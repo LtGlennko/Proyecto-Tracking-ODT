@@ -1,0 +1,20 @@
+services:
+
+  postgres:
+    # En desarrollo: exponer logs más detallados
+    environment:
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB:       ${DB_NAME}
+
+  api:
+    build:
+      target: development           # ← usa la stage de desarrollo del Dockerfile
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    volumes:
+      - .:/app                      # monta código fuente para hot-reload
+      - /app/node_modules           # excluye node_modules del host
+    command: npm run start:dev      # nest start --watch
+    profiles: []                    # en dev, siempre se levanta (sin profile)

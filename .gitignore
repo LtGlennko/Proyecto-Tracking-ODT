@@ -1,0 +1,65 @@
+# ========================
+# DEPENDENCIAS
+# ========================
+node_modules/
+
+# ========================
+# VARIABLES DE ENTORNO
+# ========================
+.env
+.env.local
+.env.*.local
+# Mantener solo el ejemplo
+!.env.example
+
+# ========================
+# BUILDS / COMPILADOS
+# ========================
+dist/
+build/
+out/
+
+# ========================
+# NX CACHE (Frontend)
+# ========================
+.nx/cache/
+.angular/cache/
+
+# ========================
+# LOGS
+# ========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# ========================
+# SISTEMA OPERATIVO
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# IDEs Y EDITORES
+# ========================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ========================
+# TESTS
+# ========================
+coverage/
+.nyc_output/
+
+# ========================
+# DOCKER
+# ========================
+# Volúmenes locales de postgres si los montas
+tracking-otd-api/docker/postgres/data/

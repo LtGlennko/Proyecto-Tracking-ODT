@@ -1,0 +1,101 @@
+[?9001h[?1004h[m]0;C:\WINDOWS\system32\cmd.exe[?25h[36m⠋ [mGenerating browser application bundles (phase: setup)...[K[58C[36m⠙ [mGenerating browser application bundles (phase: setup)...[K[58C[36m⠹ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠸ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠼ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠴ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠦ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠧ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠇ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠏ [mGenerating browser application bundles (phase: building)...[K[36m⠋ [mGenerating browser application bundles (phase: sealing)...[K[60C[36m⠙ [mGenerating browser application bundles (phase: emitting)...[32m✔ [mBrowser application bundle generation complete.[K
+
+[1mInitial chunk files[22m                                                                  [K[2m | [22m[1mNames[22m       
+[12;100H 
+[2m[30C | [22m [1mRaw size[22m[K
+[32mvendor.js                                                                            [37m[2m | vendor[22m      [m
+[37m[12;100H 
+[2m[30C | [22m  [36m2.74 MB[37m[2m | [22m[K[m
+[32mpolyfills.js                                                                         [37m[2m | polyfills[22m   [m
+[37m[12;100H 
+[2m[30C | [36m[22m262.57 kB[37m[2m | [22m[K[m
+[32mstyles.css, styles.js                                                                [37m[2m | styles[22m      [m
+[37m[12;100H 
+[2m[30C | [36m[22m185.76 kB[37m[2m | [22m[K[m
+[32mmain.js                                                                              [37m[2m | main[22m        [m
+[37m[12;100H 
+[2m[30C | [22m [36m27.19 kB[37m[2m | [22m[K[m
+[32mruntime.js                                                                           [37m[2m | runtime[22m     [m
+[37m[12;100H 
+[2m[30C | [22m [36m12.62 kB[37m[2m | [22m[K[m
+
+[1m [22m                                                                                    [K[2m | [22m[1mInitial tota[22m
+[1m[12;100Hal[22m[29X[2m[29C | [22m  [1m3.22 MB[22m[K
+
+[1mLazy chunk files[22m                                                                     [K[2m | [22m[1mNames[22m       
+[12;100H 
+[2m[30C | [22m [1mRaw size[22m[K
+[32mdefault-node_modules_angular_forms_fesm2022_forms_mjs.js                             [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-vin-tracking | [36m[22m294.59 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-vin-tracking_src_index_ts.js[37m[2m[31C | kaufmann-t[m  [13;99H[37m[2mra[m
+[37m[2m[12;100Hacking-otd-feature-vin-tracking | [36m[22m112.92 kB[37m[2m | [22m[K[m
+[32mdefault-libs_shared_models_src_index_ts-libs_tracking-otd_data-access_src_index_ts.js[37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-vin-tracking | [22m [36m44.88 kB[37m[2m | [22m[K[m
+[32mdefault-libs_shared_ui_src_index_ts.js                                               [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-vin-tracking | [22m [36m31.26 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-admin_src_index_ts.js                                      [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-admin[22m       [2m | [22m [36m27.03 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-staging_src_index_ts.js                                    [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-staging[22m     [2m | [22m [36m24.99 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-alertas_src_index_ts.js                                    [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-alertas[22m     [2m | [22m [36m22.25 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-dashboard_src_index_ts.js                                  [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-dashboard[22m   [2m | [22m [36m20.29 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-analytics_src_index_ts.js                                  [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-analytics[22m   [2m | [22m [36m17.51 kB[37m[2m | [22m[K[m
+[32mcommon.js                                                                            [37m[2m | common[22m      [m
+[37m[12;100H 
+[2m[30C | [22m [36m12.05 kB[37m[2m | [22m[K[m
+[32mlibs_tracking-otd_feature-chat_src_index_ts.js                                       [37m[2m | kaufmann-tra[m
+[37m[2m[12;100Hacking-otd-feature-chat[22m        [2m | [22m [36m10.40 kB[37m[2m | [22m[K[m
+
+Build at: [37m1m2026-03-11T17:15:07.614Z - Hash: [1m9d49147a9811030f[22m - Time: [1m3236[22mms[K[m
+
+[37m** Angular Live Development Server is listening on localhost:4200, open your browser on http://local[m
+[37m[12;100Hlhost:4200/ **[m
+
+
+[92m√ [37mCompiled successfully.[K[m
+[36m⠋ [mGenerating browser application bundles...[K[43C[36m⠙ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠹ [mGenerating browser application bundles (phase: building)...[K[61C[32m✔ [mBrowser application bundle generation complete.[K
+
+
+
+16 unchanged chunks
+
+Build at: [37m[1m2026-03-11T17:15:08.102Z[22m - Hash: [1m9d49147a9811030f[22m - Time: [1m355[22mms[K[m
+
+[92m√ [37mCompiled successfully.[K[m
+[36m⠋ [mGenerating browser application bundles...[K[43C[36m⠙ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠹ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠸ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠼ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠴ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠦ [mGenerating browser application bundles (phase: emitting)...[32m✔ [mBrowser application bundle generation complete.[K
+
+[1mInitial chunk files[22m                                   [35X[2m | [22m[1mNames[22m                                     [K[2m [22m
+[2m[12;100H | [22m [1mRaw size[22m[K
+[32mruntime.js                                            [37m[2m | runtime[22m                                   [K[2m [m
+[37m[2m[12;100H | [22m [36m12.62 kB[37m[2m | [22m[K[m
+
+[1mLazy chunk files[22m                                      [38X[2m | [22m[1mNames[22m                                     [K[2m [22m
+[2m[12;100H | [22m [1mRaw size[22m[K
+[32mlibs_tracking-otd_feature-vin-tracking_src_index_ts.js[37m[2m | kaufmann-tracking-otd-feature-vin-tracking [m
+[37m[2m[12;100H | [36m[22m112.92 kB[37m[2m | [22m[K[m
+
+14 unchanged chunks
+
+Build at: [37m[1m2026-03-11T17:33:20.640Z[22m - Hash: [1mca16331cf7c6eaf6[22m - Time: [1m1209[22mms[K[m
+
+[92m√ [37mCompiled successfully.[K[m
+[36m⠋ [mGenerating browser application bundles...[K[43C[36m⠙ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠹ [mGenerating browser application bundles (phase: building)...[K[61C[36m⠸ [mGenerating browser application bundles (phase: sealing)...[K[60C[32m✔ [mBrowser application bundle generation complete.
+
+[1mInitial chunk files[22m                                   [35X[2m | [22m[1mNames[22m                                     [K[2m [22m
+[2m[12;100H | [22m [1mRaw size[22m[K
+[32mruntime.js                                            [37m[2m | runtime[22m                                   [K[2m [m
+[37m[2m[12;100H | [22m [36m12.62 kB[37m[2m | [22m[K[m
+
+[1mLazy chunk files[22m                                      [38X[2m | [22m[1mNames[22m                                     [K[2m [22m
+[2m[12;100H | [22m [1mRaw size[22m[K
+[32mlibs_tracking-otd_feature-vin-tracking_src_index_ts.js[37m[2m | kaufmann-tracking-otd-feature-vin-tracking [m
+[37m[2m[12;100H | [36m[22m114.15 kB[37m[2m | [22m[K[m
+
+14 unchanged chunks
+
+Build at: [37m[1m2026-03-11T17:33:23.037Z[22m - Hash: [1m3b3ece9ae36a7c12[22m - Time: [1m511[22mms[K[m
+
+[92m√ [37mCompiled successfully.[K[m

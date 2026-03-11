@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global CSS Variables ─────────────────────────────────── */
+:root {
+  --brand-navy:  #1E3A5F;
+  --brand-blue:  #2E75B6;
+  --brand-light: #EFF6FF;
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: #f8fafc; /* slate-50 */
+  color: #1e293b; /* slate-800 */
+}
+
+/* ── Scrollbar styling ───────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Drawer animation ────────────────────────────────────── */
+.drawer-enter {
+  transform: translateX(100%);
+  transition: transform 300ms ease-out;
+}
+.drawer-enter-active {
+  transform: translateX(0);
+}
+.drawer-leave-active {
+  transform: translateX(100%);
+  transition: transform 300ms ease-in;
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.table-row-hover:hover {
+  background-color: #f8fafc;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+.kf-tooltip {
+  @apply absolute z-50 bg-white border border-slate-200 rounded-lg shadow-md p-3 text-xs text-slate-700;
+  pointer-events: none;
+}

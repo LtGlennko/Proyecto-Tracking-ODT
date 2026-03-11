@@ -1,0 +1,105 @@
+<div class="flex h-screen overflow-hidden bg-slate-50">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside
+    class="flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden"
+    [style.width]="sidebarCollapsed() ? '64px' : '240px'"
+    style="background-color: #1E3A5F;"
+  >
+    <!-- Logo area -->
+    <div class="flex items-center px-4 py-5 border-b border-white/10 min-h-[64px]">
+      <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+        <span class="text-white font-bold text-sm">K</span>
+      </div>
+      <span
+        *ngIf="!sidebarCollapsed()"
+        class="ml-3 text-white font-bold text-sm truncate transition-opacity duration-200"
+      >
+        Grupo Kaufmann
+      </span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+      <a
+        *ngFor="let item of visibleNavItems()"
+        [routerLink]="item.route"
+        routerLinkActive="bg-white/20 text-white"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center rounded-lg px-2 py-2.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors duration-150 cursor-pointer"
+        [class.justify-center]="sidebarCollapsed()"
+        [attr.title]="sidebarCollapsed() ? item.label : null"
+        [attr.aria-label]="item.label"
+      >
+        <span class="text-lg flex-shrink-0 w-6 text-center">{{ item.icon }}</span>
+        <span
+          *ngIf="!sidebarCollapsed()"
+          class="ml-3 text-sm font-medium truncate"
+        >{{ item.label }}</span>
+      </a>
+    </nav>
+
+    <!-- User + collapse button -->
+    <div class="border-t border-white/10 p-3">
+      <div *ngIf="!sidebarCollapsed()" class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-xs font-semibold">{{ currentUser()?.initials }}</span>
+        </div>
+        <div class="min-w-0">
+          <p class="text-white text-xs font-medium truncate">{{ currentUser()?.name }}</p>
+          <p class="text-white/50 text-xs truncate">{{ currentUser()?.role }}</p>
+        </div>
+      </div>
+      <button
+        (click)="toggleSidebar()"
+        class="w-full flex items-center justify-center rounded-lg p-2 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+        aria-label="Toggle sidebar"
+      >
+        <span class="text-sm">{{ sidebarCollapsed() ? '→' : '←' }}</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ──────────────────────────────────────── -->
+  <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 h-14 flex items-center px-6 gap-4 flex-shrink-0 shadow-sm">
+      <div class="flex-1 min-w-0">
+        <nav class="flex items-center gap-1.5 text-sm text-slate-500">
+          <span class="text-slate-400">Kaufmann</span>
+          <span class="text-slate-300">/</span>
+          <span class="text-slate-800 font-medium">{{ currentRouteName }}</span>
+        </nav>
+      </div>
+
+      <!-- Search -->
+      <div class="relative hidden md:block">
+        <input
+          type="text"
+          placeholder="Buscar VIN, cliente, ficha…"
+          class="w-64 pl-8 pr-4 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition"
+        />
+        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+      </div>
+
+      <!-- Alerts bell -->
+      <button class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors" aria-label="Alertas">
+        <span class="text-lg">🔔</span>
+        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+      </button>
+
+      <!-- Avatar -->
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white cursor-pointer"
+           style="background-color: #2E75B6;">
+        {{ currentUser()?.initials }}
+      </div>
+    </header>
+
+    <!-- ROUTER OUTLET -->
+    <main class="flex-1 overflow-y-auto">
+      <router-outlet />
+    </main>
+
+  </div>
+</div>

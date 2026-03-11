@@ -1,0 +1,21 @@
+{
+  "run": {
+    "command": "nx serve tracking-otd",
+    "startTime": "2026-03-11T17:13:46.662Z",
+    "endTime": "2026-03-11T19:02:17.931Z",
+    "inner": false
+  },
+  "tasks": [
+    {
+      "taskId": "tracking-otd:serve:development",
+      "target": "serve",
+      "projectName": "tracking-otd",
+      "hash": "5223927347720652248",
+      "startTime": "2026-03-11T17:13:46.688Z",
+      "endTime": "2026-03-11T19:02:17.928Z",
+      "params": "",
+      "cacheStatus": "cache-miss",
+      "status": 1
+    }
+  ]
+}

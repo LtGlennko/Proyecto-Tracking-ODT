@@ -1,0 +1,185 @@
+<!-- Drawer panel -->
+<aside
+  class="fixed top-0 right-0 h-full w-[420px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300"
+  [class.translate-x-0]="isOpen()"
+  [class.translate-x-full]="!isOpen()"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Detalle VIN ' + vin().id"
+>
+
+  <!-- ── HEADER ──────────────────────────────────────────── -->
+  <div class="bg-slate-800 text-white px-5 pt-5 pb-4 flex-shrink-0">
+
+    <!-- Close button -->
+    <div class="flex justify-end mb-3">
+      <button
+        (click)="closed.emit()"
+        class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+        aria-label="Cerrar drawer"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Vehicle info -->
+    <div class="flex gap-3 items-start">
+      <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+        <kf-vehicle-icon [lineaNegocio]="vin().lineaNegocio" size="lg" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-base truncate">{{ vin().modelo }}</span>
+          <kf-status-badge [status]="$any(vin().estadoGeneral)" />
+        </div>
+        <p class="text-white/60 text-xs font-mono mt-0.5">{{ vin().id }}</p>
+        <div class="flex items-center gap-3 mt-1 flex-wrap">
+          <span class="text-xs px-2 py-0.5 rounded-full bg-white/15 text-white/80">{{ vin().lineaNegocio }}</span>
+          <span class="text-xs text-white/60">{{ vin().clientName }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+      <div class="bg-white/10 rounded-lg p-2">
+        <div class="text-lg font-bold" [class]="vin().daysDelayed > 0 ? 'text-red-300' : 'text-emerald-300'">
+          {{ vin().daysDelayed > 0 ? '+' + vin().daysDelayed : vin().daysDelayed }}
+        </div>
+        <div class="text-xs text-white/50 mt-0.5">días retraso</div>
+      </div>
+      <div class="bg-white/10 rounded-lg p-2">
+        <div class="text-lg font-bold text-blue-300">{{ vin().cumplimiento }}%</div>
+        <div class="text-xs text-white/50 mt-0.5">cumplimiento</div>
+      </div>
+      <div class="bg-white/10 rounded-lg p-2">
+        <div class="text-lg font-bold text-white">{{ vin().diasVendedorComercial }}</div>
+        <div class="text-xs text-white/50 mt-0.5">días vendedor</div>
+      </div>
+    </div>
+
+    <!-- Ficha info -->
+    <div class="mt-3 flex gap-3 flex-wrap text-xs text-white/60">
+      <span>Ficha: <span class="text-white/90 font-medium">{{ vin().fichaId }}</span></span>
+      <span>Lote: <span class="text-white/90 font-medium">{{ vin().lote }}</span></span>
+      <span>OC: <span class="text-white/90 font-medium">{{ vin().ordenCompra }}</span></span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mt-4 flex gap-1 border-b border-white/10 pb-0">
+      <button
+        *ngFor="let tab of tabs"
+        (click)="setTab(tab.id)"
+        class="px-4 py-2 text-sm font-medium transition-colors rounded-t-md"
+        [class]="activeTab() === tab.id
+          ? 'bg-white text-slate-800'
+          : 'text-white/60 hover:text-white/90 hover:bg-white/10'"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── TAB CONTENT ─────────────────────────────────────── -->
+  <div class="flex-1 overflow-y-auto">
+
+    <!-- Tab 1: Subetapas -->
+    <ng-container *ngIf="activeTab() === 'subetapas'">
+      <div class="divide-y divide-slate-100">
+        <div *ngFor="let hito of vin().stages" class="bg-white">
+          <!-- Hito header -->
+          <button
+            (click)="toggleHito(hito.id)"
+            class="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+          >
+            <!-- Status indicator -->
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              [class]="hito.status === 'completed' ? 'bg-emerald-500' :
+                       hito.status === 'delayed'   ? 'bg-red-500 animate-pulse' :
+                       hito.status === 'active'    ? 'bg-blue-500 animate-pulse' : 'bg-slate-200'">
+            </span>
+            <span class="font-medium text-sm text-slate-800 flex-1">{{ hito.name }}</span>
+
+            <!-- Status badge -->
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium" [class]="hitoStatusClass(hito.status)">
+              {{ hito.status === 'completed' ? 'Completado' :
+                 hito.status === 'delayed' ? 'Demorado' :
+                 hito.status === 'active' ? 'Activo' : 'Pendiente' }}
+            </span>
+
+            <!-- Date range -->
+            <span class="text-xs text-slate-500 whitespace-nowrap">
+              {{ formatDate(hito.plan.start) }} → {{ formatDate(hito.plan.end) }}
+            </span>
+
+            <!-- Progress bar -->
+            <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden flex-shrink-0">
+              <div class="h-full rounded-full transition-all" [style.width]="hitoProgressWidth(hito) + '%'" [class]="hitoProgressColor(hito)"></div>
+            </div>
+
+            <!-- Chevron -->
+            <span class="text-slate-400 text-xs flex-shrink-0 transition-transform" [class.rotate-180]="expandedHitoId() === hito.id">▾</span>
+          </button>
+
+          <!-- Subetapas -->
+          <div *ngIf="expandedHitoId() === hito.id" class="px-4 pb-3">
+            <div class="rounded-lg overflow-hidden border border-slate-100">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-slate-50">
+                    <th class="text-left px-3 py-2 font-semibold text-slate-500">Subetapa</th>
+                    <th class="text-center px-2 py-2 font-semibold text-slate-400">Baseline</th>
+                    <th class="text-center px-2 py-2 font-semibold text-blue-500">Plan</th>
+                    <th class="text-center px-2 py-2 font-semibold text-emerald-500">Real</th>
+                    <th class="text-center px-2 py-2 font-semibold text-slate-500">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sub of hito.subStages" class="border-t border-slate-50">
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" [class]="subStageStatusDot(sub.status)"></span>
+                        <span class="text-slate-700">{{ sub.name }}</span>
+                        <span class="text-slate-400 text-[10px] bg-slate-100 px-1 rounded">{{ sub.category }}</span>
+                      </div>
+                    </td>
+                    <td class="px-2 py-2 text-center text-slate-400">{{ formatDate(sub.baseline.end) }}</td>
+                    <td class="px-2 py-2 text-center text-blue-600">{{ formatDate(sub.plan.end) }}</td>
+                    <td class="px-2 py-2 text-center">
+                      <span [class]="sub.real.end ? 'text-emerald-600 font-medium' : 'text-slate-400'">
+                        {{ sub.real.end ? formatDate(sub.real.end) : '-' }}
+                      </span>
+                    </td>
+                    <td class="px-2 py-2 text-center">
+                      <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium" [class]="hitoStatusClass(sub.status)">
+                        {{ sub.status === 'completed' ? '✓' : sub.status === 'active' ? '▶' : '○' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="hito.subStages.length === 0">
+                    <td colspan="5" class="px-3 py-3 text-center text-slate-400">Sin subetapas registradas</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Tab 2: Visual Map -->
+    <ng-container *ngIf="activeTab() === 'visual'">
+      <div class="p-4">
+        <kf-visual-map [stages]="vin().stages" (nodeClick)="onVisualMapNodeClick($event)" />
+      </div>
+    </ng-container>
+
+    <!-- Tab 3: Gantt -->
+    <ng-container *ngIf="activeTab() === 'gantt'">
+      <div class="p-4">
+        <kf-gantt-view [stages]="vin().stages" />
+      </div>
+    </ng-container>
+
+  </div>
+</aside>

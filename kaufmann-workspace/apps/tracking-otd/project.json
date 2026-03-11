@@ -1,0 +1,61 @@
+{
+  "name": "tracking-otd",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/tracking-otd/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:browser",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/tracking-otd",
+        "index": "apps/tracking-otd/src/index.html",
+        "main": "apps/tracking-otd/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/tracking-otd/tsconfig.app.json",
+        "assets": ["apps/tracking-otd/src/favicon.ico", "apps/tracking-otd/src/assets"],
+        "styles": ["apps/tracking-otd/src/styles.scss"],
+        "scripts": []
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            { "type": "initial", "maximumWarning": "500kb", "maximumError": "1mb" },
+            { "type": "anyComponentStyle", "maximumWarning": "2kb", "maximumError": "4kb" }
+          ],
+          "outputHashing": "all",
+          "fileReplacements": [
+            {
+              "replace": "apps/tracking-otd/src/environments/environment.ts",
+              "with": "apps/tracking-otd/src/environments/environment.prod.ts"
+            }
+          ]
+        },
+        "development": {
+          "buildOptimizer": false,
+          "optimization": false,
+          "vendorChunk": true,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "namedChunks": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": { "buildTarget": "tracking-otd:build:production" },
+        "development": { "buildTarget": "tracking-otd:build:development" }
+      },
+      "defaultConfiguration": "development"
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": { "lintFilePatterns": ["apps/tracking-otd/**/*.ts", "apps/tracking-otd/**/*.html"] }
+    }
+  }
+}
