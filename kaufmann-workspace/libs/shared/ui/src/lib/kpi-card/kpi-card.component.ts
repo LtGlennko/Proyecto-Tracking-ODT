@@ -1,33 +1,38 @@
 import { Component, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
-  selector: 'kf-kpi-card',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'kf-kpi-card',
+    imports: [],
+    template: `
     <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 flex items-start gap-4"
-         [style.border-left-color]="color()"
-         style="border-left-width: 4px;">
+      [style.border-left-color]="color()"
+      style="border-left-width: 4px;">
       <div class="flex-1 min-w-0">
         <p class="text-sm text-slate-500 font-medium truncate">{{ title() }}</p>
         <div class="mt-1 flex items-baseline gap-1.5">
           <span class="text-2xl font-bold text-slate-800">{{ value() }}</span>
-          <span *ngIf="unit()" class="text-sm text-slate-500">{{ unit() }}</span>
+          @if (unit()) {
+            <span class="text-sm text-slate-500">{{ unit() }}</span>
+          }
         </div>
-        <div *ngIf="trendLabel()" class="mt-1.5 flex items-center gap-1 text-xs">
-          <span [class]="trendClass()">
-            {{ trend()! > 0 ? '↑' : trend()! < 0 ? '↓' : '→' }}
-            {{ trendLabel() }}
-          </span>
+        @if (trendLabel()) {
+          <div class="mt-1.5 flex items-center gap-1 text-xs">
+            <span [class]="trendClass()">
+              {{ trend()! > 0 ? '↑' : trend()! < 0 ? '↓' : '→' }}
+              {{ trendLabel() }}
+            </span>
+          </div>
+        }
+      </div>
+      @if (icon()) {
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+          [style.background-color]="color() + '1A'">
+          <span class="text-xl">{{ icon() }}</span>
         </div>
-      </div>
-      <div *ngIf="icon()" class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-           [style.background-color]="color() + '1A'">
-        <span class="text-xl">{{ icon() }}</span>
-      </div>
+      }
     </div>
-  `,
+    `
 })
 export class KpiCardComponent {
   title = input.required<string>();

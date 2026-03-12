@@ -1,5 +1,5 @@
 import { Component, input, output, signal, computed, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { VinModel, HitoTracking, HITO_LABELS } from '@kaufmann/shared/models';
 import { StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
 import { formatDate, calculateDiff } from '@kaufmann/shared/utils';
@@ -9,10 +9,9 @@ import { GanttViewComponent } from '../gantt-view/gantt-view.component';
 type DrawerTab = 'subetapas' | 'visual' | 'gantt';
 
 @Component({
-  selector: 'kf-tracking-drawer',
-  standalone: true,
-  imports: [CommonModule, StatusBadgeComponent, VehicleIconComponent, VisualMapComponent, GanttViewComponent],
-  templateUrl: './tracking-drawer.component.html',
+    selector: 'kf-tracking-drawer',
+    imports: [StatusBadgeComponent, VehicleIconComponent, VisualMapComponent, GanttViewComponent],
+    templateUrl: './tracking-drawer.component.html'
 })
 export class TrackingDrawerComponent {
   vin = input.required<VinModel>();

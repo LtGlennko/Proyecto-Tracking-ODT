@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -11,10 +11,9 @@ import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracki
 import { formatDate } from '@kaufmann/shared/utils';
 
 @Component({
-  selector: 'kf-tracking-list-page',
-  standalone: true,
-  imports: [CommonModule, FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent],
-  templateUrl: './tracking-list-page.component.html',
+    selector: 'kf-tracking-list-page',
+    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent],
+    templateUrl: './tracking-list-page.component.html'
 })
 export class TrackingListPageComponent implements OnInit {
   readonly store = inject(TrackingStore);

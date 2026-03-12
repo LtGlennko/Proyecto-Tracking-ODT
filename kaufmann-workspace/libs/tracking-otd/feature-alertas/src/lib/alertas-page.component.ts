@@ -1,16 +1,15 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AlertasStore } from '@kaufmann/tracking-otd/data-access';
 import { AlertaModel, SeveridadAlerta, EstadoAlerta } from '@kaufmann/shared/models';
 import { formatDate } from '@kaufmann/shared/utils';
 
 @Component({
-  selector: 'kf-alertas-page',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'kf-alertas-page',
+    imports: [],
+    template: `
     <div class="p-6 space-y-5">
-
+    
       <!-- Header -->
       <div class="flex items-start justify-between">
         <div>
@@ -18,7 +17,7 @@ import { formatDate } from '@kaufmann/shared/utils';
           <p class="text-sm text-slate-500 mt-0.5">Bandeja de alertas por SLA</p>
         </div>
       </div>
-
+    
       <!-- Counters -->
       <div class="grid grid-cols-3 gap-4">
         <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
@@ -43,7 +42,7 @@ import { formatDate } from '@kaufmann/shared/utils';
           </div>
         </div>
       </div>
-
+    
       <!-- Filters -->
       <div class="bg-white rounded-lg border border-slate-200 p-3 flex gap-3 flex-wrap">
         <select (change)="setSeveridad($event)" class="text-sm rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 focus:outline-none">
@@ -65,73 +64,77 @@ import { formatDate } from '@kaufmann/shared/utils';
           <option value="COMERCIAL">COMERCIAL</option>
         </select>
       </div>
-
+    
       <!-- Alert cards -->
       <div class="space-y-3">
-        <div
-          *ngFor="let alerta of store.alertasFiltradas()"
-          class="bg-white rounded-lg border shadow-sm p-4 transition-all"
-          [class]="alerta.nivel === 'critico' ? 'border-red-200' : 'border-amber-200'"
-        >
-          <div class="flex items-start gap-4">
-            <!-- Severity icon -->
-            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 [class]="alerta.nivel === 'critico' ? 'bg-red-100' : 'bg-amber-100'">
-              <span class="text-lg">{{ alerta.nivel === 'critico' ? '🚨' : '⚠️' }}</span>
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-2">
-                <div>
-                  <p class="text-sm font-semibold text-slate-800">{{ alerta.modelo }} · {{ alerta.clientName }}</p>
-                  <p class="text-xs text-slate-500 mt-0.5">
-                    {{ alerta.stageName }} › {{ alerta.subStageName }} ·
-                    <span class="font-medium text-slate-600">{{ alerta.responsibleArea }}</span>
-                  </p>
+        @for (alerta of store.alertasFiltradas(); track alerta) {
+          <div
+            class="bg-white rounded-lg border shadow-sm p-4 transition-all"
+            [class]="alerta.nivel === 'critico' ? 'border-red-200' : 'border-amber-200'"
+            >
+            <div class="flex items-start gap-4">
+              <!-- Severity icon -->
+              <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                [class]="alerta.nivel === 'critico' ? 'bg-red-100' : 'bg-amber-100'">
+                <span class="text-lg">{{ alerta.nivel === 'critico' ? '🚨' : '⚠️' }}</span>
+              </div>
+              <!-- Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">{{ alerta.modelo }} · {{ alerta.clientName }}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                      {{ alerta.stageName }} › {{ alerta.subStageName }} ·
+                      <span class="font-medium text-slate-600">{{ alerta.responsibleArea }}</span>
+                    </p>
+                  </div>
+                  <span class="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                    [class]="statusBadge(alerta.status)">
+                    {{ statusLabel(alerta.status) }}
+                  </span>
                 </div>
-                <span class="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
-                      [class]="statusBadge(alerta.status)">
-                  {{ statusLabel(alerta.status) }}
-                </span>
-              </div>
-
-              <!-- Date deviation -->
-              <div class="mt-2 flex items-center gap-2 text-xs">
-                <span class="text-slate-400">Prev:</span>
-                <span class="font-medium text-slate-600">{{ formatDate(alerta.prevDate) }}</span>
-                <span class="text-slate-300">→</span>
-                <span class="font-medium text-red-600">{{ formatDate(alerta.newDate) }}</span>
-                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">+{{ alerta.delayDays }}d</span>
-              </div>
-
-              <!-- Actions -->
-              <div class="mt-3 flex gap-2 flex-wrap">
-                <button *ngIf="alerta.status !== 'resolved'"
-                  (click)="markResolved(alerta.id)"
-                  class="px-3 py-1.5 text-xs rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">
-                  ✓ Marcar resuelta
-                </button>
-                <button *ngIf="alerta.status === 'action_required'"
-                  (click)="markRead(alerta.id)"
-                  class="px-3 py-1.5 text-xs rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors">
-                  Marcar leída
-                </button>
-                <button class="px-3 py-1.5 text-xs rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
-                  📧 Contactar área
-                </button>
+                <!-- Date deviation -->
+                <div class="mt-2 flex items-center gap-2 text-xs">
+                  <span class="text-slate-400">Prev:</span>
+                  <span class="font-medium text-slate-600">{{ formatDate(alerta.prevDate) }}</span>
+                  <span class="text-slate-300">→</span>
+                  <span class="font-medium text-red-600">{{ formatDate(alerta.newDate) }}</span>
+                  <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">+{{ alerta.delayDays }}d</span>
+                </div>
+                <!-- Actions -->
+                <div class="mt-3 flex gap-2 flex-wrap">
+                  @if (alerta.status !== 'resolved') {
+                    <button
+                      (click)="markResolved(alerta.id)"
+                      class="px-3 py-1.5 text-xs rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                      ✓ Marcar resuelta
+                    </button>
+                  }
+                  @if (alerta.status === 'action_required') {
+                    <button
+                      (click)="markRead(alerta.id)"
+                      class="px-3 py-1.5 text-xs rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors">
+                      Marcar leída
+                    </button>
+                  }
+                  <button class="px-3 py-1.5 text-xs rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
+                    📧 Contactar área
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div *ngIf="store.alertasFiltradas().length === 0"
-             class="text-center py-12 text-slate-400">
-          No hay alertas con los filtros actuales.
-        </div>
+        }
+    
+        @if (store.alertasFiltradas().length === 0) {
+          <div
+            class="text-center py-12 text-slate-400">
+            No hay alertas con los filtros actuales.
+          </div>
+        }
       </div>
     </div>
-  `,
+    `
 })
 export class AlertasPageComponent {
   readonly store = inject(AlertasStore);

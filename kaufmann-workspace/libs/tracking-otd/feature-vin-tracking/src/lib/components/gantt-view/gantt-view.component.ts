@@ -1,5 +1,5 @@
 import { Component, input, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HitoTracking } from '@kaufmann/shared/models';
 import { formatDate } from '@kaufmann/shared/utils';
 
@@ -11,10 +11,9 @@ interface GanttBar {
 }
 
 @Component({
-  selector: 'kf-gantt-view',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'kf-gantt-view',
+    imports: [],
+    template: `
     <div class="bg-white rounded-lg border border-slate-200 p-4">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-sm font-semibold text-slate-700">Vista Gantt</h3>
@@ -24,57 +23,67 @@ interface GanttBar {
           <span class="flex items-center gap-1"><span class="w-4 h-1.5 rounded bg-emerald-400 inline-block"></span> Real</span>
         </div>
       </div>
-
+    
       <!-- Date axis -->
       <div class="flex mb-2 ml-32">
-        <div *ngFor="let tick of dateTicks()" class="flex-1 text-center text-[10px] text-slate-400 border-l border-slate-100">
-          {{ tick }}
-        </div>
+        @for (tick of dateTicks(); track tick) {
+          <div class="flex-1 text-center text-[10px] text-slate-400 border-l border-slate-100">
+            {{ tick }}
+          </div>
+        }
       </div>
-
+    
       <!-- Rows -->
       <div class="space-y-2">
-        <div *ngFor="let hito of stages()">
-          <!-- Hito row -->
-          <div class="flex items-center gap-2">
-            <div class="w-32 flex-shrink-0">
-              <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full flex-shrink-0"
+        @for (hito of stages(); track hito) {
+          <div>
+            <!-- Hito row -->
+            <div class="flex items-center gap-2">
+              <div class="w-32 flex-shrink-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full flex-shrink-0"
                   [class]="hito.status === 'completed' ? 'bg-emerald-500' :
                            hito.status === 'delayed'   ? 'bg-red-500' :
                            hito.status === 'active'    ? 'bg-blue-500' : 'bg-slate-300'">
-                </span>
-                <span class="text-xs font-medium text-slate-700 truncate">{{ hito.name }}</span>
+                  </span>
+                  <span class="text-xs font-medium text-slate-700 truncate">{{ hito.name }}</span>
+                </div>
               </div>
-            </div>
-            <div class="flex-1 h-6 relative bg-slate-50 rounded overflow-hidden border border-slate-100">
-              <!-- Baseline bar -->
-              <div *ngIf="getBar(hito, 'baseline') as bar"
-                   class="absolute top-1 h-1 rounded opacity-50"
-                   [style.left]="bar.startPct + '%'"
-                   [style.width]="bar.widthPct + '%'"
-                   [class]="bar.color">
-              </div>
-              <!-- Plan bar -->
-              <div *ngIf="getBar(hito, 'plan') as bar"
-                   class="absolute top-2.5 h-1.5 rounded"
-                   [style.left]="bar.startPct + '%'"
-                   [style.width]="bar.widthPct + '%'"
-                   [class]="bar.color">
-              </div>
-              <!-- Real bar -->
-              <div *ngIf="getBar(hito, 'real') as bar"
-                   class="absolute bottom-1 h-1.5 rounded"
-                   [style.left]="bar.startPct + '%'"
-                   [style.width]="bar.widthPct + '%'"
-                   [class]="bar.color">
+              <div class="flex-1 h-6 relative bg-slate-50 rounded overflow-hidden border border-slate-100">
+                <!-- Baseline bar -->
+                @if (getBar(hito, 'baseline'); as bar) {
+                  <div
+                    class="absolute top-1 h-1 rounded opacity-50"
+                    [style.left]="bar.startPct + '%'"
+                    [style.width]="bar.widthPct + '%'"
+                    [class]="bar.color">
+                  </div>
+                }
+                <!-- Plan bar -->
+                @if (getBar(hito, 'plan'); as bar) {
+                  <div
+                    class="absolute top-2.5 h-1.5 rounded"
+                    [style.left]="bar.startPct + '%'"
+                    [style.width]="bar.widthPct + '%'"
+                    [class]="bar.color">
+                  </div>
+                }
+                <!-- Real bar -->
+                @if (getBar(hito, 'real'); as bar) {
+                  <div
+                    class="absolute bottom-1 h-1.5 rounded"
+                    [style.left]="bar.startPct + '%'"
+                    [style.width]="bar.widthPct + '%'"
+                    [class]="bar.color">
+                  </div>
+                }
               </div>
             </div>
           </div>
-        </div>
+        }
       </div>
     </div>
-  `,
+    `
 })
 export class GanttViewComponent {
   stages = input.required<HitoTracking[]>();

@@ -1,38 +1,47 @@
 import { Component, computed, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HitoTracking } from '@kaufmann/shared/models';
 
 @Component({
-  selector: 'kf-stage-node',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'kf-stage-node',
+    imports: [],
+    template: `
     <div
       class="relative flex flex-col items-center cursor-pointer group"
       (click)="nodeClick.emit(hito().id)"
       [attr.aria-label]="hito().name + ' - ' + hito().status"
-    >
+      >
       <!-- Node circle -->
       <div [class]="nodeClass()">
-        <ng-container [ngSwitch]="hito().status">
-          <svg *ngSwitchCase="'completed'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-          </svg>
-          <svg *ngSwitchCase="'delayed'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v4m0 4h.01" />
-          </svg>
-          <svg *ngSwitchCase="'active'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <circle cx="12" cy="12" r="4" fill="currentColor" />
-          </svg>
-          <svg *ngSwitchDefault class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <circle cx="12" cy="12" r="5" stroke-width="2" />
-          </svg>
-        </ng-container>
+        @switch (hito().status) {
+          @case ('completed') {
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          }
+          @case ('delayed') {
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v4m0 4h.01" />
+            </svg>
+          }
+          @case ('active') {
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="12" cy="12" r="4" fill="currentColor" />
+            </svg>
+          }
+          @default {
+            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="12" cy="12" r="5" stroke-width="2" />
+            </svg>
+          }
+        }
       </div>
       <!-- Pulse ring for active/delayed -->
-      <div *ngIf="hito().status === 'active' || hito().status === 'delayed'"
-           [class]="ringClass()"
-      ></div>
+      @if (hito().status === 'active' || hito().status === 'delayed') {
+        <div
+          [class]="ringClass()"
+        ></div>
+      }
       <!-- Label -->
       <span class="mt-2 text-xs font-medium text-slate-600 whitespace-nowrap">
         {{ hito().name }}
@@ -58,7 +67,7 @@ import { HitoTracking } from '@kaufmann/shared/models';
         </div>
       </div>
     </div>
-  `,
+    `
 })
 export class StageNodeComponent {
   hito = input.required<HitoTracking>();

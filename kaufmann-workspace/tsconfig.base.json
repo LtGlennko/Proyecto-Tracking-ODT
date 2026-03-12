@@ -4,30 +4,60 @@
     "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
     "module": "ES2022",
-    "lib": ["ES2022", "dom"],
+    "lib": [
+      "ES2022",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@kaufmann/shared/ui":                         ["libs/shared/ui/src/index.ts"],
-      "@kaufmann/shared/models":                     ["libs/shared/models/src/index.ts"],
-      "@kaufmann/shared/auth":                       ["libs/shared/auth/src/index.ts"],
-      "@kaufmann/shared/utils":                      ["libs/shared/utils/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-dashboard":    ["libs/tracking-otd/feature-dashboard/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-vin-tracking": ["libs/tracking-otd/feature-vin-tracking/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-alertas":      ["libs/tracking-otd/feature-alertas/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-analytics":    ["libs/tracking-otd/feature-analytics/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-admin":        ["libs/tracking-otd/feature-admin/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-staging":      ["libs/tracking-otd/feature-staging/src/index.ts"],
-      "@kaufmann/tracking-otd/feature-chat":         ["libs/tracking-otd/feature-chat/src/index.ts"],
-      "@kaufmann/tracking-otd/data-access":          ["libs/tracking-otd/data-access/src/index.ts"]
+      "@kaufmann/shared/auth": [
+        "libs/shared/auth/src/index.ts"
+      ],
+      "@kaufmann/shared/models": [
+        "libs/shared/models/src/index.ts"
+      ],
+      "@kaufmann/shared/ui": [
+        "libs/shared/ui/src/index.ts"
+      ],
+      "@kaufmann/shared/utils": [
+        "libs/shared/utils/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/data-access": [
+        "libs/tracking-otd/data-access/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-admin": [
+        "libs/tracking-otd/feature-admin/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-alertas": [
+        "libs/tracking-otd/feature-alertas/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-analytics": [
+        "libs/tracking-otd/feature-analytics/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-chat": [
+        "libs/tracking-otd/feature-chat/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-dashboard": [
+        "libs/tracking-otd/feature-dashboard/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-staging": [
+        "libs/tracking-otd/feature-staging/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-vin-tracking": [
+        "libs/tracking-otd/feature-vin-tracking/src/index.ts"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }

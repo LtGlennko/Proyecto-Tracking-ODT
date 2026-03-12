@@ -1,19 +1,18 @@
 import { Component, inject, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
 import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
 
 @Component({
-  selector: 'kf-analytics-page',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'kf-analytics-page',
+    imports: [],
+    template: `
     <div class="p-6 space-y-6">
       <div>
         <h1 class="text-xl font-bold text-slate-800">Analytics</h1>
         <p class="text-sm text-slate-500 mt-0.5">Métricas de rendimiento OTD</p>
       </div>
-
+    
       <!-- OTD Gauge -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 col-span-1">
@@ -33,41 +32,47 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
           </div>
           <p class="text-center text-xs text-slate-500 mt-2">{{ store.totalActivos() }} VINs activos</p>
         </div>
-
+    
         <!-- Stats -->
         <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
           <h3 class="text-sm font-semibold text-slate-700 mb-3">Por Línea de Negocio</h3>
           <div class="space-y-2">
-            <div *ngFor="let linea of lineasStats()" class="flex items-center gap-2">
-              <span class="text-xs w-20 text-slate-600">{{ linea.nombre }}</span>
-              <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full rounded-full transition-all" [style.width]="linea.pct + '%'"
+            @for (linea of lineasStats(); track linea) {
+              <div class="flex items-center gap-2">
+                <span class="text-xs w-20 text-slate-600">{{ linea.nombre }}</span>
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all" [style.width]="linea.pct + '%'"
                      [class]="linea.nombre === 'VC' || linea.nombre === 'Camiones' ? 'bg-blue-500' :
                               linea.nombre === 'Autos' ? 'bg-purple-500' :
                               linea.nombre === 'Buses' ? 'bg-sky-500' : 'bg-orange-500'">
+                  </div>
                 </div>
+                <span class="text-xs text-slate-500 w-8 text-right">{{ linea.total }}</span>
               </div>
-              <span class="text-xs text-slate-500 w-8 text-right">{{ linea.total }}</span>
-            </div>
+            }
           </div>
         </div>
-
+    
         <!-- Lead time por hito -->
         <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 col-span-2">
           <h3 class="text-sm font-semibold text-slate-700 mb-3">Volumen por Hito</h3>
           <div class="space-y-2">
-            <div *ngFor="let hId of HITO_IDS" class="flex items-center gap-3">
-              <span class="text-xs w-20 text-right text-slate-600 shrink-0">{{ HITO_LABELS[hId] }}</span>
-              <div class="flex-1 h-5 bg-slate-50 rounded overflow-hidden border border-slate-100 flex">
-                <div class="h-full bg-emerald-400 transition-all flex items-center justify-end pr-1"
-                     [style.width]="hitoOntime(hId) + '%'">
-                  <span *ngIf="hitoOntime(hId) > 15" class="text-[10px] text-white font-medium">{{ hitoOntime(hId) }}%</span>
-                </div>
-                <div class="h-full bg-red-400 transition-all"
-                     [style.width]="hitoDemorado(hId) + '%'">
+            @for (hId of HITO_IDS; track hId) {
+              <div class="flex items-center gap-3">
+                <span class="text-xs w-20 text-right text-slate-600 shrink-0">{{ HITO_LABELS[hId] }}</span>
+                <div class="flex-1 h-5 bg-slate-50 rounded overflow-hidden border border-slate-100 flex">
+                  <div class="h-full bg-emerald-400 transition-all flex items-center justify-end pr-1"
+                    [style.width]="hitoOntime(hId) + '%'">
+                    @if (hitoOntime(hId) > 15) {
+                      <span class="text-[10px] text-white font-medium">{{ hitoOntime(hId) }}%</span>
+                    }
+                  </div>
+                  <div class="h-full bg-red-400 transition-all"
+                    [style.width]="hitoDemorado(hId) + '%'">
+                  </div>
                 </div>
               </div>
-            </div>
+            }
           </div>
           <div class="flex gap-4 mt-3 text-xs text-slate-500">
             <span class="flex items-center gap-1"><span class="w-3 h-2 rounded bg-emerald-400 inline-block"></span> A tiempo</span>
@@ -75,21 +80,23 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
           </div>
         </div>
       </div>
-
+    
       <!-- Tendencia (placeholder for Chart.js integration) -->
       <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
         <h3 class="text-sm font-semibold text-slate-700 mb-4">Tendencia de Entregas (últimos 6 meses)</h3>
         <div class="h-48 flex items-end gap-4 px-4 border-b border-slate-100">
-          <div *ngFor="let bar of trendBars()" class="flex-1 flex flex-col items-center gap-1">
-            <span class="text-xs text-slate-500">{{ bar.value }}</span>
-            <div class="w-full rounded-t-sm transition-all" [style.height]="(bar.value / maxTrend() * 100) + 'px'"
-                 [class]="bar.delayed > 0 ? 'bg-red-400' : 'bg-emerald-400'"></div>
-            <span class="text-[10px] text-slate-400">{{ bar.label }}</span>
-          </div>
+          @for (bar of trendBars(); track bar) {
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <span class="text-xs text-slate-500">{{ bar.value }}</span>
+              <div class="w-full rounded-t-sm transition-all" [style.height]="(bar.value / maxTrend() * 100) + 'px'"
+              [class]="bar.delayed > 0 ? 'bg-red-400' : 'bg-emerald-400'"></div>
+              <span class="text-[10px] text-slate-400">{{ bar.label }}</span>
+            </div>
+          }
         </div>
       </div>
     </div>
-  `,
+    `
 })
 export class AnalyticsPageComponent {
   readonly store = inject(TrackingStore);

@@ -1,0 +1,577 @@
+{
+  "info": {
+    "name": "Tracking OTD — Grupo Kaufmann",
+    "_postman_id": "tracking-otd-kaufmann-v1",
+    "description": "API de seguimiento de ventas y entregas de vehículos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",   "value": "http://localhost:3000/api/v1" },
+    { "key": "token",     "value": "" },
+    { "key": "vinId",     "value": "WDB9630321L123456" },
+    { "key": "fichaId",   "value": "1" },
+    { "key": "clienteId", "value": "1" },
+    { "key": "empresaId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sync usuario (primer login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/auth/sync", "host": ["{{baseUrl}}"], "path": ["auth", "sync"] },
+            "body": { "mode": "raw", "raw": "{}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+          ]}}]
+        },
+        {
+          "name": "Mi perfil",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('data existe', () => pm.expect(pm.response.json().data).to.exist);"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "http://localhost:3000/api/health", "host": ["http://localhost:3000/api/health"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}]
+        },
+        {
+          "name": "Liveness probe",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "http://localhost:3000/api/health/liveness", "host": ["http://localhost:3000/api/health/liveness"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Empresa",
+      "item": [
+        {
+          "name": "Listar empresas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/empresa", "host": ["{{baseUrl}}"], "path": ["empresa"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);",
+            "pm.test('data existe', () => pm.expect(pm.response.json().data).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Detalle empresa",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/empresa/{{empresaId}}", "host": ["{{baseUrl}}"], "path": ["empresa", "{{empresaId}}"] }
+          }
+        },
+        {
+          "name": "Crear empresa",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/empresa", "host": ["{{baseUrl}}"], "path": ["empresa"] },
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Nueva Empresa\",\n  \"codigo\": \"NVE\"\n}" }
+          }
+        },
+        {
+          "name": "Actualizar empresa",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/empresa/{{empresaId}}", "host": ["{{baseUrl}}"], "path": ["empresa", "{{empresaId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Divemotor SAC\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cliente",
+      "item": [
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/cliente?empresaId={{empresaId}}&page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["cliente"], "query": [
+              { "key": "empresaId", "value": "{{empresaId}}" },
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "20" }
+            ]}
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+          ]}}]
+        },
+        {
+          "name": "Solo VICs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/cliente?isVic=true", "host": ["{{baseUrl}}"], "path": ["cliente"], "query": [{ "key": "isVic", "value": "true" }] }
+          }
+        },
+        {
+          "name": "Detalle cliente",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/cliente/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["cliente", "{{clienteId}}"] }
+          }
+        },
+        {
+          "name": "Crear cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/cliente", "host": ["{{baseUrl}}"], "path": ["cliente"] },
+            "body": { "mode": "raw", "raw": "{\n  \"empresaId\": 1,\n  \"nombre\": \"Empresa Transportes SAC\",\n  \"ruc\": \"20123456789\",\n  \"isVic\": false\n}" }
+          }
+        },
+        {
+          "name": "Actualizar cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/cliente/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["cliente", "{{clienteId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isVic\": true\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "VIN",
+      "item": [
+        {
+          "name": "Listar VINs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/vin?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["vin"], "query": [
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "20" }
+            ]}
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);",
+            "pm.test('data existe', () => pm.expect(pm.response.json().data).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Filtrar DEMORADOS",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/vin?estado=DEMORADO", "host": ["{{baseUrl}}"], "path": ["vin"], "query": [{ "key": "estado", "value": "DEMORADO" }] }
+          }
+        },
+        {
+          "name": "Buscar por VIN",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/vin?busqueda={{vinId}}", "host": ["{{baseUrl}}"], "path": ["vin"], "query": [{ "key": "busqueda", "value": "{{vinId}}" }] }
+          }
+        },
+        {
+          "name": "Detalle VIN completo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/vin/{{vinId}}", "host": ["{{baseUrl}}"], "path": ["vin", "{{vinId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);",
+            "pm.test('data existe', () => pm.expect(pm.response.json().data).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Crear VIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/vin", "host": ["{{baseUrl}}"], "path": ["vin"] },
+            "body": { "mode": "raw", "raw": "{\n  \"id\": \"WDB9630321L123456\",\n  \"fichaId\": 1,\n  \"marca\": \"Mercedes-Benz\",\n  \"modelo\": \"O500RS\",\n  \"lineaNegocio\": \"Buses\",\n  \"tipoVehiculo\": \"Bus\"\n}" }
+          }
+        },
+        {
+          "name": "Actualizar VIN",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/vin/{{vinId}}", "host": ["{{baseUrl}}"], "path": ["vin", "{{vinId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"etaEntregaFinal\": \"2026-06-30\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tracking",
+      "item": [
+        {
+          "name": "Tracking completo VIN",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/tracking/vin/{{vinId}}", "host": ["{{baseUrl}}"], "path": ["tracking", "vin", "{{vinId}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+          ]}}]
+        },
+        {
+          "name": "Actualizar hito",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/tracking/vin/{{vinId}}/hito/1", "host": ["{{baseUrl}}"], "path": ["tracking", "vin", "{{vinId}}", "hito", "1"] },
+            "body": { "mode": "raw", "raw": "{\n  \"fechaPlan\": \"2026-04-15\",\n  \"fechaReal\": \"2026-04-18\"\n}" }
+          }
+        },
+        {
+          "name": "Actualizar subetapa (GAP manual)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/tracking/vin/{{vinId}}/subetapa/12", "host": ["{{baseUrl}}"], "path": ["tracking", "vin", "{{vinId}}", "subetapa", "12"] },
+            "body": { "mode": "raw", "raw": "{\n  \"fechaReal\": \"2026-04-20\"\n}" }
+          }
+        },
+        {
+          "name": "Sync desde staging",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/tracking/vin/{{vinId}}/sync-staging", "host": ["{{baseUrl}}"], "path": ["tracking", "vin", "{{vinId}}", "sync-staging"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SLA",
+      "item": [
+        {
+          "name": "Listar reglas SLA",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/sla", "host": ["{{baseUrl}}"], "path": ["sla"] }
+          }
+        },
+        {
+          "name": "Crear regla SLA",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/sla", "host": ["{{baseUrl}}"], "path": ["sla"] },
+            "body": { "mode": "raw", "raw": "{\n  \"empresaId\": 1,\n  \"subetapaId\": 14,\n  \"diasObjetivo\": 3,\n  \"diasTolerancia\": 1\n}" }
+          }
+        },
+        {
+          "name": "Actualizar regla SLA",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/sla/1", "host": ["{{baseUrl}}"], "path": ["sla", "1"] },
+            "body": { "mode": "raw", "raw": "{\n  \"diasObjetivo\": 5\n}" }
+          }
+        },
+        {
+          "name": "Resolver SLA aplicable",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/sla/resolve", "host": ["{{baseUrl}}"], "path": ["sla", "resolve"] },
+            "body": { "mode": "raw", "raw": "{\n  \"empresaId\": 1,\n  \"subetapaId\": 14,\n  \"lineaNegocio\": \"Buses\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const data = pm.response.json().data;",
+            "pm.test('diasCritico calculado', () => pm.expect(data.diasCritico).to.equal(data.diasObjetivo + data.diasTolerancia));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "Alertas",
+      "item": [
+        {
+          "name": "Listar alertas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/alertas?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["alertas"], "query": [
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "20" }
+            ]}
+          }
+        },
+        {
+          "name": "Solo críticas activas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/alertas?nivel=critico&estadoAlerta=activa", "host": ["{{baseUrl}}"], "path": ["alertas"], "query": [
+              { "key": "nivel", "value": "critico" },
+              { "key": "estadoAlerta", "value": "activa" }
+            ]}
+          }
+        },
+        {
+          "name": "Detalle alerta",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/alertas/1", "host": ["{{baseUrl}}"], "path": ["alertas", "1"] }
+          }
+        },
+        {
+          "name": "Marcar como leída",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/alertas/1/estado", "host": ["{{baseUrl}}"], "path": ["alertas", "1", "estado"] },
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"leida\"\n}" }
+          }
+        },
+        {
+          "name": "Registrar acción",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/alertas/1/accion", "host": ["{{baseUrl}}"], "path": ["alertas", "1", "accion"] },
+            "body": { "mode": "raw", "raw": "{\n  \"accionTomada\": \"contactar_responsable\",\n  \"notas\": \"Se contactó al ejecutivo de ventas para gestionar la factura pendiente.\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hitos (catálogo)",
+      "item": [
+        {
+          "name": "Listar hitos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/hitos", "host": ["{{baseUrl}}"], "path": ["hitos"] }
+          }
+        },
+        {
+          "name": "Grupos paralelos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/hitos/grupos-paralelos", "host": ["{{baseUrl}}"], "path": ["hitos", "grupos-paralelos"] }
+          }
+        },
+        {
+          "name": "Toggle hito (activar/desactivar)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/hitos/1/toggle", "host": ["{{baseUrl}}"], "path": ["hitos", "1", "toggle"] }
+          }
+        },
+        {
+          "name": "Subetapas del hito",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/hitos/1/subetapas", "host": ["{{baseUrl}}"], "path": ["hitos", "1", "subetapas"] }
+          }
+        },
+        {
+          "name": "Toggle subetapa",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/hitos/subetapas/7/toggle", "host": ["{{baseUrl}}"], "path": ["hitos", "subetapas", "7", "toggle"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Crear chat para VIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/chat", "host": ["{{baseUrl}}"], "path": ["chat"] },
+            "body": { "mode": "raw", "raw": "{\n  \"tipo\": \"vin\",\n  \"vinId\": \"{{vinId}}\"\n}" }
+          }
+        },
+        {
+          "name": "Obtener chat del VIN",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/chat/vin/{{vinId}}", "host": ["{{baseUrl}}"], "path": ["chat", "vin", "{{vinId}}"] }
+          }
+        },
+        {
+          "name": "Mensajes del chat",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/chat/1/mensajes?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["chat", "1", "mensajes"], "query": [
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "20" }
+            ]}
+          }
+        },
+        {
+          "name": "Enviar mensaje con mención",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/chat/1/mensajes", "host": ["{{baseUrl}}"], "path": ["chat", "1", "mensajes"] },
+            "body": { "mode": "raw", "raw": "{\n  \"contenido\": \"@Juan la factura del VIN {{vinId}} está pendiente de aprobación.\",\n  \"menciones\": [2]\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Staging",
+      "item": [
+        {
+          "name": "Upload PROPED (Excel)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/staging/upload/proped", "host": ["{{baseUrl}}"], "path": ["staging", "upload", "proped"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "/ruta/a/PROPED_BUSES.xlsx" }]
+            }
+          }
+        },
+        {
+          "name": "Upload SAP (Excel)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/staging/upload/sap", "host": ["{{baseUrl}}"], "path": ["staging", "upload", "sap"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "/ruta/a/Reporte_fichas.xlsx" }]
+            }
+          }
+        },
+        {
+          "name": "Preview de upload",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/staging/preview/upload-id-123", "host": ["{{baseUrl}}"], "path": ["staging", "preview", "upload-id-123"] }
+          }
+        },
+        {
+          "name": "Aplicar upload (upsert)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/staging/apply/upload-id-123", "host": ["{{baseUrl}}"], "path": ["staging", "apply", "upload-id-123"] }
+          }
+        },
+        {
+          "name": "Estado staging del VIN",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/staging/vin/{{vinId}}", "host": ["{{baseUrl}}"], "path": ["staging", "vin", "{{vinId}}"] }
+          }
+        },
+        {
+          "name": "Historial de cargas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/staging/history?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["staging", "history"], "query": [
+              { "key": "page", "value": "1" },
+              { "key": "limit", "value": "10" }
+            ]}
+          }
+        }
+      ]
+    }
+  ]
+}

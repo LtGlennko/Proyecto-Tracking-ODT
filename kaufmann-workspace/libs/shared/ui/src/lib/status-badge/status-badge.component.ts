@@ -1,13 +1,12 @@
 import { Component, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export type StatusValue = 'A TIEMPO' | 'DEMORADO' | 'FINALIZADO' | 'ACTIVO' | 'PENDIENTE';
 
 @Component({
-  selector: 'kf-status-badge',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'kf-status-badge',
+    imports: [],
+    template: `
     <span [class]="badgeClass()" role="status">
       <span
         class="w-1.5 h-1.5 rounded-full inline-block mr-1.5 flex-shrink-0"
@@ -15,7 +14,7 @@ export type StatusValue = 'A TIEMPO' | 'DEMORADO' | 'FINALIZADO' | 'ACTIVO' | 'P
       ></span>
       {{ status() }}
     </span>
-  `,
+  `
 })
 export class StatusBadgeComponent {
   status = input.required<StatusValue>();

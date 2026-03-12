@@ -1,0 +1,435 @@
+{
+  "version": "6.0",
+  "nxVersion": "20.8.4",
+  "pathMappings": {
+    "@kaufmann/shared/auth": [
+      "libs/shared/auth/src/index.ts"
+    ],
+    "@kaufmann/shared/models": [
+      "libs/shared/models/src/index.ts"
+    ],
+    "@kaufmann/shared/ui": [
+      "libs/shared/ui/src/index.ts"
+    ],
+    "@kaufmann/shared/utils": [
+      "libs/shared/utils/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/data-access": [
+      "libs/tracking-otd/data-access/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-admin": [
+      "libs/tracking-otd/feature-admin/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-alertas": [
+      "libs/tracking-otd/feature-alertas/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-analytics": [
+      "libs/tracking-otd/feature-analytics/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-chat": [
+      "libs/tracking-otd/feature-chat/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-dashboard": [
+      "libs/tracking-otd/feature-dashboard/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-staging": [
+      "libs/tracking-otd/feature-staging/src/index.ts"
+    ],
+    "@kaufmann/tracking-otd/feature-vin-tracking": [
+      "libs/tracking-otd/feature-vin-tracking/src/index.ts"
+    ]
+  },
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "nonProjectFiles": [
+      {
+        "file": "nx.json",
+        "hash": "2258669821839053178"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/cab926ac41e5a6fd.json",
+        "hash": "11948641770946174518"
+      },
+      {
+        "file": "libs/tracking-otd/feature-admin/src/lib/admin-page.component.ts",
+        "hash": "5206183104231897055"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/90ea5f2135da600d.json",
+        "hash": "5872094006494654578"
+      },
+      {
+        "file": "libs/shared/models/src/lib/cliente.model.ts",
+        "hash": "17097074791592244641"
+      },
+      {
+        "file": "tsconfig.base.json",
+        "hash": "1899184737992287484"
+      },
+      {
+        "file": "libs/shared/ui/src/lib/kpi-card/kpi-card.component.ts",
+        "hash": "5671082975206831667"
+      },
+      {
+        "file": "libs/shared/auth/src/index.ts",
+        "hash": "1063443531578431268"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/bcc67d43b916ce22.json",
+        "hash": "5924980270140321316"
+      },
+      {
+        "file": ".nx/workspace-data/source-maps.json",
+        "hash": "1165779889261447171"
+      },
+      {
+        "file": "libs/shared/auth/src/lib/auth.guard.ts",
+        "hash": "15586969640972932872"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/aece1e3350e86a1d.json",
+        "hash": "14506876212561752375"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/lib/mock/mock-clients.data.ts",
+        "hash": "17348634165814114377"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/1bdada0fd0bb91d8.json",
+        "hash": "6024157560253133099"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/8192b70793c04cd0.json",
+        "hash": "2425028361033003446"
+      },
+      {
+        "file": ".nx/workspace-data/355919d2-24bf-4766-8806-fa9c1dbedbca.db-shm",
+        "hash": "4375083255303985134"
+      },
+      {
+        "file": "libs/shared/ui/src/lib/status-badge/status-badge.component.ts",
+        "hash": "7169974495158483283"
+      },
+      {
+        "file": "libs/tracking-otd/feature-dashboard/src/index.ts",
+        "hash": "1902611604305738346"
+      },
+      {
+        "file": "libs/tracking-otd/feature-chat/src/lib/chat-page.component.ts",
+        "hash": "18047677369480564574"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/lib/containers/tracking-list-page/tracking-list-page.component.html",
+        "hash": "7215221373875381235"
+      },
+      {
+        "file": ".nx/workspace-data/parsed-lock-file.json",
+        "hash": "3090006842009929131"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/index.ts",
+        "hash": "2187985465256125974"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/e00211d15ace90d8.json",
+        "hash": "8774019226643430333"
+      },
+      {
+        "file": "libs/tracking-otd/feature-dashboard/src/lib/dashboard-page.component.ts",
+        "hash": "13085633666827960820"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/lib/components/gantt-view/gantt-view.component.ts",
+        "hash": "9914381673511795527"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/d19f3e1b53049cd5.json",
+        "hash": "936833367846945739"
+      },
+      {
+        "file": "package.json",
+        "hash": "9543566368362726759"
+      },
+      {
+        "file": "libs/tracking-otd/feature-admin/src/index.ts",
+        "hash": "14842117805841182271"
+      },
+      {
+        "file": ".nx/workspace-data/355919d2-24bf-4766-8806-fa9c1dbedbca.db-wal",
+        "hash": "15607842874754652957"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/lib/stores/alertas.store.ts",
+        "hash": "10495526599554180881"
+      },
+      {
+        "file": "libs/tracking-otd/feature-analytics/src/index.ts",
+        "hash": "1865974019132993514"
+      },
+      {
+        "file": "libs/shared/auth/src/lib/role.guard.ts",
+        "hash": "2574596895623175806"
+      },
+      {
+        "file": "libs/tracking-otd/feature-alertas/src/lib/alertas-page.component.ts",
+        "hash": "1319485277028143288"
+      },
+      {
+        "file": "libs/shared/models/src/lib/vin.model.ts",
+        "hash": "3287260979959155839"
+      },
+      {
+        "file": ".nx/workspace-data/355919d2-24bf-4766-8806-fa9c1dbedbca.db",
+        "hash": "6240709564311096908"
+      },
+      {
+        "file": "libs/tracking-otd/feature-chat/src/index.ts",
+        "hash": "13168251243049248913"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/index.ts",
+        "hash": "15618941966725835612"
+      },
+      {
+        "file": "libs/shared/utils/src/lib/pipes/diferencia-dias.pipe.ts",
+        "hash": "7806698674806138187"
+      },
+      {
+        "file": "libs/shared/auth/src/lib/auth.interceptor.ts",
+        "hash": "14830389291050426614"
+      },
+      {
+        "file": "libs/tracking-otd/feature-staging/src/lib/staging-page.component.ts",
+        "hash": "2132094207555130052"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/lib/mock/mock-alertas.data.ts",
+        "hash": "9880151079944082700"
+      },
+      {
+        "file": "libs/tracking-otd/feature-analytics/src/lib/analytics-page.component.ts",
+        "hash": "11164721893692314616"
+      },
+      {
+        "file": "libs/shared/ui/src/index.ts",
+        "hash": "13048205129949036300"
+      },
+      {
+        "file": "libs/shared/auth/src/lib/auth.service.ts",
+        "hash": "7278733842616857013"
+      },
+      {
+        "file": "libs/shared/models/src/index.ts",
+        "hash": "11741295640859605956"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/lib/mock/mock-sla.data.ts",
+        "hash": "2448704906195299909"
+      },
+      {
+        "file": "tailwind.config.js",
+        "hash": "9858566878513353287"
+      },
+      {
+        "file": "libs/shared/utils/src/lib/index.ts",
+        "hash": "5417475421800504307"
+      },
+      {
+        "file": ".nx/workspace-data/d/daemon.log",
+        "hash": "15245103711904115987"
+      },
+      {
+        "file": "libs/tracking-otd/feature-staging/src/index.ts",
+        "hash": "3255305547595415668"
+      },
+      {
+        "file": "libs/tracking-otd/feature-alertas/src/index.ts",
+        "hash": "12854030086823730530"
+      },
+      {
+        "file": ".nx/workspace-data/lockfile.hash",
+        "hash": "13239571209627950309"
+      },
+      {
+        "file": "libs/shared/models/src/lib/index.ts",
+        "hash": "15165381657750056446"
+      },
+      {
+        "file": ".nx/workspace-data/project-graph.json",
+        "hash": "5478791473310823909"
+      },
+      {
+        "file": "libs/shared/utils/src/lib/pipes/estado-color.pipe.ts",
+        "hash": "202978762845196900"
+      },
+      {
+        "file": "migrations.json",
+        "hash": "9893512685157887743"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/lib/components/tracking-drawer/tracking-drawer.component.html",
+        "hash": "8214143297393394917"
+      },
+      {
+        "file": "libs/shared/models/src/lib/sla-config.model.ts",
+        "hash": "16417668098922268728"
+      },
+      {
+        "file": "libs/shared/ui/src/lib/stage-node/stage-node.component.ts",
+        "hash": "13940354693708046198"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/lib/components/tracking-drawer/tracking-drawer.component.ts",
+        "hash": "615716261491153228"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/lib/components/visual-map/visual-map.component.ts",
+        "hash": "11055265986450644959"
+      },
+      {
+        "file": ".angular/cache/21.1.5/angular-webpack/93bd5bdf68cdb11578636c311d076b0fa60bd685/0.pack",
+        "hash": "16635279654164248389"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/lib/mock/mock-data.helpers.ts",
+        "hash": "13573945130353179737"
+      },
+      {
+        "file": "package-lock.json",
+        "hash": "2443171924984025053"
+      },
+      {
+        "file": ".angular/cache/21.1.5/angular-webpack/93bd5bdf68cdb11578636c311d076b0fa60bd685/index.pack",
+        "hash": "12693203332448474785"
+      },
+      {
+        "file": "libs/shared/models/src/lib/subetapa.model.ts",
+        "hash": "18355011005813473004"
+      },
+      {
+        "file": "libs/tracking-otd/data-access/src/lib/stores/tracking.store.ts",
+        "hash": "7760823334264690654"
+      },
+      {
+        "file": ".nx/workspace-data/file-map.json",
+        "hash": "15560632052739485936"
+      },
+      {
+        "file": "libs/tracking-otd/feature-vin-tracking/src/lib/containers/tracking-list-page/tracking-list-page.component.ts",
+        "hash": "8829028502182240831"
+      },
+      {
+        "file": "libs/shared/utils/src/lib/pipes/fecha-formato.pipe.ts",
+        "hash": "17516207083933558380"
+      },
+      {
+        "file": "libs/shared/utils/src/index.ts",
+        "hash": "11741295640859605956"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/bee8647792501cdd.json",
+        "hash": "4587141707356547582"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/933af85220f69b52.json",
+        "hash": "1429192772181342552"
+      },
+      {
+        "file": "libs/shared/utils/src/lib/helpers/sla.helpers.ts",
+        "hash": "16932178109802144974"
+      },
+      {
+        "file": "libs/shared/utils/src/lib/helpers/date.helpers.ts",
+        "hash": "94927825983146968"
+      },
+      {
+        "file": "libs/shared/models/src/lib/alerta.model.ts",
+        "hash": "1368463322130169465"
+      },
+      {
+        "file": ".angular/cache/21.1.5/babel-webpack/4bf8188608737695.json",
+        "hash": "17565283479560789577"
+      },
+      {
+        "file": "libs/shared/models/src/lib/hito.model.ts",
+        "hash": "5692844441625935978"
+      },
+      {
+        "file": "libs/shared/models/src/lib/ficha.model.ts",
+        "hash": "4111239068121998464"
+      },
+      {
+        "file": "libs/shared/ui/src/lib/vehicle-icon/vehicle-icon.component.ts",
+        "hash": "12592803518909514642"
+      }
+    ],
+    "projectFileMap": {
+      "tracking-otd": [
+        {
+          "file": "apps/tracking-otd/postcss.config.js",
+          "hash": "7047169266103752666"
+        },
+        {
+          "file": "apps/tracking-otd/project.json",
+          "hash": "6358985749602575058"
+        },
+        {
+          "file": "apps/tracking-otd/src/app/app.component.html",
+          "hash": "5373625867318115808"
+        },
+        {
+          "file": "apps/tracking-otd/src/app/app.component.ts",
+          "hash": "9625132871253823683",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@angular/router"
+          ]
+        },
+        {
+          "file": "apps/tracking-otd/src/app/app.config.ts",
+          "hash": "260878223691343592",
+          "deps": [
+            "npm:@angular/core",
+            "npm:@angular/router",
+            "npm:@angular/common",
+            "npm:@angular/platform-browser"
+          ]
+        },
+        {
+          "file": "apps/tracking-otd/src/app/app.routes.ts",
+          "hash": "7272742629827822482",
+          "deps": [
+            "npm:@angular/router"
+          ]
+        },
+        {
+          "file": "apps/tracking-otd/src/environments/environment.prod.ts",
+          "hash": "2809159675873686123"
+        },
+        {
+          "file": "apps/tracking-otd/src/environments/environment.ts",
+          "hash": "18298103866755175689"
+        },
+        {
+          "file": "apps/tracking-otd/src/index.html",
+          "hash": "10074243665766195512"
+        },
+        {
+          "file": "apps/tracking-otd/src/main.ts",
+          "hash": "10300702331445756274",
+          "deps": [
+            "npm:@angular/platform-browser"
+          ]
+        },
+        {
+          "file": "apps/tracking-otd/src/styles.scss",
+          "hash": "11054500814893597936"
+        },
+        {
+          "file": "apps/tracking-otd/tsconfig.app.json",
+          "hash": "13447781573035912691"
+        }
+      ]
+    }
+  }
+}

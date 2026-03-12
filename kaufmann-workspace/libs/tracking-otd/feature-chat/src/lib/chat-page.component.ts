@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 
 interface ChatMessage {
@@ -12,10 +12,9 @@ interface ChatMessage {
 }
 
 @Component({
-  selector: 'kf-chat-page',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'kf-chat-page',
+    imports: [FormsModule],
+    template: `
     <div class="p-6 space-y-5">
       <div>
         <h1 class="text-xl font-bold text-slate-800">Chat</h1>
@@ -24,19 +23,23 @@ interface ChatMessage {
       <div class="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col h-[calc(100vh-220px)]">
         <!-- Messages -->
         <div class="flex-1 overflow-y-auto p-5 space-y-4">
-          <div *ngFor="let msg of messages()" class="flex gap-3">
-            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-              {{ msg.initials }}
-            </div>
-            <div class="flex-1">
-              <div class="flex items-baseline gap-2">
-                <span class="text-sm font-semibold text-slate-800">{{ msg.user }}</span>
-                <span class="text-xs text-slate-400">{{ msg.timestamp }}</span>
-                <span *ngIf="msg.vinRef" class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono">{{ msg.vinRef }}</span>
+          @for (msg of messages(); track msg) {
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                {{ msg.initials }}
               </div>
-              <p class="text-sm text-slate-600 mt-0.5">{{ msg.text }}</p>
+              <div class="flex-1">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-sm font-semibold text-slate-800">{{ msg.user }}</span>
+                  <span class="text-xs text-slate-400">{{ msg.timestamp }}</span>
+                  @if (msg.vinRef) {
+                    <span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono">{{ msg.vinRef }}</span>
+                  }
+                </div>
+                <p class="text-sm text-slate-600 mt-0.5">{{ msg.text }}</p>
+              </div>
             </div>
-          </div>
+          }
         </div>
         <!-- Input -->
         <div class="border-t border-slate-200 p-4 flex gap-3">
@@ -50,7 +53,7 @@ interface ChatMessage {
         </div>
       </div>
     </div>
-  `,
+    `
 })
 export class ChatPageComponent {
   messages = signal<ChatMessage[]>([
