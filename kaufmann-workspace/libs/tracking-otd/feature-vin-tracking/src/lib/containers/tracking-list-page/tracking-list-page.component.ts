@@ -29,8 +29,6 @@ export class TrackingListPageComponent implements OnInit {
 
   estadoOptions: EstadoVin[] = ['A TIEMPO', 'DEMORADO', 'FINALIZADO'];
   lineaOptions: LineaNegocio[] = ['VC', 'Autos', 'Maquinarias', 'Buses'];
-  empresaOptions = ['Divemotor', 'Andes Motor', 'Andes Maq'];
-
   pagedVins = computed(() => {
     const all = this.store.vinsFiltrados();
     const start = (this.currentPage() - 1) * this.pageSize;
@@ -65,12 +63,6 @@ export class TrackingListPageComponent implements OnInit {
   setLinea(e: Event) {
     const val = (e.target as HTMLSelectElement).value as LineaNegocio | '';
     this.store.setFiltro('lineaNegocio', val || null);
-    this.currentPage.set(1);
-  }
-
-  setEmpresa(e: Event) {
-    const val = (e.target as HTMLSelectElement).value;
-    this.store.setFiltro('empresa', val || null);
     this.currentPage.set(1);
   }
 

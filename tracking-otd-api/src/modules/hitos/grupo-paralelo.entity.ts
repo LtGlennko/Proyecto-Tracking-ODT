@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Hito } from './hito.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('grupo_paralelo')
 export class GrupoParalelo {
@@ -9,14 +8,8 @@ export class GrupoParalelo {
   @Column({ nullable: true })
   nombre: string;
 
-  @Column({ name: 'orden_global', nullable: true })
-  ordenGlobal: number;
-
   @Column({ type: 'text', nullable: true })
   descripcion: string;
-
-  @OneToMany(() => Hito, h => h.grupoParalelo)
-  hitos: Hito[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

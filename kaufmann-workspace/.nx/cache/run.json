@@ -1,18 +1,18 @@
 {
   "run": {
-    "command": "nx build tracking-otd --configuration=development",
-    "startTime": "2026-03-12T17:15:25.759Z",
-    "endTime": "2026-03-12T17:15:34.217Z",
+    "command": "nx build tracking-otd --skip-nx-cache",
+    "startTime": "2026-03-12T18:39:06.136Z",
+    "endTime": "2026-03-12T18:39:27.253Z",
     "inner": false
   },
   "tasks": [
     {
-      "taskId": "tracking-otd:build:development",
+      "taskId": "tracking-otd:build:production",
       "target": "build",
       "projectName": "tracking-otd",
-      "hash": "14164974245265652772",
-      "startTime": "2026-03-12T17:15:25.770Z",
-      "endTime": "2026-03-12T17:15:34.042Z",
+      "hash": "12896595474851940559",
+      "startTime": "2026-03-12T18:39:06.147Z",
+      "endTime": "2026-03-12T18:39:27.237Z",
       "params": "",
       "cacheStatus": "cache-miss",
       "status": 0

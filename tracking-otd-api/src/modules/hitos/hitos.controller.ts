@@ -1,81 +1,94 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { HitosService } from './hitos.service';
 
 @ApiTags('hitos')
 @ApiBearerAuth('azure-ad-b2c')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('v1/hitos')
 export class HitosController {
   constructor(private service: HitosService) {}
 
+  // ── Master catalog ──
+
   @Get()
-  @ApiOperation({ summary: 'Listar hitos con subetapas' })
-  findAll() { return this.service.findAll(); }
+  @ApiOperation({ summary: 'Listar hitos maestros con subetapas' })
+  findAll() { return this.service.findAllHitos(); }
 
   @Get('grupos-paralelos')
   @ApiOperation({ summary: 'Listar grupos paralelos' })
   findGrupos() { return this.service.findGrupos(); }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Detalle de hito' })
-  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+  @ApiOperation({ summary: 'Detalle de hito maestro' })
+  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOneHito(id); }
 
   @Post()
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Crear hito [solo admin]' })
-  create(@Body() dto: any) { return this.service.create(dto); }
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Crear hito [solo superadmin]' })
+  create(@Body() dto: any) { return this.service.createHito(dto); }
 
   @Patch(':id')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Actualizar hito [solo admin]' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: any) { return this.service.update(id, dto); }
-
-  @Patch(':id/toggle')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Activar/desactivar hito [solo admin]' })
-  toggle(@Param('id', ParseIntPipe) id: number) { return this.service.toggle(id); }
-
-  @Get(':hitoId/subetapas')
-  @ApiOperation({ summary: 'Subetapas del hito' })
-  findSubetapas(@Param('hitoId', ParseIntPipe) hitoId: number) { return this.service.findSubetapasByHito(hitoId); }
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Actualizar hito maestro [solo superadmin]' })
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: any) { return this.service.updateHito(id, dto); }
 
   @Post(':hitoId/subetapas')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Crear subetapa [solo admin]' })
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Crear subetapa [solo superadmin]' })
   createSubetapa(@Param('hitoId', ParseIntPipe) hitoId: number, @Body() dto: any) {
     return this.service.createSubetapa(hitoId, dto);
   }
 
   @Patch('subetapas/:id')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Actualizar subetapa [solo admin]' })
-  updateSubetapa(@Param('id', ParseIntPipe) id: number, @Body() dto: any) { return this.service.updateSubetapa(id, dto); }
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Actualizar subetapa maestro [solo superadmin]' })
+  updateSubetapa(@Param('id', ParseIntPipe) id: number, @Body() dto: any) {
+    return this.service.updateSubetapa(id, dto);
+  }
 
-  @Patch('subetapas/:id/toggle')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Toggle subetapa [solo admin]' })
-  toggleSubetapa(@Param('id', ParseIntPipe) id: number) { return this.service.toggleSubetapa(id); }
+  // ── Config por tipo de vehículo ──
 
-  @Post('subetapas/:id/config')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Agregar config de subetapa [solo admin]' })
-  addConfig(@Param('id', ParseIntPipe) id: number, @Body() dto: any) { return this.service.addSubetapaConfig(id, dto); }
+  @Get('config/:tipoVehiculo')
+  @ApiOperation({ summary: 'Obtener config de hitos para un tipo de vehículo' })
+  getConfig(@Param('tipoVehiculo') tipoVehiculo: string) {
+    return this.service.getConfigByTipoVehiculo(tipoVehiculo);
+  }
 
-  @Delete('subetapas/:id/config/:cid')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Eliminar config [solo admin]' })
-  removeConfig(@Param('cid', ParseIntPipe) cid: number) { return this.service.removeSubetapaConfig(cid); }
+  @Patch('config/:tipoVehiculo/hito/:hitoId')
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Actualizar config de hito por tipo de vehículo [solo superadmin]' })
+  upsertHitoConfig(
+    @Param('tipoVehiculo') tipoVehiculo: string,
+    @Param('hitoId', ParseIntPipe) hitoId: number,
+    @Body() dto: any,
+  ) {
+    return this.service.upsertHitoConfig(tipoVehiculo, hitoId, dto);
+  }
+
+  @Patch('config/:tipoVehiculo/subetapa/:subetapaId')
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Actualizar config de subetapa por tipo de vehículo [solo superadmin]' })
+  upsertSubetapaConfig(
+    @Param('tipoVehiculo') tipoVehiculo: string,
+    @Param('subetapaId', ParseIntPipe) subetapaId: number,
+    @Body() dto: any,
+  ) {
+    return this.service.upsertSubetapaConfig(tipoVehiculo, subetapaId, dto);
+  }
+
+  // ── Grupos paralelos ──
 
   @Post('grupos-paralelos')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Crear grupo paralelo [solo admin]' })
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Crear grupo paralelo [solo superadmin]' })
   createGrupo(@Body() dto: any) { return this.service.createGrupo(dto); }
 
   @Patch('grupos-paralelos/:id')
-  @Roles('administrador')
-  @ApiOperation({ summary: 'Actualizar grupo paralelo [solo admin]' })
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Actualizar grupo paralelo [solo superadmin]' })
   updateGrupo(@Param('id', ParseIntPipe) id: number, @Body() dto: any) { return this.service.updateGrupo(id, dto); }
 }

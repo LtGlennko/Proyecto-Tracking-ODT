@@ -1,6 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from '@kaufmann/shared/auth';
+import { AuthService, EmpresaFilterService } from '@kaufmann/shared/auth';
 
 interface NavItem {
   label: string;
@@ -17,8 +17,10 @@ interface NavItem {
 export class AppComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
+  readonly empresaFilter = inject(EmpresaFilterService);
 
   sidebarCollapsed = signal(false);
+  profileMenuOpen = signal(false);
   currentUser = this.auth.currentUser;
   isAdmin = this.auth.isAdmin;
   showShell = computed(() => this.auth.isAuthenticated());
@@ -39,6 +41,21 @@ export class AppComponent {
 
   toggleSidebar() {
     this.sidebarCollapsed.update(v => !v);
+  }
+
+  onEmpresaChange(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this.empresaFilter.select(val ? Number(val) : null);
+  }
+
+  toggleProfileMenu() {
+    this.profileMenuOpen.update(v => !v);
+  }
+
+  logout() {
+    this.profileMenuOpen.set(false);
+    this.auth.logout();
+    this.router.navigate(['/login']);
   }
 
   get currentRouteName(): string {

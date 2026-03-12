@@ -1,10 +1,10 @@
-import { computed } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { VinModel, EstadoVin, LineaNegocio, ClienteModel } from '@kaufmann/shared/models';
+import { EmpresaFilterService } from '@kaufmann/shared/auth';
 import { MOCK_CLIENTS } from '../mock/mock-clients.data';
 
 type FiltrosTracking = {
-  empresa: string | null;
   lineaNegocio: LineaNegocio | null;
   estado: EstadoVin | null;
   hitoActual: string | null;
@@ -30,7 +30,7 @@ const initialState: TrackingState = {
   vins: allVins,
   loading: false,
   error: null,
-  filtros: { empresa: null, lineaNegocio: null, estado: null, hitoActual: null, busqueda: '' },
+  filtros: { lineaNegocio: null, estado: null, hitoActual: null, busqueda: '' },
   selectedVinId: null,
   drawerOpen: false,
   selectedStageId: null,
@@ -41,42 +41,46 @@ export const TrackingStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
 
-  withComputed(({ vins, filtros, selectedVinId, clientes }) => ({
+  withComputed(({ vins, filtros, selectedVinId, clientes }) => {
+    const empresaFilter = inject(EmpresaFilterService);
 
-    vinsFiltrados: computed(() => {
-      const f = filtros();
-      return vins().filter(v => {
-        if (f.estado && v.estadoGeneral !== f.estado) return false;
-        if (f.lineaNegocio && v.lineaNegocio !== f.lineaNegocio) return false;
-        if (f.empresa) {
-          const client = clientes().find(c => c.fichas.some(fi => fi.vins.some(vi => vi.id === v.id)));
-          if (client?.empresa !== f.empresa) return false;
-        }
-        if (f.hitoActual && v.currentStageId !== f.hitoActual) return false;
-        if (f.busqueda) {
-          const q = f.busqueda.toLowerCase();
-          return (
-            v.id.toLowerCase().includes(q) ||
-            v.clientName.toLowerCase().includes(q) ||
-            v.modelo.toLowerCase().includes(q) ||
-            v.fichaId.toLowerCase().includes(q)
-          );
-        }
-        return true;
-      });
-    }),
+    return {
+      vinsFiltrados: computed(() => {
+        const f = filtros();
+        const selectedEmpresaNombre = empresaFilter.selectedEmpresaNombre();
 
-    totalDemorados: computed(() => vins().filter(v => v.estadoGeneral === 'DEMORADO').length),
-    totalActivos: computed(() => vins().filter(v => v.estadoGeneral !== 'FINALIZADO').length),
-    totalFinalizados: computed(() => vins().filter(v => v.estadoGeneral === 'FINALIZADO').length),
+        return vins().filter(v => {
+          if (f.estado && v.estadoGeneral !== f.estado) return false;
+          if (f.lineaNegocio && v.lineaNegocio !== f.lineaNegocio) return false;
+          if (selectedEmpresaNombre) {
+            const client = clientes().find(c => c.fichas.some(fi => fi.vins.some(vi => vi.id === v.id)));
+            if (client?.empresa !== selectedEmpresaNombre) return false;
+          }
+          if (f.hitoActual && v.currentStageId !== f.hitoActual) return false;
+          if (f.busqueda) {
+            const q = f.busqueda.toLowerCase();
+            return (
+              v.id.toLowerCase().includes(q) ||
+              v.clientName.toLowerCase().includes(q) ||
+              v.modelo.toLowerCase().includes(q) ||
+              v.fichaId.toLowerCase().includes(q)
+            );
+          }
+          return true;
+        });
+      }),
 
-    selectedVin: computed(() => {
-      const id = selectedVinId();
-      if (!id) return null;
-      return vins().find(v => v.id === id) ?? null;
-    }),
+      totalDemorados: computed(() => vins().filter(v => v.estadoGeneral === 'DEMORADO').length),
+      totalActivos: computed(() => vins().filter(v => v.estadoGeneral !== 'FINALIZADO').length),
+      totalFinalizados: computed(() => vins().filter(v => v.estadoGeneral === 'FINALIZADO').length),
 
-  })),
+      selectedVin: computed(() => {
+        const id = selectedVinId();
+        if (!id) return null;
+        return vins().find(v => v.id === id) ?? null;
+      }),
+    };
+  }),
 
   withMethods((store) => ({
     openDrawer(vinId: string, stageId?: string) {
@@ -94,7 +98,7 @@ export const TrackingStore = signalStore(
     },
     clearFiltros() {
       patchState(store, {
-        filtros: { empresa: null, lineaNegocio: null, estado: null, hitoActual: null, busqueda: '' },
+        filtros: { lineaNegocio: null, estado: null, hitoActual: null, busqueda: '' },
       });
     },
     toggleViewMode() {

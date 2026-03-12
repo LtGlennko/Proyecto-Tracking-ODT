@@ -1,0 +1,1 @@
+{"ast":null,"code":"export * from './lib/chat-page.component';\nimport { ChatPageComponent } from './lib/chat-page.component';\nexport const CHAT_ROUTES = [{\n  path: '',\n  component: ChatPageComponent\n}];","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

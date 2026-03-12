@@ -1,0 +1,1 @@
+{"ast":null,"code":"export * from './lib/staging-page.component';\nimport { StagingPageComponent } from './lib/staging-page.component';\nexport const STAGING_ROUTES = [{\n  path: '',\n  component: StagingPageComponent\n}];","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

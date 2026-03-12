@@ -19,11 +19,8 @@ export class Subetapa {
   @Column({ nullable: true })
   categoria: string;
 
-  @Column({ nullable: true })
-  orden: number;
-
-  @Column({ name: 'activo_default', nullable: true })
-  activoDefault: boolean;
+  @Column({ name: 'campo_staging_vin', nullable: true })
+  campoStagingVin: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

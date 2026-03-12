@@ -141,6 +141,10 @@ export class AuthService {
     } catch { /* ignore */ }
   }
 
+  async refreshProfile(): Promise<void> {
+    return this.fetchMe();
+  }
+
   private async fetchMe(): Promise<void> {
     try {
       const me = await firstValueFrom(
