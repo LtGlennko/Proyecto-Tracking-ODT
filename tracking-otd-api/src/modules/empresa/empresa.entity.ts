@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany } from 'typeorm';
+import { Usuario } from '../usuario/usuario.entity';
 
 @Entity('empresa')
 export class Empresa {
@@ -10,6 +11,9 @@ export class Empresa {
 
   @Column({ nullable: true, unique: true })
   codigo: string;
+
+  @ManyToMany(() => Usuario, (usuario) => usuario.empresas)
+  usuarios: Usuario[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

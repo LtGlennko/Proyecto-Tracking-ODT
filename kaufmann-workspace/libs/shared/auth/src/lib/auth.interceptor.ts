@@ -1,8 +1,14 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from './auth.service';
 
-// Placeholder: add Bearer token from MSAL when auth is wired up
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  // const token = inject(AuthService).getToken();
-  // const cloned = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  const token = inject(AuthService).getAccessToken();
+  if (token) {
+    const cloned = req.clone({
+      setHeaders: { Authorization: `Bearer ${token}` },
+    });
+    return next(cloned);
+  }
   return next(req);
 };

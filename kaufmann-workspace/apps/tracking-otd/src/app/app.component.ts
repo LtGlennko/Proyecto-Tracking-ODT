@@ -1,5 +1,4 @@
 import { Component, signal, computed, inject } from '@angular/core';
-
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '@kaufmann/shared/auth';
 
@@ -22,6 +21,7 @@ export class AppComponent {
   sidebarCollapsed = signal(false);
   currentUser = this.auth.currentUser;
   isAdmin = this.auth.isAdmin;
+  showShell = computed(() => this.auth.isAuthenticated());
 
   navItems: NavItem[] = [
     //{ label: 'Dashboard',    route: '/dashboard', icon: '📊' },

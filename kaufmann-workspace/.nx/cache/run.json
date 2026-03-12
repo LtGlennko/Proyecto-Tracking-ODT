@@ -1,21 +1,21 @@
 {
   "run": {
-    "command": "nx serve tracking-otd --port=4300",
-    "startTime": "2026-03-12T14:23:24.447Z",
-    "endTime": "2026-03-12T14:23:25.520Z",
+    "command": "nx build tracking-otd --configuration=development",
+    "startTime": "2026-03-12T17:15:25.759Z",
+    "endTime": "2026-03-12T17:15:34.217Z",
     "inner": false
   },
   "tasks": [
     {
-      "taskId": "tracking-otd:serve:development",
-      "target": "serve",
+      "taskId": "tracking-otd:build:development",
+      "target": "build",
       "projectName": "tracking-otd",
-      "hash": "14304457243817411049",
-      "startTime": "2026-03-12T14:23:24.457Z",
-      "endTime": "2026-03-12T14:23:25.517Z",
+      "hash": "14164974245265652772",
+      "startTime": "2026-03-12T17:15:25.770Z",
+      "endTime": "2026-03-12T17:15:34.042Z",
       "params": "",
       "cacheStatus": "cache-miss",
-      "status": 1
+      "status": 0
     }
   ]
 }

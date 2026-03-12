@@ -50,7 +50,8 @@
         "production": { "buildTarget": "tracking-otd:build:production" },
         "development": { "buildTarget": "tracking-otd:build:development" }
       },
-      "defaultConfiguration": "development"
+      "defaultConfiguration": "development",
+      "options": { "port": 3000 }
     },
     "lint": {
       "executor": "@nx/eslint:lint",

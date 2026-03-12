@@ -16,6 +16,7 @@ import { AlertasModule } from './modules/alertas/alertas.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { StagingModule } from './modules/staging/staging.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsuarioModule } from './modules/usuario/usuario.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -62,6 +63,7 @@ import { HealthModule } from './modules/health/health.module';
     ChatModule,
     StagingModule,
     AuthModule,
+    UsuarioModule,
     HealthModule,
   ],
   controllers: [AppController],

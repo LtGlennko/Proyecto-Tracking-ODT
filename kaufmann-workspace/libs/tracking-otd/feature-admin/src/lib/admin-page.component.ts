@@ -1,10 +1,28 @@
-import { Component, signal, computed } from '@angular/core';
-
+import { Component, signal, inject, OnInit, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { HITO_LABELS, HITOS_IDS, SlaConfigModel } from '@kaufmann/shared/models';
 import { MOCK_SLA_CONFIGS } from '@kaufmann/tracking-otd/data-access';
+import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
 
 type AdminTab = 'hitos' | 'sla' | 'usuarios';
+
+interface UsuarioApi {
+  id: number;
+  azureAdOid: string;
+  nombre: string;
+  email: string;
+  perfil: string;
+  activo: boolean;
+  empresas: EmpresaApi[];
+}
+
+interface EmpresaApi {
+  id: number;
+  nombre: string;
+  codigo: string;
+}
 
 @Component({
     selector: 'kf-admin-page',
@@ -15,7 +33,7 @@ type AdminTab = 'hitos' | 'sla' | 'usuarios';
         <h1 class="text-xl font-bold text-slate-800">Administración</h1>
         <p class="text-sm text-slate-500 mt-0.5">Gestión de hitos, SLAs y usuarios</p>
       </div>
-    
+
       <!-- Tabs -->
       <div class="flex border-b border-slate-200 gap-1">
         @for (tab of tabs; track tab) {
@@ -27,7 +45,7 @@ type AdminTab = 'hitos' | 'sla' | 'usuarios';
           >{{ tab.label }}</button>
         }
       </div>
-    
+
       <!-- Tab: Hitos y Subetapas -->
       @if (activeTab() === 'hitos') {
         <div>
@@ -59,7 +77,7 @@ type AdminTab = 'hitos' | 'sla' | 'usuarios';
           </div>
         </div>
       }
-    
+
       <!-- Tab: SLA Config -->
       @if (activeTab() === 'sla') {
         <div class="space-y-4">
@@ -125,52 +143,133 @@ type AdminTab = 'hitos' | 'sla' | 'usuarios';
           </div>
         </div>
       }
-    
+
       <!-- Tab: Usuarios -->
       @if (activeTab() === 'usuarios') {
-        <div>
-          <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <table class="w-full text-sm">
-              <thead class="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Usuario</th>
-                  <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Email</th>
-                  <th class="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Perfil</th>
-                  <th class="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (user of mockUsers; track user) {
-                  <tr class="border-b border-slate-100 hover:bg-slate-50">
-                    <td class="px-4 py-3">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-full bg-brand-blue flex items-center justify-center text-white text-xs font-semibold"
-                        style="background-color: #2E75B6;">{{ user.initials }}</div>
-                        <span class="font-medium text-slate-800 text-sm">{{ user.name }}</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3 text-slate-500 text-sm">{{ user.email }}</td>
-                    <td class="px-3 py-3">
-                      <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                    [class]="user.role === 'administrador' ? 'bg-purple-100 text-purple-700' :
-                             user.role === 'supervisor' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'">
-                        {{ user.role }}
-                      </span>
-                    </td>
-                    <td class="px-3 py-3 text-center">
-                      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                    </td>
+        <div class="space-y-4">
+          @if (loadingUsers()) {
+            <div class="flex justify-center py-8">
+              <span class="text-slate-400 text-sm">Cargando usuarios...</span>
+            </div>
+          } @else {
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Usuario</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Email</th>
+                    <th class="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Perfil</th>
+                    <th class="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Empresas</th>
+                    <th class="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                    @if (auth.isSuperAdmin()) {
+                      <th class="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+                    }
                   </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  @for (user of users(); track user.id) {
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                          style="background-color: #2E75B6;">{{ getInitials(user.nombre) }}</div>
+                          <span class="font-medium text-slate-800 text-sm">{{ user.nombre || '—' }}</span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-slate-500 text-sm">{{ user.email || '—' }}</td>
+                      <td class="px-3 py-3">
+                        @if (editingUserId() === user.id) {
+                          <select [ngModel]="editPerfil()" (ngModelChange)="editPerfil.set($event)"
+                            class="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            @for (p of perfiles; track p) {
+                              <option [value]="p.value">{{ p.label }}</option>
+                            }
+                          </select>
+                        } @else {
+                          <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                            [class]="getPerfilClass(user.perfil)">
+                            {{ user.perfil }}
+                          </span>
+                        }
+                      </td>
+                      <td class="px-3 py-3">
+                        @if (editingUserId() === user.id) {
+                          <div class="flex flex-wrap gap-1">
+                            @for (emp of allEmpresas(); track emp.id) {
+                              <label class="inline-flex items-center gap-1 text-xs cursor-pointer">
+                                <input type="checkbox"
+                                  [checked]="editEmpresaIds().includes(emp.id)"
+                                  (change)="toggleEmpresa(emp.id)"
+                                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                {{ emp.nombre }}
+                              </label>
+                            }
+                          </div>
+                        } @else {
+                          <div class="flex flex-wrap gap-1">
+                            @for (emp of user.empresas; track emp.id) {
+                              <span class="px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600">{{ emp.nombre }}</span>
+                            } @empty {
+                              <span class="text-xs text-slate-400">Sin asignar</span>
+                            }
+                          </div>
+                        }
+                      </td>
+                      <td class="px-3 py-3 text-center">
+                        @if (editingUserId() === user.id) {
+                          <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" [ngModel]="editActivo()" (ngModelChange)="editActivo.set($event)"
+                              class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                          </label>
+                        } @else {
+                          <span class="inline-block w-2 h-2 rounded-full"
+                            [class]="user.activo ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                        }
+                      </td>
+                      @if (auth.isSuperAdmin()) {
+                        <td class="px-3 py-3 text-center">
+                          @if (editingUserId() === user.id) {
+                            <div class="flex items-center justify-center gap-1">
+                              <button (click)="saveUser(user)"
+                                class="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                                [disabled]="saving()">
+                                {{ saving() ? '...' : 'Guardar' }}
+                              </button>
+                              <button (click)="cancelEdit()"
+                                class="px-2 py-1 text-xs bg-slate-200 text-slate-600 rounded hover:bg-slate-300 transition-colors">
+                                Cancelar
+                              </button>
+                            </div>
+                          } @else {
+                            <button (click)="startEdit(user)"
+                              class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                              Editar
+                            </button>
+                          }
+                        </td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6" class="px-4 py-8 text-center text-slate-400 text-sm">
+                        No hay usuarios registrados
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
     </div>
     `
 })
-export class AdminPageComponent {
+export class AdminPageComponent implements OnInit {
+  readonly auth = inject(AuthService);
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = inject(API_BASE_URL);
+
   readonly HITO_LABELS = HITO_LABELS;
   readonly HITO_IDS = [...HITOS_IDS];
 
@@ -182,15 +281,124 @@ export class AdminPageComponent {
   ];
 
   slaConfigs = signal<SlaConfigModel[]>([...MOCK_SLA_CONFIGS]);
-
   newSlaObjetivo = 30;
   newSlaTolerance = 5;
 
-  mockUsers = [
-    { name: 'Juan Pérez', email: 'j.perez@kaufmann.com', role: 'administrador', initials: 'JP' },
-    { name: 'Maria Lopez', email: 'm.lopez@kaufmann.com', role: 'supervisor', initials: 'ML' },
-    { name: 'Roberto Gomez', email: 'r.gomez@kaufmann.com', role: 'asesor_comercial', initials: 'RG' },
-    { name: 'Ana Torres', email: 'a.torres@kaufmann.com', role: 'asesor_comercial', initials: 'AT' },
-    { name: 'Carlos Ruiz', email: 'c.ruiz@kaufmann.com', role: 'asesor_comercial', initials: 'CR' },
+  // Usuarios state
+  users = signal<UsuarioApi[]>([]);
+  allEmpresas = signal<EmpresaApi[]>([]);
+  loadingUsers = signal(false);
+  saving = signal(false);
+
+  // Edit state
+  editingUserId = signal<number | null>(null);
+  editPerfil = signal('');
+  editEmpresaIds = signal<number[]>([]);
+  editActivo = signal(true);
+
+  perfiles = [
+    { value: 'superadministrador', label: 'Superadministrador' },
+    { value: 'administrador', label: 'Administrador' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'asesor_comercial', label: 'Asesor Comercial' },
   ];
+
+  constructor() {
+    // Load users when switching to usuarios tab
+    effect(() => {
+      if (this.activeTab() === 'usuarios' && this.users().length === 0) {
+        this.loadUsers();
+      }
+    });
+  }
+
+  ngOnInit() {
+    this.loadEmpresas();
+  }
+
+  async loadUsers(): Promise<void> {
+    this.loadingUsers.set(true);
+    try {
+      const data = await firstValueFrom(
+        this.http.get<UsuarioApi[]>(`${this.apiUrl}/v1/usuario`)
+      );
+      this.users.set(data);
+    } catch (err) {
+      console.error('Error loading users:', err);
+    } finally {
+      this.loadingUsers.set(false);
+    }
+  }
+
+  async loadEmpresas(): Promise<void> {
+    try {
+      const data = await firstValueFrom(
+        this.http.get<EmpresaApi[]>(`${this.apiUrl}/v1/empresa`)
+      );
+      this.allEmpresas.set(data);
+    } catch (err) {
+      console.error('Error loading empresas:', err);
+    }
+  }
+
+  startEdit(user: UsuarioApi): void {
+    this.editingUserId.set(user.id);
+    this.editPerfil.set(user.perfil);
+    this.editEmpresaIds.set(user.empresas.map(e => e.id));
+    this.editActivo.set(user.activo);
+  }
+
+  cancelEdit(): void {
+    this.editingUserId.set(null);
+  }
+
+  toggleEmpresa(empresaId: number): void {
+    const current = this.editEmpresaIds();
+    if (current.includes(empresaId)) {
+      this.editEmpresaIds.set(current.filter(id => id !== empresaId));
+    } else {
+      this.editEmpresaIds.set([...current, empresaId]);
+    }
+  }
+
+  async saveUser(user: UsuarioApi): Promise<void> {
+    this.saving.set(true);
+    try {
+      // Update perfil + activo
+      await firstValueFrom(
+        this.http.patch<UsuarioApi>(`${this.apiUrl}/v1/usuario/${user.id}`, {
+          perfil: this.editPerfil(),
+          activo: this.editActivo(),
+        })
+      );
+
+      // Update empresas
+      await firstValueFrom(
+        this.http.put<UsuarioApi>(`${this.apiUrl}/v1/usuario/${user.id}/empresas`, {
+          empresaIds: this.editEmpresaIds(),
+        })
+      );
+
+      this.editingUserId.set(null);
+      await this.loadUsers();
+    } catch (err) {
+      console.error('Error saving user:', err);
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+  }
+
+  getPerfilClass(perfil: string): string {
+    switch (perfil) {
+      case 'superadministrador': return 'bg-red-100 text-red-700';
+      case 'administrador': return 'bg-purple-100 text-purple-700';
+      case 'supervisor': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  }
 }
