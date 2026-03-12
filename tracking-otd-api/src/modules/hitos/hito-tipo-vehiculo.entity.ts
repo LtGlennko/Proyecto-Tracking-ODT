@@ -25,6 +25,9 @@ export class HitoTipoVehiculo {
   @JoinColumn({ name: 'grupo_paralelo_id' })
   grupoParalelo: GrupoParalelo;
 
+  @Column({ nullable: true })
+  carril: string;
+
   @Column()
   orden: number;
 

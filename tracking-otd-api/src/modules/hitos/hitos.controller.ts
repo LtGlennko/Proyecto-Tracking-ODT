@@ -91,4 +91,12 @@ export class HitosController {
   @Roles('superadministrador')
   @ApiOperation({ summary: 'Actualizar grupo paralelo [solo superadmin]' })
   updateGrupo(@Param('id', ParseIntPipe) id: number, @Body() dto: any) { return this.service.updateGrupo(id, dto); }
+
+  @Delete('grupos-paralelos/:id')
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Desasociar grupo paralelo para un tipo de vehículo [solo superadmin]' })
+  deleteGrupo(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('tipoVehiculo') tipoVehiculo: string,
+  ) { return this.service.deleteGrupoForTipo(id, tipoVehiculo); }
 }

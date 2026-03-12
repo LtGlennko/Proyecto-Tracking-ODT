@@ -5,6 +5,8 @@ import { firstValueFrom } from 'rxjs';
 import { SlaConfigModel } from '@kaufmann/shared/models';
 import { MOCK_SLA_CONFIGS } from '@kaufmann/tracking-otd/data-access';
 import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
+import { HitoConfigSwimlaneComponent } from './hito-config-swimlane/hito-config-swimlane.component';
+import { ProcessPreviewComponent } from './process-preview/process-preview.component';
 
 type AdminTab = 'hitos' | 'config' | 'sla' | 'usuarios';
 
@@ -108,7 +110,7 @@ const TIPO_VEHICULO_OPTIONS = [
 
 @Component({
     selector: 'kf-admin-page',
-    imports: [FormsModule],
+    imports: [FormsModule, HitoConfigSwimlaneComponent, ProcessPreviewComponent],
     template: `
     <div class="p-6 space-y-5">
       <div>
@@ -272,146 +274,64 @@ const TIPO_VEHICULO_OPTIONS = [
             </div>
           </div>
 
+          <!-- Toggle: Editor / Vista previa -->
+          <div class="flex items-center gap-2">
+            <button (click)="showPreview.set(false)"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border"
+              [class]="!showPreview()
+                ? 'bg-slate-700 text-white border-slate-700'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Editor
+              </span>
+            </button>
+            <button (click)="showPreview.set(true)"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border"
+              [class]="showPreview()
+                ? 'bg-slate-700 text-white border-slate-700'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                Vista previa
+              </span>
+            </button>
+          </div>
+
           @if (loadingConfig()) {
             <div class="flex justify-center py-8">
               <span class="text-slate-400 text-sm">Cargando configuración...</span>
             </div>
+          } @else if (hitoConfigs().length === 0) {
+            <div class="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-400 text-sm">
+              No hay hitos configurados para este tipo de vehículo
+            </div>
+          } @else if (showPreview()) {
+            <kf-process-preview [hitos]="hitoConfigs()" />
           } @else {
-            @for (hc of hitoConfigs(); track hc.hitoId; let hi = $index) {
-              <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                <!-- Hito header row -->
-                <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
-                  (click)="toggleConfigExpanded(hc.hitoId)">
-                  <!-- Arrow buttons for hito reorder -->
-                  @if (auth.isSuperAdmin()) {
-                    <div class="flex flex-col gap-0.5" (click)="$event.stopPropagation()">
-                      <button (click)="moveHito(hi, -1)"
-                        class="w-5 h-4 flex items-center justify-center rounded text-slate-400 transition-colors"
-                        [class]="hi === 0 ? 'opacity-30 cursor-default' : 'hover:bg-blue-100 hover:text-blue-600'"
-                        [disabled]="hi === 0">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                      </button>
-                      <button (click)="moveHito(hi, 1)"
-                        class="w-5 h-4 flex items-center justify-center rounded text-slate-400 transition-colors"
-                        [class]="hi === hitoConfigs().length - 1 ? 'opacity-30 cursor-default' : 'hover:bg-blue-100 hover:text-blue-600'"
-                        [disabled]="hi === hitoConfigs().length - 1">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                      </button>
-                    </div>
-                  } @else {
-                    <span class="text-slate-400 text-xs w-5 text-center">{{ expandedConfigHitoId() === hc.hitoId ? '▼' : '▶' }}</span>
-                  }
-                  <span class="text-sm font-semibold text-slate-800 flex-1">{{ hc.nombre }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full font-medium"
-                    [class]="getCarrilClass(hc.carril)">
-                    {{ hc.carril }}
-                  </span>
-                  @if (hc.grupoParalelo) {
-                    <span class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                      {{ hc.grupoParalelo.nombre }}
-                    </span>
-                  }
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                    [class]="hc.activo ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'">
-                    <span class="w-1.5 h-1.5 rounded-full" [class]="hc.activo ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                    {{ hc.activo ? 'Activo' : 'Inactivo' }}
-                  </span>
-                  @if (auth.isSuperAdmin()) {
-                    <button (click)="$event.stopPropagation(); toggleHitoActivo(hc)"
-                      class="text-xs px-2 py-1 rounded transition-colors"
-                      [class]="hc.activo ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'">
-                      {{ hc.activo ? 'Desactivar' : 'Activar' }}
-                    </button>
-                  }
-                </div>
-
-                @if (expandedConfigHitoId() === hc.hitoId) {
-                  <!-- Hito config controls (superadmin) -->
-                  @if (auth.isSuperAdmin()) {
-                    <div class="flex items-center gap-4 px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs">
-                      <label class="flex items-center gap-1.5">
-                        <span class="text-slate-500 font-medium">Grupo paralelo:</span>
-                        <select [ngModel]="hc.grupoParalelo?.id ?? 0" (ngModelChange)="patchHitoConfig(hc, { grupoParaleloId: $event === 0 ? null : $event })"
-                          class="px-2 py-1 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                          <option [ngValue]="0">— Ninguno —</option>
-                          @for (gp of gruposParalelos(); track gp.id) {
-                            <option [ngValue]="gp.id">{{ gp.nombre }}</option>
-                          }
-                        </select>
-                      </label>
-                    </div>
-                  }
-
-                  <!-- Subetapas config table -->
-                  <table class="w-full text-sm">
-                    <thead class="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        @if (auth.isSuperAdmin()) {
-                          <th class="text-center px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-14">Orden</th>
-                        }
-                        <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Subetapa</th>
-                        <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Categoría</th>
-                        <th class="text-center px-3 py-2 text-xs font-semibold text-slate-500 uppercase w-20">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (sub of hc.subetapas; track sub.subetapaId; let si = $index) {
-                        <tr class="border-b border-slate-100 hover:bg-slate-50">
-                          @if (auth.isSuperAdmin()) {
-                            <td class="px-2 py-2 text-center">
-                              <div class="flex items-center justify-center gap-0.5">
-                                <button (click)="moveSub(hc, si, -1)"
-                                  class="w-5 h-5 flex items-center justify-center rounded text-slate-400 transition-colors"
-                                  [class]="si === 0 ? 'opacity-30 cursor-default' : 'hover:bg-blue-100 hover:text-blue-600'"
-                                  [disabled]="si === 0">
-                                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                                </button>
-                                <button (click)="moveSub(hc, si, 1)"
-                                  class="w-5 h-5 flex items-center justify-center rounded text-slate-400 transition-colors"
-                                  [class]="si === hc.subetapas.length - 1 ? 'opacity-30 cursor-default' : 'hover:bg-blue-100 hover:text-blue-600'"
-                                  [disabled]="si === hc.subetapas.length - 1">
-                                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                              </div>
-                            </td>
-                          }
-                          <td class="px-3 py-2.5">
-                            <span class="text-sm text-slate-800 font-medium">{{ sub.nombre }}</span>
-                          </td>
-                          <td class="px-3 py-2.5">
-                            <span class="text-xs px-1.5 py-0.5 rounded font-medium"
-                              [class]="getCategoriaClass(sub.categoria)">
-                              {{ sub.categoria }}
-                            </span>
-                          </td>
-                          <td class="px-3 py-2.5 text-center">
-                            @if (auth.isSuperAdmin()) {
-                              <button (click)="toggleSubActivo(sub)"
-                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs transition-colors"
-                                [class]="sub.activo ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">
-                                <span class="w-1.5 h-1.5 rounded-full" [class]="sub.activo ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                                {{ sub.activo ? 'On' : 'Off' }}
-                              </button>
-                            } @else {
-                              <span class="inline-block w-2 h-2 rounded-full"
-                                [class]="sub.activo ? 'bg-emerald-500' : 'bg-slate-300'"></span>
-                            }
-                          </td>
-                        </tr>
-                      } @empty {
-                        <tr>
-                          <td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">Sin subetapas</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                }
-              </div>
-            } @empty {
-              <div class="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-400 text-sm">
-                No hay hitos configurados para este tipo de vehículo
-              </div>
-            }
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              <kf-hito-config-swimlane
+                [hitos]="hitoConfigs()"
+                [grupos]="gruposParalelos()"
+                [isSuperAdmin]="auth.isSuperAdmin()"
+                (moveHitoUp)="moveHitoInCarril($event, -1)"
+                (moveHitoDown)="moveHitoInCarril($event, 1)"
+                (moveGroupUp)="moveGroup($event, -1)"
+                (moveGroupDown)="moveGroup($event, 1)"
+                (changeCarril)="changeCarrilHito($event.hito, $event.newCarril)"
+                (toggleHito)="toggleHitoActivo($event)"
+                (moveSubUp)="moveSub($event.hito, getSubIndex($event.hito, $event.sub), -1)"
+                (moveSubDown)="moveSub($event.hito, getSubIndex($event.hito, $event.sub), 1)"
+                (toggleSub)="toggleSubActivo($event.sub)"
+                (changeGrupo)="handleChangeGrupo($event.hito, $event.grupoId)"
+                (deleteGroup)="deleteGroup($event)"
+              />
+            </div>
           }
         </div>
       }
@@ -634,7 +554,7 @@ export class AdminPageComponent implements OnInit {
   hitoConfigs = signal<HitoConfigView[]>([]);
   gruposParalelos = signal<GrupoParaleloApi[]>([]);
   loadingConfig = signal(false);
-  expandedConfigHitoId = signal<number | null>(null);
+  showPreview = signal(false);
 
   // ── Tab 3: SLA ──
   slaConfigs = signal<SlaConfigModel[]>([...MOCK_SLA_CONFIGS]);
@@ -744,7 +664,6 @@ export class AdminPageComponent implements OnInit {
   // ══════════════════════════════════════════
 
   selectTipoVehiculo(tipo: string): void {
-    this.expandedConfigHitoId.set(null);
     this.selectedTipoVehiculo.set(tipo);
   }
 
@@ -773,10 +692,6 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
-  toggleConfigExpanded(hitoId: number): void {
-    this.expandedConfigHitoId.set(this.expandedConfigHitoId() === hitoId ? null : hitoId);
-  }
-
   async toggleHitoActivo(hc: HitoConfigView): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
     try {
@@ -789,50 +704,155 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
-  patchHitoConfig(hc: HitoConfigView, patch: { grupoParaleloId?: number | null }): void {
+  /** Change a hito's grupo. If grupoId=0 (virtual trailing), create a new real grupo first.
+   *  After the change, auto-delete any empty non-trailing grupos for this vehicle type. */
+  async handleChangeGrupo(hc: HitoConfigView, grupoId: number): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
-    // Optimistic update for grupoParalelo
-    if (patch.grupoParaleloId !== undefined) {
-      this.hitoConfigs.update(configs => configs.map(c =>
-        c.hitoId === hc.hitoId
-          ? { ...c, grupoParalelo: patch.grupoParaleloId ? this.gruposParalelos().find(g => g.id === patch.grupoParaleloId) ?? null : null }
-          : c
-      ));
+    const oldGrupoId = hc.grupoParalelo?.id ?? null;
+
+    let actualGrupoId = grupoId;
+    // grupoId=0 means the virtual empty trailing group → create a real one
+    if (grupoId === 0) {
+      const newGrupo = await firstValueFrom(
+        this.http.post<GrupoParaleloApi>(`${this.apiUrl}/v1/hitos/grupos-paralelos`, {})
+      );
+      actualGrupoId = newGrupo.id;
     }
-    firstValueFrom(
-      this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hc.hitoId}`, patch)
-    ).then(() => this.loadHitoConfig(tipo))
-     .catch(err => console.error('Error patching hito config:', err));
+
+    // Assign hito to the target grupo
+    await firstValueFrom(
+      this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hc.hitoId}`, { grupoParaleloId: actualGrupoId })
+    );
+
+    // Reload to get fresh state
+    await this.loadGruposParalelos();
+    await this.loadHitoConfig(tipo);
+
+    // Auto-delete old grupo if it's now empty for this vehicle type
+    if (oldGrupoId && oldGrupoId !== actualGrupoId) {
+      const stillUsed = this.hitoConfigs().some(c => c.grupoParalelo?.id === oldGrupoId);
+      if (!stillUsed) {
+        try {
+          await firstValueFrom(
+            this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${oldGrupoId}?tipoVehiculo=${tipo}`)
+          );
+          await this.loadGruposParalelos();
+          await this.loadHitoConfig(tipo);
+        } catch (err) {
+          console.error('Error cleaning up empty grupo:', err);
+        }
+      }
+    }
   }
 
-  /** Move hito up (-1) or down (+1) by swapping orden with its neighbor */
-  async moveHito(index: number, direction: -1 | 1): Promise<void> {
+  /** Move a hito within its carril (same grupo) by swapping orden with neighbor */
+  async moveHitoInCarril(hito: HitoConfigView, direction: -1 | 1): Promise<void> {
     const configs = this.hitoConfigs();
-    const neighborIdx = index + direction;
-    if (neighborIdx < 0 || neighborIdx >= configs.length) return;
-
-    const current = configs[index];
-    const neighbor = configs[neighborIdx];
     const tipo = this.selectedTipoVehiculo();
 
-    // Optimistic swap in UI
-    const swapped = [...configs];
-    swapped[index] = { ...neighbor, orden: current.orden };
-    swapped[neighborIdx] = { ...current, orden: neighbor.orden };
-    swapped.sort((a, b) => a.orden - b.orden);
-    this.hitoConfigs.set(swapped);
+    const peers = configs
+      .filter(h =>
+        h.carril === hito.carril &&
+        h.grupoParalelo?.id === hito.grupoParalelo?.id
+      )
+      .sort((a, b) => a.orden - b.orden);
 
-    // Persist both
+    const idx = peers.findIndex(h => h.hitoId === hito.hitoId);
+    const neighborIdx = idx + direction;
+    if (neighborIdx < 0 || neighborIdx >= peers.length) return;
+
+    const neighbor = peers[neighborIdx];
+
+    this.hitoConfigs.update(cs => cs.map(c => {
+      if (c.hitoId === hito.hitoId) return { ...c, orden: neighbor.orden };
+      if (c.hitoId === neighbor.hitoId) return { ...c, orden: hito.orden };
+      return c;
+    }));
+
     try {
       await Promise.all([
-        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${current.hitoId}`, { orden: neighbor.orden })),
-        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${neighbor.hitoId}`, { orden: current.orden })),
+        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hito.hitoId}`, { orden: neighbor.orden })),
+        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${neighbor.hitoId}`, { orden: hito.orden })),
       ]);
       await this.loadHitoConfig(tipo);
     } catch (err) {
-      console.error('Error moving hito:', err);
+      console.error('Error moving hito in carril:', err);
       await this.loadHitoConfig(tipo);
     }
+  }
+
+  /** Move a grupo paralelo block up or down by redistributing orden values */
+  async moveGroup(grupoId: number, direction: -1 | 1): Promise<void> {
+    const tipo = this.selectedTipoVehiculo();
+    const configs = this.hitoConfigs();
+
+    const grupoEntries = [...new Map(
+      configs
+        .filter(h => h.grupoParalelo)
+        .map(h => [h.grupoParalelo!.id, Math.min(...configs
+          .filter(c => c.grupoParalelo?.id === h.grupoParalelo!.id)
+          .map(c => c.orden)
+        )] as [number, number])
+    ).entries()]
+      .sort((a, b) => a[1] - b[1]);
+
+    const currentIdx = grupoEntries.findIndex(([id]) => id === grupoId);
+    const neighborIdx = currentIdx + direction;
+    if (neighborIdx < 0 || neighborIdx >= grupoEntries.length) return;
+
+    const [neighborGrupoId] = grupoEntries[neighborIdx];
+
+    const hitosA = configs.filter(h => h.grupoParalelo?.id === grupoId);
+    const hitosB = configs.filter(h => h.grupoParalelo?.id === neighborGrupoId);
+
+    const ordenesA = hitosA.map(h => h.orden).sort((a, b) => a - b);
+    const ordenesB = hitosB.map(h => h.orden).sort((a, b) => a - b);
+    const allOrdenes = [...ordenesA, ...ordenesB].sort((a, b) => a - b);
+
+    const [primerGrupo, segundoGrupo] = direction === -1
+      ? [hitosA, hitosB]
+      : [hitosB, hitosA];
+
+    const patchCalls: Promise<unknown>[] = [];
+    primerGrupo.sort((a, b) => a.orden - b.orden).forEach((h, i) => {
+      patchCalls.push(firstValueFrom(
+        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${h.hitoId}`, { orden: allOrdenes[i] })
+      ));
+    });
+    segundoGrupo.sort((a, b) => a.orden - b.orden).forEach((h, i) => {
+      patchCalls.push(firstValueFrom(
+        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${h.hitoId}`, { orden: allOrdenes[primerGrupo.length + i] })
+      ));
+    });
+
+    try {
+      await Promise.all(patchCalls);
+      await this.loadHitoConfig(tipo);
+    } catch (err) {
+      console.error('Error moving group:', err);
+      await this.loadHitoConfig(tipo);
+    }
+  }
+
+  /** Change a hito's carril (per vehicle type config) */
+  async changeCarrilHito(hito: HitoConfigView, newCarril: string): Promise<void> {
+    const tipo = this.selectedTipoVehiculo();
+    this.hitoConfigs.update(cs => cs.map(c =>
+      c.hitoId === hito.hitoId ? { ...c, carril: newCarril } : c
+    ));
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hito.hitoId}`, { carril: newCarril })
+      );
+      await this.loadHitoConfig(tipo);
+    } catch (err) {
+      console.error('Error changing carril:', err);
+      await this.loadHitoConfig(tipo);
+    }
+  }
+
+  getSubIndex(hito: HitoConfigView, sub: SubetapaConfigView): number {
+    return hito.subetapas.findIndex(s => s.subetapaId === sub.subetapaId);
   }
 
   /** Move subetapa up (-1) or down (+1) within its hito */
@@ -865,6 +885,20 @@ export class AdminPageComponent implements OnInit {
     } catch (err) {
       console.error('Error moving subetapa:', err);
       await this.loadHitoConfig(tipo);
+    }
+  }
+
+  /** Delete a grupo paralelo — backend reassigns hitos to previous grupo for this vehicle type only */
+  async deleteGroup(grupoId: number): Promise<void> {
+    const tipo = this.selectedTipoVehiculo();
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${grupoId}?tipoVehiculo=${tipo}`)
+      );
+      await this.loadGruposParalelos();
+      await this.loadHitoConfig(tipo);
+    } catch (err) {
+      console.error('Error deleting grupo:', err);
     }
   }
 
