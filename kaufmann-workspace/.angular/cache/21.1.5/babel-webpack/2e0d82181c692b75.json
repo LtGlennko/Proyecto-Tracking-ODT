@@ -1,0 +1,1 @@
+{"ast":null,"code":"export * from './lib/admin-page.component';\nexport * from './lib/hito-config-swimlane/hito-config-swimlane.component';\nimport { AdminPageComponent } from './lib/admin-page.component';\nexport const ADMIN_ROUTES = [{\n  path: '',\n  component: AdminPageComponent\n}];","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

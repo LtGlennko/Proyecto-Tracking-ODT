@@ -149,6 +149,55 @@ export class HitosService {
 
     const subConfigMap = new Map(subConfigs.map(sc => [sc.subetapaId, sc]));
 
+    // Find hitos without config for this vehicle type and add them with defaults
+    const configuredHitoIds = new Set(hitoConfigs.map(hc => hc.hitoId));
+    const allHitos = await this.hitoRepo.find({ relations: ['subetapas'], order: { id: 'ASC' } });
+    const unconfiguredHitos = allHitos.filter(h => !configuredHitoIds.has(h.id));
+
+    if (unconfiguredHitos.length > 0) {
+      // Determine last grupo — create one if none exists
+      let lastGrupoId: number | null = null;
+      const withGrupo = hitoConfigs.filter(hc => hc.grupoParaleloId != null);
+      if (withGrupo.length > 0) {
+        lastGrupoId = withGrupo.reduce((best, hc) =>
+          hc.orden > best.orden ? hc : best
+        ).grupoParaleloId;
+      } else {
+        const newGrupo = await this.grupoRepo.save(this.grupoRepo.create({}));
+        lastGrupoId = newGrupo.id;
+      }
+
+      let maxOrden = hitoConfigs.length > 0
+        ? Math.max(...hitoConfigs.map(hc => hc.orden))
+        : 0;
+
+      for (const hito of unconfiguredHitos) {
+        maxOrden++;
+        await this.hitoTvRepo.save(this.hitoTvRepo.create({
+          tipoVehiculo,
+          hitoId: hito.id,
+          orden: maxOrden,
+          activo: true,
+          grupoParaleloId: lastGrupoId,
+          carril: 'financiero',
+        }));
+
+        // Also create default subetapa configs
+        for (let i = 0; i < (hito.subetapas || []).length; i++) {
+          const sub = hito.subetapas[i];
+          await this.subTvRepo.save(this.subTvRepo.create({
+            tipoVehiculo,
+            subetapaId: sub.id,
+            orden: i + 1,
+            activo: true,
+          }));
+        }
+      }
+
+      // Re-fetch with the newly created configs
+      return this.getConfigByTipoVehiculo(tipoVehiculo);
+    }
+
     return hitoConfigs.map(hc => ({
       hitoConfigId: hc.id,
       hitoId: hc.hitoId,

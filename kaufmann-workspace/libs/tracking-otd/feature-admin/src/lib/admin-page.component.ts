@@ -319,16 +319,12 @@ const TIPO_VEHICULO_OPTIONS = [
                 [hitos]="hitoConfigs()"
                 [grupos]="gruposParalelos()"
                 [isSuperAdmin]="auth.isSuperAdmin()"
-                (moveHitoUp)="moveHitoInCarril($event, -1)"
-                (moveHitoDown)="moveHitoInCarril($event, 1)"
-                (moveGroupUp)="moveGroup($event, -1)"
-                (moveGroupDown)="moveGroup($event, 1)"
-                (changeCarril)="changeCarrilHito($event.hito, $event.newCarril)"
+                (reorderHitos)="handleReorderHitos($event)"
+                (moveHitoToTarget)="handleMoveHitoToTarget($event)"
+                (reorderGroups)="handleReorderGroups($event)"
+                (reorderSubs)="handleReorderSubs($event)"
                 (toggleHito)="toggleHitoActivo($event)"
-                (moveSubUp)="moveSub($event.hito, getSubIndex($event.hito, $event.sub), -1)"
-                (moveSubDown)="moveSub($event.hito, getSubIndex($event.hito, $event.sub), 1)"
                 (toggleSub)="toggleSubActivo($event.sub)"
-                (changeGrupo)="handleChangeGrupo($event.hito, $event.grupoId)"
                 (deleteGroup)="deleteGroup($event)"
               />
             </div>
@@ -667,8 +663,8 @@ export class AdminPageComponent implements OnInit {
     this.selectedTipoVehiculo.set(tipo);
   }
 
-  async loadHitoConfig(tipoVehiculo: string): Promise<void> {
-    this.loadingConfig.set(true);
+  async loadHitoConfig(tipoVehiculo: string, silent = false): Promise<void> {
+    if (!silent) this.loadingConfig.set(true);
     try {
       const data = await firstValueFrom(
         this.http.get<HitoConfigView[]>(`${this.apiUrl}/v1/hitos/config/${tipoVehiculo}`)
@@ -677,7 +673,7 @@ export class AdminPageComponent implements OnInit {
     } catch (err) {
       console.error('Error loading hito config:', err);
     } finally {
-      this.loadingConfig.set(false);
+      if (!silent) this.loadingConfig.set(false);
     }
   }
 
@@ -694,197 +690,188 @@ export class AdminPageComponent implements OnInit {
 
   async toggleHitoActivo(hc: HitoConfigView): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
+    const newState = !hc.activo;
+    // Optimistic update — toggle hito + all its subetapas
+    this.hitoConfigs.update(configs =>
+      configs.map(h => h.hitoId === hc.hitoId
+        ? { ...h, activo: newState, subetapas: h.subetapas.map(s => ({ ...s, activo: newState })) }
+        : h
+      )
+    );
     try {
-      await firstValueFrom(
-        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hc.hitoId}`, { activo: !hc.activo })
-      );
-      await this.loadHitoConfig(tipo);
+      const calls: Promise<unknown>[] = [
+        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hc.hitoId}`, { activo: newState })),
+        ...hc.subetapas
+          .filter(s => s.activo !== newState)
+          .map(s => firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/subetapa/${s.subetapaId}`, { activo: newState }))),
+      ];
+      await Promise.all(calls);
     } catch (err) {
       console.error('Error toggling hito:', err);
+      await this.loadHitoConfig(tipo, true);
     }
   }
 
-  /** Change a hito's grupo. If grupoId=0 (virtual trailing), create a new real grupo first.
-   *  After the change, auto-delete any empty non-trailing grupos for this vehicle type. */
-  async handleChangeGrupo(hc: HitoConfigView, grupoId: number): Promise<void> {
+  /** Drag-drop: reorder hitos within same carril+grupo */
+  async handleReorderHitos(event: { grupoId: number; carril: string; hitoIds: number[] }): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
-    const oldGrupoId = hc.grupoParalelo?.id ?? null;
+    const configs = this.hitoConfigs();
 
-    let actualGrupoId = grupoId;
-    // grupoId=0 means the virtual empty trailing group → create a real one
-    if (grupoId === 0) {
+    // Get current orden values for peers in this carril+grupo, sorted
+    const peers = configs
+      .filter(h => h.carril === event.carril && h.grupoParalelo?.id === event.grupoId)
+      .sort((a, b) => a.orden - b.orden);
+
+    const ordenes = peers.map(h => h.orden).sort((a, b) => a - b);
+
+    // Assign ordenes to the new order of hitoIds
+    const patchCalls = event.hitoIds.map((hitoId, i) =>
+      firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hitoId}`, { orden: ordenes[i] }))
+    );
+
+    try {
+      await Promise.all(patchCalls);
+      await this.loadHitoConfig(tipo, true);
+    } catch (err) {
+      console.error('Error reordering hitos:', err);
+      await this.loadHitoConfig(tipo, true);
+    }
+  }
+
+  /** Drag-drop: hito moved to different carril and/or grupo.
+   *  Handles: same-grupo cross-carril, cross-grupo same-carril, cross-grupo cross-carril.
+   *  Also handles virtual trailing grupo (id=0) → create real grupo on demand.
+   *  Auto-deletes empty grupos after move. */
+  async handleMoveHitoToTarget(event: { hitoId: number; newCarril: string; newGrupoId: number; orderedHitoIds: number[] }): Promise<void> {
+    const tipo = this.selectedTipoVehiculo();
+    const configs = this.hitoConfigs();
+    const movedHito = configs.find(h => h.hitoId === event.hitoId);
+    const oldGrupoId = movedHito?.grupoParalelo?.id ?? null;
+
+    let actualGrupoId = event.newGrupoId;
+
+    // grupoId=0 means virtual trailing → create a real grupo
+    if (actualGrupoId === 0) {
       const newGrupo = await firstValueFrom(
-        this.http.post<GrupoParaleloApi>(`${this.apiUrl}/v1/hitos/grupos-paralelos`, {})
+        this.http.post<{ id: number }>(`${this.apiUrl}/v1/hitos/grupos-paralelos`, {})
       );
       actualGrupoId = newGrupo.id;
     }
 
-    // Assign hito to the target grupo
-    await firstValueFrom(
-      this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hc.hitoId}`, { grupoParaleloId: actualGrupoId })
-    );
+    // Build the patch for the moved hito: carril + grupo
+    const patchCalls: Promise<unknown>[] = [
+      firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${event.hitoId}`, {
+        carril: event.newCarril,
+        grupoParaleloId: actualGrupoId,
+      })),
+    ];
 
-    // Reload to get fresh state
-    await this.loadGruposParalelos();
-    await this.loadHitoConfig(tipo);
-
-    // Auto-delete old grupo if it's now empty for this vehicle type
-    if (oldGrupoId && oldGrupoId !== actualGrupoId) {
-      const stillUsed = this.hitoConfigs().some(c => c.grupoParalelo?.id === oldGrupoId);
-      if (!stillUsed) {
-        try {
-          await firstValueFrom(
-            this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${oldGrupoId}?tipoVehiculo=${tipo}`)
-          );
-          await this.loadGruposParalelos();
-          await this.loadHitoConfig(tipo);
-        } catch (err) {
-          console.error('Error cleaning up empty grupo:', err);
-        }
-      }
-    }
-  }
-
-  /** Move a hito within its carril (same grupo) by swapping orden with neighbor */
-  async moveHitoInCarril(hito: HitoConfigView, direction: -1 | 1): Promise<void> {
-    const configs = this.hitoConfigs();
-    const tipo = this.selectedTipoVehiculo();
-
-    const peers = configs
-      .filter(h =>
-        h.carril === hito.carril &&
-        h.grupoParalelo?.id === hito.grupoParalelo?.id
-      )
+    // Assign ordenes to the target list's new order
+    const targetPeers = configs
+      .filter(h => h.carril === event.newCarril && h.grupoParalelo?.id === event.newGrupoId)
       .sort((a, b) => a.orden - b.orden);
 
-    const idx = peers.findIndex(h => h.hitoId === hito.hitoId);
-    const neighborIdx = idx + direction;
-    if (neighborIdx < 0 || neighborIdx >= peers.length) return;
-
-    const neighbor = peers[neighborIdx];
-
-    this.hitoConfigs.update(cs => cs.map(c => {
-      if (c.hitoId === hito.hitoId) return { ...c, orden: neighbor.orden };
-      if (c.hitoId === neighbor.hitoId) return { ...c, orden: hito.orden };
-      return c;
-    }));
-
-    try {
-      await Promise.all([
-        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hito.hitoId}`, { orden: neighbor.orden })),
-        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${neighbor.hitoId}`, { orden: hito.orden })),
-      ]);
-      await this.loadHitoConfig(tipo);
-    } catch (err) {
-      console.error('Error moving hito in carril:', err);
-      await this.loadHitoConfig(tipo);
+    let ordenes: number[];
+    if (targetPeers.length > 0) {
+      const existing = targetPeers.map(h => h.orden).sort((a, b) => a - b);
+      const maxOrden = Math.max(...configs.map(h => h.orden));
+      ordenes = [];
+      for (let i = 0; i < event.orderedHitoIds.length; i++) {
+        ordenes.push(existing[i] ?? maxOrden + i + 1);
+      }
+    } else {
+      const maxOrden = configs.length > 0 ? Math.max(...configs.map(h => h.orden)) : 0;
+      ordenes = event.orderedHitoIds.map((_, i) => maxOrden + i + 1);
     }
-  }
 
-  /** Move a grupo paralelo block up or down by redistributing orden values */
-  async moveGroup(grupoId: number, direction: -1 | 1): Promise<void> {
-    const tipo = this.selectedTipoVehiculo();
-    const configs = this.hitoConfigs();
-
-    const grupoEntries = [...new Map(
-      configs
-        .filter(h => h.grupoParalelo)
-        .map(h => [h.grupoParalelo!.id, Math.min(...configs
-          .filter(c => c.grupoParalelo?.id === h.grupoParalelo!.id)
-          .map(c => c.orden)
-        )] as [number, number])
-    ).entries()]
-      .sort((a, b) => a[1] - b[1]);
-
-    const currentIdx = grupoEntries.findIndex(([id]) => id === grupoId);
-    const neighborIdx = currentIdx + direction;
-    if (neighborIdx < 0 || neighborIdx >= grupoEntries.length) return;
-
-    const [neighborGrupoId] = grupoEntries[neighborIdx];
-
-    const hitosA = configs.filter(h => h.grupoParalelo?.id === grupoId);
-    const hitosB = configs.filter(h => h.grupoParalelo?.id === neighborGrupoId);
-
-    const ordenesA = hitosA.map(h => h.orden).sort((a, b) => a - b);
-    const ordenesB = hitosB.map(h => h.orden).sort((a, b) => a - b);
-    const allOrdenes = [...ordenesA, ...ordenesB].sort((a, b) => a - b);
-
-    const [primerGrupo, segundoGrupo] = direction === -1
-      ? [hitosA, hitosB]
-      : [hitosB, hitosA];
-
-    const patchCalls: Promise<unknown>[] = [];
-    primerGrupo.sort((a, b) => a.orden - b.orden).forEach((h, i) => {
-      patchCalls.push(firstValueFrom(
-        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${h.hitoId}`, { orden: allOrdenes[i] })
-      ));
-    });
-    segundoGrupo.sort((a, b) => a.orden - b.orden).forEach((h, i) => {
-      patchCalls.push(firstValueFrom(
-        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${h.hitoId}`, { orden: allOrdenes[primerGrupo.length + i] })
-      ));
+    event.orderedHitoIds.forEach((hitoId, i) => {
+      patchCalls.push(
+        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hitoId}`, { orden: ordenes[i] }))
+      );
     });
 
     try {
       await Promise.all(patchCalls);
-      await this.loadHitoConfig(tipo);
+      await this.loadGruposParalelos();
+      await this.loadHitoConfig(tipo, true);
+
+      // Auto-delete old grupo if now empty for this vehicle type
+      if (oldGrupoId && oldGrupoId !== actualGrupoId) {
+        const stillUsed = this.hitoConfigs().some(c => c.grupoParalelo?.id === oldGrupoId);
+        if (!stillUsed) {
+          try {
+            await firstValueFrom(
+              this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${oldGrupoId}?tipoVehiculo=${tipo}`)
+            );
+            await this.loadGruposParalelos();
+            await this.loadHitoConfig(tipo, true);
+          } catch (e) {
+            console.error('Error cleaning up empty grupo:', e);
+          }
+        }
+      }
     } catch (err) {
-      console.error('Error moving group:', err);
-      await this.loadHitoConfig(tipo);
+      console.error('Error moving hito to target:', err);
+      await this.loadHitoConfig(tipo, true);
     }
   }
 
-  /** Change a hito's carril (per vehicle type config) */
-  async changeCarrilHito(hito: HitoConfigView, newCarril: string): Promise<void> {
+  /** Drag-drop: reorder grupos by redistributing all orden values */
+  async handleReorderGroups(event: { orderedGrupoIds: number[] }): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
-    this.hitoConfigs.update(cs => cs.map(c =>
-      c.hitoId === hito.hitoId ? { ...c, carril: newCarril } : c
-    ));
+    const configs = this.hitoConfigs();
+
+    // Collect all orden values sorted ascending
+    const allOrdenes = configs.map(h => h.orden).sort((a, b) => a - b);
+
+    // Build new ordered list: hitos grouped by grupo in the new order, preserving internal carril order
+    const patchCalls: Promise<unknown>[] = [];
+    let ordenIdx = 0;
+
+    for (const grupoId of event.orderedGrupoIds) {
+      const hitosInGrupo = configs
+        .filter(h => h.grupoParalelo?.id === grupoId)
+        .sort((a, b) => a.orden - b.orden);
+
+      for (const hito of hitosInGrupo) {
+        const newOrden = allOrdenes[ordenIdx++];
+        if (newOrden !== hito.orden) {
+          patchCalls.push(
+            firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hito.hitoId}`, { orden: newOrden }))
+          );
+        }
+      }
+    }
+
     try {
-      await firstValueFrom(
-        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${hito.hitoId}`, { carril: newCarril })
-      );
-      await this.loadHitoConfig(tipo);
+      await Promise.all(patchCalls);
+      await this.loadHitoConfig(tipo, true);
     } catch (err) {
-      console.error('Error changing carril:', err);
-      await this.loadHitoConfig(tipo);
+      console.error('Error reordering groups:', err);
+      await this.loadHitoConfig(tipo, true);
     }
   }
 
-  getSubIndex(hito: HitoConfigView, sub: SubetapaConfigView): number {
-    return hito.subetapas.findIndex(s => s.subetapaId === sub.subetapaId);
-  }
-
-  /** Move subetapa up (-1) or down (+1) within its hito */
-  async moveSub(hc: HitoConfigView, index: number, direction: -1 | 1): Promise<void> {
-    const subs = hc.subetapas;
-    const neighborIdx = index + direction;
-    if (neighborIdx < 0 || neighborIdx >= subs.length) return;
-
-    const current = subs[index];
-    const neighbor = subs[neighborIdx];
+  /** Drag-drop: reorder subetapas within a hito */
+  async handleReorderSubs(event: { hitoId: number; subetapaIds: number[] }): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
+    const hito = this.hitoConfigs().find(h => h.hitoId === event.hitoId);
+    if (!hito) return;
 
-    // Optimistic swap in UI
-    this.hitoConfigs.update(configs => configs.map(c => {
-      if (c.hitoId !== hc.hitoId) return c;
-      const newSubs = [...c.subetapas];
-      newSubs[index] = { ...neighbor, orden: current.orden };
-      newSubs[neighborIdx] = { ...current, orden: neighbor.orden };
-      newSubs.sort((a, b) => a.orden - b.orden);
-      return { ...c, subetapas: newSubs };
-    }));
+    // Get existing orden values sorted
+    const ordenes = hito.subetapas.map(s => s.orden).sort((a, b) => a - b);
 
-    // Persist both
+    // Assign ordenes to new order
+    const patchCalls = event.subetapaIds.map((subId, i) =>
+      firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/subetapa/${subId}`, { orden: ordenes[i] }))
+    );
+
     try {
-      await Promise.all([
-        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/subetapa/${current.subetapaId}`, { orden: neighbor.orden })),
-        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/subetapa/${neighbor.subetapaId}`, { orden: current.orden })),
-      ]);
-      await this.loadHitoConfig(tipo);
+      await Promise.all(patchCalls);
+      await this.loadHitoConfig(tipo, true);
     } catch (err) {
-      console.error('Error moving subetapa:', err);
-      await this.loadHitoConfig(tipo);
+      console.error('Error reordering subetapas:', err);
+      await this.loadHitoConfig(tipo, true);
     }
   }
 
@@ -896,7 +883,7 @@ export class AdminPageComponent implements OnInit {
         this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${grupoId}?tipoVehiculo=${tipo}`)
       );
       await this.loadGruposParalelos();
-      await this.loadHitoConfig(tipo);
+      await this.loadHitoConfig(tipo, true);
     } catch (err) {
       console.error('Error deleting grupo:', err);
     }
@@ -904,15 +891,45 @@ export class AdminPageComponent implements OnInit {
 
   async toggleSubActivo(sub: SubetapaConfigView): Promise<void> {
     const tipo = this.selectedTipoVehiculo();
-    try {
-      await firstValueFrom(
-        this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/subetapa/${sub.subetapaId}`, {
-          activo: !sub.activo,
-        })
+    const newSubState = !sub.activo;
+
+    // Find parent hito to determine cascade
+    const parentHito = this.hitoConfigs().find(h => h.subetapas.some(s => s.subetapaId === sub.subetapaId));
+    let hitoNeedsToggle = false;
+    if (parentHito) {
+      const subsAfterToggle = parentHito.subetapas.map(s =>
+        s.subetapaId === sub.subetapaId ? newSubState : s.activo
       );
-      await this.loadHitoConfig(tipo);
+      const anyActive = subsAfterToggle.some(a => a);
+      // Activate hito if a sub is activated and hito is off; deactivate if all subs off
+      if (newSubState && !parentHito.activo) hitoNeedsToggle = true;
+      if (!newSubState && !anyActive && parentHito.activo) hitoNeedsToggle = true;
+    }
+
+    // Optimistic update — toggle sub + cascade hito if needed
+    this.hitoConfigs.update(configs =>
+      configs.map(h => {
+        const updatedSubs = h.subetapas.map(s =>
+          s.subetapaId === sub.subetapaId ? { ...s, activo: newSubState } : s
+        );
+        if (h.hitoId === parentHito?.hitoId && hitoNeedsToggle) {
+          return { ...h, activo: !h.activo, subetapas: updatedSubs };
+        }
+        return { ...h, subetapas: updatedSubs };
+      })
+    );
+
+    try {
+      const calls: Promise<unknown>[] = [
+        firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/subetapa/${sub.subetapaId}`, { activo: newSubState })),
+      ];
+      if (parentHito && hitoNeedsToggle) {
+        calls.push(firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/config/${tipo}/hito/${parentHito.hitoId}`, { activo: !parentHito.activo })));
+      }
+      await Promise.all(calls);
     } catch (err) {
       console.error('Error toggling subetapa:', err);
+      await this.loadHitoConfig(tipo, true);
     }
   }
 

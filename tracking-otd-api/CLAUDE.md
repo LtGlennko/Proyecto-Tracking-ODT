@@ -1,4 +1,6 @@
-# Tracking OTD API — Configuración Claude Code
+# Tracking OTD API — Backend Agent
+
+> Este archivo es leído automáticamente por el agente backend. Contiene las reglas y contexto para trabajar en `tracking-otd-api/`.
 
 ## Contexto del Proyecto
 Sistema de seguimiento de ventas y entregas de vehículos para Grupo Kaufmann.
@@ -78,7 +80,24 @@ npm run test
 npm run test:cov
 ```
 
+## Entidades de Configuración por Tipo de Vehículo
+- `HitoTipoVehiculo` — grupoParaleloId, carril (financiero/operativo), orden, activo
+- `SubetapaTipoVehiculo` — orden, activo, campoStagingVin
+- `GrupoParalelo` — Agrupación para ejecución simultánea de hitos
+- Operaciones SIEMPRE scoped por tipo de vehículo
+- Grupos paralelos: crear on-demand, eliminar automáticamente cuando quedan vacíos
+- `deleteGrupoForTipo(grupoId, tipoVehiculo)`: reasigna hitos al grupo previo por orden visual, luego elimina el grupo
+- Endpoints: `POST /v1/hitos/grupos-paralelos`, `DELETE /v1/hitos/grupos-paralelos/:id?tipoVehiculo=X`
+- `PATCH /v1/hitos/config/:tipo/hito/:hitoId` — actualiza grupoParaleloId, carril, orden, activo
+
+## Patrones Obligatorios
+- Service pattern: lógica de negocio en `*.service.ts`, no en controllers
+- Controllers solo validan input y delegan al service
+- Transactions con `queryRunner` para operaciones multi-tabla
+- Todos los endpoints bajo `/api/v1/`
+- DTOs con decoradores class-validator (`@IsString()`, `@IsNumber()`, etc.)
+
 ## Cobertura de Fechas en staging_vin
-- ✅ 12 directas: auto-poblan desde staging (TrackingService.syncFromStaging)
-- ⚠️  3 proxy: fcc→InicioTrámite, fclr→PlacasRecibidas, fechaColocacion→PedidoFábrica
-- ❌  5 GAP manual: SolicitudCrédito, Aprobación, PagoConfirmado, UnidadLista, CitaAgendada
+- 12 directas: auto-poblan desde staging (TrackingService.syncFromStaging)
+- 3 proxy: fcc→InicioTrámite, fclr→PlacasRecibidas, fechaColocacion→PedidoFábrica
+- 5 GAP manual: SolicitudCrédito, Aprobación, PagoConfirmado, UnidadLista, CitaAgendada
