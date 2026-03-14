@@ -35,19 +35,17 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
     
         <!-- Stats -->
         <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-          <h3 class="text-sm font-semibold text-slate-700 mb-3">Por Línea de Negocio</h3>
+          <h3 class="text-sm font-semibold text-slate-700 mb-3">Por Tipo de Vehículo</h3>
           <div class="space-y-2">
-            @for (linea of lineasStats(); track linea) {
+            @for (tipo of tipoVehiculoStats(); track tipo) {
               <div class="flex items-center gap-2">
-                <span class="text-xs w-20 text-slate-600">{{ linea.nombre }}</span>
+                <span class="text-xs w-20 text-slate-600">{{ tipo.nombre }}</span>
                 <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div class="h-full rounded-full transition-all" [style.width]="linea.pct + '%'"
-                     [class]="linea.nombre === 'VC' || linea.nombre === 'Camiones' ? 'bg-blue-500' :
-                              linea.nombre === 'Autos' ? 'bg-purple-500' :
-                              linea.nombre === 'Buses' ? 'bg-sky-500' : 'bg-orange-500'">
+                  <div class="h-full rounded-full transition-all" [style.width]="tipo.pct + '%'"
+                     [style.background-color]="tipo.color">
                   </div>
                 </div>
-                <span class="text-xs text-slate-500 w-8 text-right">{{ linea.total }}</span>
+                <span class="text-xs text-slate-500 w-8 text-right">{{ tipo.total }}</span>
               </div>
             }
           </div>
@@ -110,17 +108,23 @@ export class AnalyticsPageComponent {
     return Math.round((ontime / vins.length) * 100);
   });
 
-  lineasStats = computed(() => {
+  tipoVehiculoStats = computed(() => {
     const vins = this.store.vins();
-    const map: Record<string, number> = {};
+    const map: Record<string, { nombre: string; color: string; count: number }> = {};
     for (const v of vins) {
-      map[v.lineaNegocio] = (map[v.lineaNegocio] ?? 0) + 1;
+      const tv = v.tipoVehiculo;
+      const key = tv?.slug ?? 'desconocido';
+      if (!map[key]) {
+        map[key] = { nombre: tv?.nombre ?? 'Desconocido', color: tv?.color ?? '#94a3b8', count: 0 };
+      }
+      map[key].count++;
     }
     const total = vins.length || 1;
-    return Object.entries(map).map(([nombre, cnt]) => ({
-      nombre,
-      total: cnt,
-      pct: Math.round((cnt / total) * 100),
+    return Object.values(map).map(entry => ({
+      nombre: entry.nombre,
+      color: entry.color,
+      total: entry.count,
+      pct: Math.round((entry.count / total) * 100),
     }));
   });
 

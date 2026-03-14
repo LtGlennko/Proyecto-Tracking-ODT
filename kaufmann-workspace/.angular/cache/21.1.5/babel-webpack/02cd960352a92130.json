@@ -1,1 +1,0 @@
-{"ast":null,"code":"export * from './lib/alertas-page.component';\nimport { AlertasPageComponent } from './lib/alertas-page.component';\nexport const ALERTAS_ROUTES = [{\n  path: '',\n  component: AlertasPageComponent\n}];","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

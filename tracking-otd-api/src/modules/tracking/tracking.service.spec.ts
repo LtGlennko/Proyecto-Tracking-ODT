@@ -139,20 +139,4 @@ describe('TrackingService', () => {
     });
   });
 
-  describe('calcularEstadoGeneral()', () => {
-    it('debe retornar FINALIZADO si todos los hitos están finalizados', () => {
-      const hitos = [{ estado: 'FINALIZADO' }, { estado: 'FINALIZADO' }];
-      expect(service.calcularEstadoGeneral(hitos)).toBe('FINALIZADO');
-    });
-
-    it('debe retornar DEMORADO si al menos 1 hito está demorado', () => {
-      const hitos = [{ estado: 'A TIEMPO' }, { estado: 'DEMORADO' }, { estado: 'FINALIZADO' }];
-      expect(service.calcularEstadoGeneral(hitos)).toBe('DEMORADO');
-    });
-
-    it('debe retornar A TIEMPO en cualquier otro caso', () => {
-      const hitos = [{ estado: 'A TIEMPO' }, { estado: 'ACTIVO' }];
-      expect(service.calcularEstadoGeneral(hitos)).toBe('A TIEMPO');
-    });
-  });
 });

@@ -1,5 +1,6 @@
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Ficha } from '../ficha/ficha.entity';
+import { TipoVehiculo } from '../tipo-vehiculo/tipo-vehiculo.entity';
 
 @Entity('vin')
 export class Vin {
@@ -16,32 +17,12 @@ export class Vin {
   @Column({ nullable: true })
   marca: string;
 
-  @Column({ nullable: true })
-  modelo: string;
+  @Column({ name: 'tipo_vehiculo_id', nullable: true })
+  tipoVehiculoId: number;
 
-  @Column({ nullable: true })
-  segmento: string;
-
-  @Column({ name: 'linea_negocio', nullable: true })
-  lineaNegocio: string;
-
-  @Column({ name: 'tipo_vehiculo', nullable: true })
-  tipoVehiculo: string;
-
-  @Column({ nullable: true })
-  lote: string;
-
-  @Column({ name: 'ejecutivo_sap', nullable: true })
-  ejecutivoSap: string;
-
-  @Column({ name: 'tipo_financiamiento', nullable: true })
-  tipoFinanciamiento: string;
-
-  @Column({ name: 'eta_entrega_final', type: 'date', nullable: true })
-  etaEntregaFinal: Date;
-
-  @Column({ name: 'desviacion_acumulada', nullable: true })
-  desviacionAcumulada: number;
+  @ManyToOne(() => TipoVehiculo)
+  @JoinColumn({ name: 'tipo_vehiculo_id' })
+  tipoVehiculo: TipoVehiculo;
 
   @Column({ name: 'ultima_actualizacion', type: 'timestamp', nullable: true })
   ultimaActualizacion: Date;

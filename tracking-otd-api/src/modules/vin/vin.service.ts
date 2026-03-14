@@ -14,18 +14,19 @@ export class VinService {
   ) {}
 
   async findAll(filters: FilterVinDto) {
-    const { page = 1, limit = 20, lineaNegocio, tipoVehiculo, empresaId, busqueda } = filters;
+    const { page = 1, limit = 20, tipoVehiculoId, empresaId, busqueda } = filters;
     const qb = this.repo.createQueryBuilder('v')
       .leftJoinAndSelect('v.ficha', 'ficha')
       .leftJoinAndSelect('ficha.cliente', 'cliente')
-      .leftJoinAndSelect('cliente.empresa', 'empresa');
+      .leftJoinAndSelect('cliente.empresa', 'empresa')
+      .leftJoinAndSelect('v.tipoVehiculo', 'tv')
+      .leftJoin('staging_vin', 'sv', 'sv.vin = v.id');
 
-    if (lineaNegocio) qb.andWhere('v.linea_negocio = :lineaNegocio', { lineaNegocio });
-    if (tipoVehiculo) qb.andWhere('v.tipo_vehiculo = :tipoVehiculo', { tipoVehiculo });
+    if (tipoVehiculoId) qb.andWhere('v.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId });
     if (empresaId) qb.andWhere('empresa.id = :empresaId', { empresaId });
     if (busqueda) {
       qb.andWhere(
-        '(v.id ILIKE :q OR v.modelo ILIKE :q OR cliente.nombre ILIKE :q OR ficha.codigo ILIKE :q)',
+        '(v.id ILIKE :q OR sv.modelo_comercial ILIKE :q OR cliente.nombre ILIKE :q OR ficha.codigo ILIKE :q)',
         { q: `%${busqueda}%` },
       );
     }
@@ -42,7 +43,7 @@ export class VinService {
   async findOne(id: string): Promise<Vin & { estadoGeneral: string }> {
     const vin = await this.repo.findOne({
       where: { id },
-      relations: ['ficha', 'ficha.cliente', 'ficha.cliente.empresa'],
+      relations: ['ficha', 'ficha.cliente', 'ficha.cliente.empresa', 'tipoVehiculo'],
     });
     if (!vin) throw new NotFoundException(`VIN ${id} no encontrado`);
 

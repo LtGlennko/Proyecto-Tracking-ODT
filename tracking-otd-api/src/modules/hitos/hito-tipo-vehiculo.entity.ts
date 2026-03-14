@@ -1,9 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Unique } from 'typeorm';
 import { Hito } from './hito.entity';
 import { GrupoParalelo } from './grupo-paralelo.entity';
+import { TipoVehiculo } from '../tipo-vehiculo/tipo-vehiculo.entity';
 
 @Entity('hito_tipo_vehiculo')
-@Unique(['hitoId', 'tipoVehiculo'])
+@Unique(['hitoId', 'tipoVehiculoId'])
 export class HitoTipoVehiculo {
   @PrimaryGeneratedColumn()
   id: number;
@@ -15,8 +16,12 @@ export class HitoTipoVehiculo {
   @JoinColumn({ name: 'hito_id' })
   hito: Hito;
 
-  @Column({ name: 'tipo_vehiculo' })
-  tipoVehiculo: string;
+  @Column({ name: 'tipo_vehiculo_id' })
+  tipoVehiculoId: number;
+
+  @ManyToOne(() => TipoVehiculo)
+  @JoinColumn({ name: 'tipo_vehiculo_id' })
+  tipoVehiculo: TipoVehiculo;
 
   @Column({ name: 'grupo_paralelo_id', nullable: true })
   grupoParaleloId: number;

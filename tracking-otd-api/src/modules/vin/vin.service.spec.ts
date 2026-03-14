@@ -39,16 +39,16 @@ describe('VinService', () => {
   });
 
   describe('findAll()', () => {
-    it('debe filtrar por lineaNegocio', async () => {
+    it('debe filtrar por tipoVehiculoId', async () => {
       const qb = mockQb();
       repo.createQueryBuilder.mockReturnValue(qb);
-      qb.getManyAndCount.mockResolvedValue([[{ id: 'VIN1', lineaNegocio: 'Camiones' }], 1]);
+      qb.getManyAndCount.mockResolvedValue([[{ id: 'VIN1', tipoVehiculoId: 1 }], 1]);
 
-      const result = await service.findAll({ lineaNegocio: 'Camiones', page: 1, limit: 20 });
+      const result = await service.findAll({ tipoVehiculoId: 1, page: 1, limit: 20 });
 
       expect(qb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('linea_negocio'),
-        expect.objectContaining({ lineaNegocio: 'Camiones' }),
+        expect.stringContaining('tipo_vehiculo_id'),
+        expect.objectContaining({ tipoVehiculoId: 1 }),
       );
     });
 

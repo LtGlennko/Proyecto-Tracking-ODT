@@ -1,12 +1,10 @@
 import { Component, input } from '@angular/core';
 
-import { LineaNegocio } from '@kaufmann/shared/models';
-
 @Component({
     selector: 'kf-vehicle-icon',
     imports: [],
     template: `
-    <span [class]="sizeClass()" [attr.title]="lineaNegocio()">
+    <span [class]="sizeClass()" [attr.title]="slug()">
       @switch (iconKey()) {
         <!-- Camión / VC -->
         @case ('truck') {
@@ -56,14 +54,14 @@ import { LineaNegocio } from '@kaufmann/shared/models';
     `
 })
 export class VehicleIconComponent {
-  lineaNegocio = input<LineaNegocio | string>('VC');
+  slug = input<string>('camion');
   size = input<'sm' | 'md' | 'lg'>('md');
 
   iconKey = () => {
-    const l = this.lineaNegocio()?.toLowerCase() ?? '';
-    if (l.includes('bus')) return 'bus';
-    if (l.includes('maq')) return 'construction';
-    if (l === 'autos') return 'car';
+    const s = this.slug()?.toLowerCase() ?? '';
+    if (s.includes('bus')) return 'bus';
+    if (s.includes('maq')) return 'construction';
+    if (s.includes('vehiculo_ligero') || s.includes('auto')) return 'car';
     return 'truck';
   };
 

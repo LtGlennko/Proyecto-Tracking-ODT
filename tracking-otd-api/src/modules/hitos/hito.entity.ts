@@ -12,6 +12,9 @@ export class Hito {
   @Column({ nullable: true })
   carril: string;
 
+  @Column({ default: 0 })
+  orden: number;
+
   @OneToMany(() => Subetapa, s => s.hito)
   subetapas: Subetapa[];
 

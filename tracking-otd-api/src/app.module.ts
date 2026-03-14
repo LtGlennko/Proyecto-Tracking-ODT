@@ -17,6 +17,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { StagingModule } from './modules/staging/staging.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsuarioModule } from './modules/usuario/usuario.module';
+import { TipoVehiculoModule } from './modules/tipo-vehiculo/tipo-vehiculo.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -64,6 +65,7 @@ import { HealthModule } from './modules/health/health.module';
     StagingModule,
     AuthModule,
     UsuarioModule,
+    TipoVehiculoModule,
     HealthModule,
   ],
   controllers: [AppController],

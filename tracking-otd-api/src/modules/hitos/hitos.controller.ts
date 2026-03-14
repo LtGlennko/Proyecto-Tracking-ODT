@@ -52,32 +52,39 @@ export class HitosController {
 
   // ── Config por tipo de vehículo ──
 
-  @Get('config/:tipoVehiculo')
+  @Get('config/:tipoVehiculoId')
   @ApiOperation({ summary: 'Obtener config de hitos para un tipo de vehículo' })
-  getConfig(@Param('tipoVehiculo') tipoVehiculo: string) {
-    return this.service.getConfigByTipoVehiculo(tipoVehiculo);
+  getConfig(@Param('tipoVehiculoId', ParseIntPipe) tipoVehiculoId: number) {
+    return this.service.getConfigByTipoVehiculo(tipoVehiculoId);
   }
 
-  @Patch('config/:tipoVehiculo/hito/:hitoId')
+  @Patch('config/:tipoVehiculoId/hito/:hitoId')
   @Roles('superadministrador')
   @ApiOperation({ summary: 'Actualizar config de hito por tipo de vehículo [solo superadmin]' })
   upsertHitoConfig(
-    @Param('tipoVehiculo') tipoVehiculo: string,
+    @Param('tipoVehiculoId', ParseIntPipe) tipoVehiculoId: number,
     @Param('hitoId', ParseIntPipe) hitoId: number,
     @Body() dto: any,
   ) {
-    return this.service.upsertHitoConfig(tipoVehiculo, hitoId, dto);
+    return this.service.upsertHitoConfig(tipoVehiculoId, hitoId, dto);
   }
 
-  @Patch('config/:tipoVehiculo/subetapa/:subetapaId')
+  @Patch('config/:tipoVehiculoId/subetapa/:subetapaId')
   @Roles('superadministrador')
   @ApiOperation({ summary: 'Actualizar config de subetapa por tipo de vehículo [solo superadmin]' })
   upsertSubetapaConfig(
-    @Param('tipoVehiculo') tipoVehiculo: string,
+    @Param('tipoVehiculoId', ParseIntPipe) tipoVehiculoId: number,
     @Param('subetapaId', ParseIntPipe) subetapaId: number,
     @Body() dto: any,
   ) {
-    return this.service.upsertSubetapaConfig(tipoVehiculo, subetapaId, dto);
+    return this.service.upsertSubetapaConfig(tipoVehiculoId, subetapaId, dto);
+  }
+
+  @Delete('config/:tipoVehiculoId/reset')
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Restablecer config por defecto para un tipo de vehículo [solo superadmin]' })
+  resetConfig(@Param('tipoVehiculoId', ParseIntPipe) tipoVehiculoId: number) {
+    return this.service.resetConfigForTipo(tipoVehiculoId);
   }
 
   // ── Grupos paralelos ──
@@ -97,6 +104,6 @@ export class HitosController {
   @ApiOperation({ summary: 'Desasociar grupo paralelo para un tipo de vehículo [solo superadmin]' })
   deleteGrupo(
     @Param('id', ParseIntPipe) id: number,
-    @Query('tipoVehiculo') tipoVehiculo: string,
-  ) { return this.service.deleteGrupoForTipo(id, tipoVehiculo); }
+    @Query('tipoVehiculoId', ParseIntPipe) tipoVehiculoId: number,
+  ) { return this.service.deleteGrupoForTipo(id, tipoVehiculoId); }
 }

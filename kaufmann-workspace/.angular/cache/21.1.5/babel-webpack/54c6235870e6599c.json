@@ -1,1 +1,0 @@
-{"ast":null,"code":"export * from './lib/analytics-page.component';\nimport { AnalyticsPageComponent } from './lib/analytics-page.component';\nexport const ANALYTICS_ROUTES = [{\n  path: '',\n  component: AnalyticsPageComponent\n}];","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

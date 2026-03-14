@@ -67,7 +67,7 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
                   <td class="px-4 py-2.5 text-xs font-medium text-slate-700">{{ vin.clientName }}</td>
                   <td class="px-4 py-2.5">
                     <div class="flex items-center gap-2">
-                      <kf-vehicle-icon [lineaNegocio]="vin.lineaNegocio" size="sm" />
+                      <kf-vehicle-icon [slug]="vin.tipoVehiculo?.slug ?? 'camion'" size="sm" />
                       <span class="text-xs text-slate-600 truncate max-w-40">{{ vin.modelo }}</span>
                     </div>
                   </td>

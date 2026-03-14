@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Unique } from 'typeorm';
 import { Subetapa } from './subetapa.entity';
+import { TipoVehiculo } from '../tipo-vehiculo/tipo-vehiculo.entity';
 
 @Entity('subetapa_tipo_vehiculo')
-@Unique(['subetapaId', 'tipoVehiculo'])
+@Unique(['subetapaId', 'tipoVehiculoId'])
 export class SubetapaTipoVehiculo {
   @PrimaryGeneratedColumn()
   id: number;
@@ -14,8 +15,12 @@ export class SubetapaTipoVehiculo {
   @JoinColumn({ name: 'subetapa_id' })
   subetapa: Subetapa;
 
-  @Column({ name: 'tipo_vehiculo' })
-  tipoVehiculo: string;
+  @Column({ name: 'tipo_vehiculo_id' })
+  tipoVehiculoId: number;
+
+  @ManyToOne(() => TipoVehiculo)
+  @JoinColumn({ name: 'tipo_vehiculo_id' })
+  tipoVehiculo: TipoVehiculo;
 
   @Column()
   orden: number;

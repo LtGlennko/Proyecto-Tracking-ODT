@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, IsNull, Repository } from 'typeorm';
 import { Alerta } from './alerta.entity';
 import { VinHitoTracking } from '../tracking/vin-hito-tracking.entity';
 import { SlaService } from '../sla/sla.service';
@@ -20,8 +20,9 @@ export class AlertasScheduler {
   async detectarSlaVencidos() {
     this.logger.log('Iniciando detección de SLA vencidos...');
     try {
+      // Find hitos with a plan date set (SLA-tracked)
       const activos = await this.trackRepo.find({
-        where: { estado: 'ACTIVO' },
+        where: { fechaPlan: Not(IsNull()) },
         relations: ['hito'],
       });
 

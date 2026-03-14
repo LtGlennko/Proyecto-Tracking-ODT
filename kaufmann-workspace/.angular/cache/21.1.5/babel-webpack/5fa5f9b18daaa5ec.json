@@ -1,1 +1,0 @@
-{"ast":null,"code":"export const environment = {\n  production: true,\n  apiUrl: 'https://api.tracking-otd.kaufmann.com.pe/api',\n  msalClientId: 'YOUR_PROD_CLIENT_ID',\n  msalAuthority: 'https://login.microsoftonline.com/YOUR_PROD_TENANT_ID',\n  msalRedirectUri: 'https://tracking-otd.kaufmann.com.pe'\n};","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

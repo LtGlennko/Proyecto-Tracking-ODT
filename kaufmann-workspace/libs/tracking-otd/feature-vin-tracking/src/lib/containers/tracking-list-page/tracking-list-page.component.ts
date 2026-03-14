@@ -4,15 +4,24 @@ import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
-import { VinModel, EstadoVin, LineaNegocio, HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
+import { VinModel, EstadoVin, TipoVehiculoModel, FichaModel, HitoTracking, HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
 import { StatusBadgeComponent } from '@kaufmann/shared/ui';
 import { VehicleIconComponent } from '@kaufmann/shared/ui';
 import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracking-drawer.component';
+import { VisualMapComponent } from '../../components/visual-map/visual-map.component';
 import { formatDate } from '@kaufmann/shared/utils';
+
+/** Known tipo vehiculo options for filter dropdown */
+const TIPO_VEHICULO_FILTER_OPTIONS: TipoVehiculoModel[] = [
+  { id: 1, nombre: 'Camión', slug: 'camion', color: '#2563eb' },
+  { id: 2, nombre: 'Bus', slug: 'bus', color: '#0ea5e9' },
+  { id: 3, nombre: 'Maquinaria', slug: 'maquinaria', color: '#f97316' },
+  { id: 4, nombre: 'Vehículo Ligero', slug: 'vehiculo_ligero', color: '#a855f7' },
+];
 
 @Component({
     selector: 'kf-tracking-list-page',
-    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent],
+    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent],
     templateUrl: './tracking-list-page.component.html'
 })
 export class TrackingListPageComponent implements OnInit {
@@ -27,8 +36,19 @@ export class TrackingListPageComponent implements OnInit {
   searchInput$ = new Subject<string>();
   searchValue = signal('');
 
+  // Computed signals to reflect store filter state in UI controls
+  selectedTipoVehiculoId = computed(() => this.store.filtros().tipoVehiculoId?.toString() ?? '');
+  selectedEstado = computed(() => this.store.filtros().estado ?? '');
+
+  // Expand/collapse state for grouped view
+  expandedRows = signal<Set<string>>(new Set());
+
+  // VIN selected for inline visual map (null = show list)
+  visualMapVin = signal<VinModel | null>(null);
+
   estadoOptions: EstadoVin[] = ['A TIEMPO', 'DEMORADO', 'FINALIZADO'];
-  lineaOptions: LineaNegocio[] = ['VC', 'Autos', 'Maquinarias', 'Buses'];
+  tipoVehiculoOptions: TipoVehiculoModel[] = TIPO_VEHICULO_FILTER_OPTIONS;
+
   pagedVins = computed(() => {
     const all = this.store.vinsFiltrados();
     const start = (this.currentPage() - 1) * this.pageSize;
@@ -47,11 +67,22 @@ export class TrackingListPageComponent implements OnInit {
     });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    // Sync local searchValue with store (in case filters persisted from previous navigation)
+    const storeBusqueda = this.store.filtros().busqueda;
+    if (storeBusqueda) this.searchValue.set(storeBusqueda);
+
+    this.store.loadClientes();
+  }
 
   onSearch(value: string) {
     this.searchValue.set(value);
     this.searchInput$.next(value);
+  }
+
+  clearSearch() {
+    this.searchValue.set('');
+    this.searchInput$.next('');
   }
 
   setEstado(e: Event) {
@@ -60,14 +91,60 @@ export class TrackingListPageComponent implements OnInit {
     this.currentPage.set(1);
   }
 
-  setLinea(e: Event) {
-    const val = (e.target as HTMLSelectElement).value as LineaNegocio | '';
-    this.store.setFiltro('lineaNegocio', val || null);
+  setTipoVehiculo(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    this.store.setFiltro('tipoVehiculoId', val ? Number(val) : null);
     this.currentPage.set(1);
   }
 
   openDrawer(vinId: string, stageId?: string) {
     this.store.openDrawer(vinId, stageId);
+  }
+
+  // -- Grouped view helpers --
+
+  toggleExpand(id: string): void {
+    this.expandedRows.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  isExpanded(id: string): boolean {
+    return this.expandedRows().has(id);
+  }
+
+  flattenVins(fichas: FichaModel[]): VinModel[] {
+    return fichas.flatMap(f => f.vins);
+  }
+
+  calcStats(vins: VinModel[]): { total: number; delivered: number; onTime: number; delayed: number } {
+    return {
+      total: vins.length,
+      delivered: vins.filter(v => v.estadoGeneral === 'FINALIZADO').length,
+      onTime: vins.filter(v => v.estadoGeneral === 'A TIEMPO').length,
+      delayed: vins.filter(v => v.estadoGeneral === 'DEMORADO').length,
+    };
+  }
+
+  // -- Visual map --
+
+  showVisualMap(vin: VinModel, event: Event): void {
+    event.stopPropagation();
+    this.visualMapVin.set(vin);
+  }
+
+  closeVisualMap(): void {
+    this.visualMapVin.set(null);
+  }
+
+  // -- Shared helpers --
+
+  getSubetapaTooltip(stage: HitoTracking): string {
+    if (!stage.subStages || stage.subStages.length === 0) return stage.name;
+    const subs = stage.subStages.map(s => `  · ${s.name}`).join('\n');
+    return `${stage.name}\n${subs}`;
   }
 
   getHitoStatus(vin: VinModel, hitoId: string): string {
@@ -88,14 +165,14 @@ export class TrackingListPageComponent implements OnInit {
   prevPage() { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
   nextPage() { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
 
-  lineaBadge(linea: string): string {
-    switch (linea) {
-      case 'VC':
-      case 'Camiones': return 'bg-blue-100 text-blue-700 border border-blue-200';
-      case 'Autos':    return 'bg-purple-100 text-purple-700 border border-purple-200';
-      case 'Maquinarias': return 'bg-orange-100 text-orange-700 border border-orange-200';
-      case 'Buses':    return 'bg-sky-100 text-sky-700 border border-sky-200';
-      default:         return 'bg-slate-100 text-slate-600 border border-slate-200';
+  tipoBadgeClass(vin: VinModel): string {
+    const slug = vin.tipoVehiculo?.slug ?? '';
+    switch (slug) {
+      case 'camion':          return 'bg-blue-100 text-blue-700 border border-blue-200';
+      case 'vehiculo_ligero': return 'bg-purple-100 text-purple-700 border border-purple-200';
+      case 'maquinaria':      return 'bg-orange-100 text-orange-700 border border-orange-200';
+      case 'bus':             return 'bg-sky-100 text-sky-700 border border-sky-200';
+      default:                return 'bg-slate-100 text-slate-600 border border-slate-200';
     }
   }
 

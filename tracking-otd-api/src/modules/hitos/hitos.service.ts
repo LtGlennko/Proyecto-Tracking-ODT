@@ -22,11 +22,18 @@ export class HitosService {
   // ── Master CRUD ──
 
   findAllHitos(): Promise<Hito[]> {
-    return this.hitoRepo.find({ relations: ['subetapas'], order: { id: 'ASC' } });
+    return this.hitoRepo.find({
+      relations: ['subetapas'],
+      order: { orden: 'ASC', id: 'ASC' },
+    });
   }
 
   async findOneHito(id: number): Promise<Hito> {
-    const hito = await this.hitoRepo.findOne({ where: { id }, relations: ['subetapas'] });
+    const hito = await this.hitoRepo.findOne({
+      where: { id },
+      relations: ['subetapas'],
+      order: { subetapas: { orden: 'ASC', id: 'ASC' } },
+    });
     if (!hito) throw new NotFoundException(`Hito ${id} no encontrado`);
     return hito;
   }
@@ -59,7 +66,6 @@ export class HitosService {
   }
 
   async createGrupo(dto: Partial<GrupoParalelo>): Promise<GrupoParalelo> {
-    // Only one empty grupo allowed — delete grupos with zero references across ALL vehicle types
     const allGrupos = await this.grupoRepo.find({ order: { id: 'ASC' } });
     for (const g of allGrupos) {
       const globalCount = await this.hitoTvRepo.count({ where: { grupoParaleloId: g.id } });
@@ -75,14 +81,12 @@ export class HitosService {
     return this.grupoRepo.findOne({ where: { id } });
   }
 
-  async deleteGrupoForTipo(id: number, tipoVehiculo: string): Promise<void> {
+  async deleteGrupoForTipo(id: number, tipoVehiculoId: number): Promise<void> {
     const grupo = await this.grupoRepo.findOne({ where: { id } });
     if (!grupo) throw new NotFoundException(`Grupo ${id} no encontrado`);
 
-    // Only work with hito configs for THIS vehicle type
-    const configsForTipo = await this.hitoTvRepo.find({ where: { tipoVehiculo } });
+    const configsForTipo = await this.hitoTvRepo.find({ where: { tipoVehiculoId } });
 
-    // Determine visual order of grupos within this vehicle type by minOrden
     const grupoMinOrden = new Map<number, number>();
     for (const h of configsForTipo) {
       if (h.grupoParaleloId != null) {
@@ -91,11 +95,9 @@ export class HitosService {
       }
     }
 
-    // Sort grupos by visual position for this vehicle type
     const grupoIdsInTipo = [...new Set(
       configsForTipo.filter(h => h.grupoParaleloId != null).map(h => h.grupoParaleloId),
     )];
-    // Include the target grupo even if it has no hitos in this tipo
     if (!grupoIdsInTipo.includes(id)) grupoIdsInTipo.push(id);
 
     const sorted = grupoIdsInTipo
@@ -105,7 +107,6 @@ export class HitosService {
     const idx = sorted.findIndex(g => g.id === id);
     const prevGrupo = idx > 0 ? sorted[idx - 1] : null;
 
-    // Reassign only THIS vehicle type's hitos from the deleted grupo
     const hitosInGrupo = configsForTipo
       .filter(h => h.grupoParaleloId === id)
       .sort((a, b) => a.orden - b.orden);
@@ -126,7 +127,6 @@ export class HitosService {
       }
     }
 
-    // Only delete the grupo_paralelo record if NO other vehicle type references it
     const globalCount = await this.hitoTvRepo.count({ where: { grupoParaleloId: id } });
     if (globalCount === 0) {
       await this.grupoRepo.delete(id);
@@ -135,27 +135,25 @@ export class HitosService {
 
   // ── Config por tipo de vehículo ──
 
-  async getConfigByTipoVehiculo(tipoVehiculo: string) {
+  async getConfigByTipoVehiculo(tipoVehiculoId: number) {
     const hitoConfigs = await this.hitoTvRepo.find({
-      where: { tipoVehiculo },
+      where: { tipoVehiculoId },
       relations: ['hito', 'hito.subetapas', 'grupoParalelo'],
       order: { orden: 'ASC' },
     });
 
     const subConfigs = await this.subTvRepo.find({
-      where: { tipoVehiculo },
+      where: { tipoVehiculoId },
       order: { orden: 'ASC' },
     });
 
     const subConfigMap = new Map(subConfigs.map(sc => [sc.subetapaId, sc]));
 
-    // Find hitos without config for this vehicle type and add them with defaults
     const configuredHitoIds = new Set(hitoConfigs.map(hc => hc.hitoId));
-    const allHitos = await this.hitoRepo.find({ relations: ['subetapas'], order: { id: 'ASC' } });
+    const allHitos = await this.hitoRepo.find({ relations: ['subetapas'], order: { orden: 'ASC', id: 'ASC' } });
     const unconfiguredHitos = allHitos.filter(h => !configuredHitoIds.has(h.id));
 
     if (unconfiguredHitos.length > 0) {
-      // Determine last grupo — create one if none exists
       let lastGrupoId: number | null = null;
       const withGrupo = hitoConfigs.filter(hc => hc.grupoParaleloId != null);
       if (withGrupo.length > 0) {
@@ -174,19 +172,19 @@ export class HitosService {
       for (const hito of unconfiguredHitos) {
         maxOrden++;
         await this.hitoTvRepo.save(this.hitoTvRepo.create({
-          tipoVehiculo,
+          tipoVehiculoId,
           hitoId: hito.id,
           orden: maxOrden,
           activo: true,
           grupoParaleloId: lastGrupoId,
-          carril: 'financiero',
+          carril: hito.carril || 'financiero',
         }));
 
-        // Also create default subetapa configs
-        for (let i = 0; i < (hito.subetapas || []).length; i++) {
-          const sub = hito.subetapas[i];
+        const sortedSubs = [...(hito.subetapas || [])].sort((a, b) => (a.orden || 0) - (b.orden || 0) || a.id - b.id);
+        for (let i = 0; i < sortedSubs.length; i++) {
+          const sub = sortedSubs[i];
           await this.subTvRepo.save(this.subTvRepo.create({
-            tipoVehiculo,
+            tipoVehiculoId,
             subetapaId: sub.id,
             orden: i + 1,
             activo: true,
@@ -194,8 +192,7 @@ export class HitosService {
         }
       }
 
-      // Re-fetch with the newly created configs
-      return this.getConfigByTipoVehiculo(tipoVehiculo);
+      return this.getConfigByTipoVehiculo(tipoVehiculoId);
     }
 
     return hitoConfigs.map(hc => ({
@@ -222,17 +219,17 @@ export class HitosService {
   }
 
   async upsertHitoConfig(
-    tipoVehiculo: string,
+    tipoVehiculoId: number,
     hitoId: number,
     dto: { orden?: number; activo?: boolean; grupoParaleloId?: number | null; carril?: string },
   ): Promise<HitoTipoVehiculo> {
-    const config = await this.hitoTvRepo.findOne({ where: { tipoVehiculo, hitoId } });
+    const config = await this.hitoTvRepo.findOne({ where: { tipoVehiculoId, hitoId } });
     if (config) {
       await this.hitoTvRepo.update(config.id, dto);
       return this.hitoTvRepo.findOne({ where: { id: config.id } });
     }
     return this.hitoTvRepo.save(this.hitoTvRepo.create({
-      tipoVehiculo, hitoId,
+      tipoVehiculoId, hitoId,
       orden: dto.orden ?? 0,
       activo: dto.activo ?? true,
       grupoParaleloId: dto.grupoParaleloId ?? null,
@@ -241,20 +238,36 @@ export class HitosService {
   }
 
   async upsertSubetapaConfig(
-    tipoVehiculo: string,
+    tipoVehiculoId: number,
     subetapaId: number,
     dto: { orden?: number; activo?: boolean },
   ): Promise<SubetapaTipoVehiculo> {
-    const config = await this.subTvRepo.findOne({ where: { tipoVehiculo, subetapaId } });
+    const config = await this.subTvRepo.findOne({ where: { tipoVehiculoId, subetapaId } });
     if (config) {
       await this.subTvRepo.update(config.id, dto);
       return this.subTvRepo.findOne({ where: { id: config.id } });
     }
     return this.subTvRepo.save(this.subTvRepo.create({
-      tipoVehiculo, subetapaId,
+      tipoVehiculoId, subetapaId,
       orden: dto.orden ?? 0,
       activo: dto.activo ?? true,
     }));
+  }
+
+  // ── Reset config por tipo de vehículo ──
+
+  async resetConfigForTipo(tipoVehiculoId: number): Promise<void> {
+    await this.subTvRepo.delete({ tipoVehiculoId });
+    await this.hitoTvRepo.delete({ tipoVehiculoId });
+
+    // Limpiar grupos paralelos huérfanos (sin hitos asociados en ningún tipo)
+    const allGrupos = await this.grupoRepo.find();
+    for (const g of allGrupos) {
+      const count = await this.hitoTvRepo.count({ where: { grupoParaleloId: g.id } });
+      if (count === 0) {
+        await this.grupoRepo.delete(g.id);
+      }
+    }
   }
 
   // ── Legacy SubetapaConfig ──

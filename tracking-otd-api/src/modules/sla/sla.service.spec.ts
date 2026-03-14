@@ -36,8 +36,8 @@ describe('SlaService', () => {
   describe('resolve()', () => {
     it('debe retornar la regla más específica (mayor score de dimensiones)', async () => {
       const rules: Partial<SlaConfig>[] = [
-        { id: 1, empresaId: 1, subetapaId: null, lineaNegocio: null, tipoVehiculo: null, diasObjetivo: 5, diasTolerancia: 2 },
-        { id: 2, empresaId: 1, subetapaId: 14, lineaNegocio: null, tipoVehiculo: null, diasObjetivo: 3, diasTolerancia: 1 },
+        { id: 1, empresaId: 1, subetapaId: null, tipoVehiculoId: null, diasObjetivo: 5, diasTolerancia: 2 },
+        { id: 2, empresaId: 1, subetapaId: 14, tipoVehiculoId: null, diasObjetivo: 3, diasTolerancia: 1 },
       ];
       repo.find.mockResolvedValue(rules);
 
@@ -55,8 +55,8 @@ describe('SlaService', () => {
 
     it('debe preferir empresa+subetapa sobre solo empresa', async () => {
       const rules: Partial<SlaConfig>[] = [
-        { id: 1, empresaId: 1, subetapaId: null, lineaNegocio: null, tipoVehiculo: null, diasObjetivo: 10, diasTolerancia: 5 },
-        { id: 2, empresaId: 1, subetapaId: 5, lineaNegocio: null, tipoVehiculo: null, diasObjetivo: 3, diasTolerancia: 1 },
+        { id: 1, empresaId: 1, subetapaId: null, tipoVehiculoId: null, diasObjetivo: 10, diasTolerancia: 5 },
+        { id: 2, empresaId: 1, subetapaId: 5, tipoVehiculoId: null, diasObjetivo: 3, diasTolerancia: 1 },
       ];
       repo.find.mockResolvedValue(rules);
 
@@ -66,7 +66,7 @@ describe('SlaService', () => {
 
     it('debe ignorar dimensiones que no coincidan con el contexto', async () => {
       const rules: Partial<SlaConfig>[] = [
-        { id: 1, empresaId: 2, subetapaId: null, lineaNegocio: null, tipoVehiculo: null, diasObjetivo: 10, diasTolerancia: 5 },
+        { id: 1, empresaId: 2, subetapaId: null, tipoVehiculoId: null, diasObjetivo: 10, diasTolerancia: 5 },
       ];
       repo.find.mockResolvedValue(rules);
 

@@ -6,8 +6,8 @@ export function addDays(baseDate: string, days: number): string {
   return d.toISOString().split('T')[0];
 }
 
-function createImportacion(startDate: string, status: HitoTracking['status'], lineaNegocio?: string): HitoTracking {
-  const isBus = lineaNegocio === 'Buses';
+function createImportacion(startDate: string, status: HitoTracking['status'], tipoVehiculoSlug?: string): HitoTracking {
+  const isBus = tipoVehiculoSlug === 'bus';
   const offset = isBus ? 5 : 0;
   const endBaseline = addDays(startDate, 30 + offset);
   const endReal = status === 'delayed' ? addDays(startDate, 38 + offset) : addDays(startDate, 29 + offset);
@@ -124,8 +124,8 @@ function createEntrega(progEnd: string, status: HitoTracking['status']): HitoTra
   };
 }
 
-export function generateStages(startDate: string, scenario: 'ontime' | 'delayed', lineaNegocio: string): HitoTracking[] {
-  const s1 = createImportacion(startDate, 'completed', lineaNegocio);
+export function generateStages(startDate: string, scenario: 'ontime' | 'delayed', tipoVehiculoSlug: string): HitoTracking[] {
+  const s1 = createImportacion(startDate, 'completed', tipoVehiculoSlug);
   const s2 = createAsignacion(s1.real.end!, 'completed');
   const sPDI = createPDI(s2.real.end!, scenario === 'delayed' ? 'delayed' : 'active');
   const s3 = createCredito(s2.real.end!, 'completed');

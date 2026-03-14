@@ -24,13 +24,6 @@ export class VinHitoTracking {
   @Column({ name: 'fecha_plan', type: 'date', nullable: true })
   fechaPlan: Date;
 
-  @Column({ name: 'fecha_real', type: 'date', nullable: true })
-  fechaReal: Date;
-
-  // diferencia_dias: NEVER persisted, calculated at service level
-  @Column({ nullable: true })
-  estado: string;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

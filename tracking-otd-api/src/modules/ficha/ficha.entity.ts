@@ -22,6 +22,9 @@ export class Ficha {
   @Column({ name: 'fecha_creacion', type: 'date', nullable: true })
   fechaCreacion: Date;
 
+  @Column({ nullable: true })
+  ejecutivo: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

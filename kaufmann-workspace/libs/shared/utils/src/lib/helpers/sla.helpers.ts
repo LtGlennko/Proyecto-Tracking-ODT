@@ -4,16 +4,14 @@ function countDimensions(config: SlaConfigModel): number {
   let count = 0;
   if (config.empresaId != null) count++;
   if (config.subetapaId != null) count++;
-  if (config.lineaNegocio != null) count++;
-  if (config.tipoVehiculo != null) count++;
+  if (config.tipoVehiculoId != null) count++;
   return count;
 }
 
 function matches(config: SlaConfigModel, context: SlaContext): boolean {
   if (config.empresaId != null && config.empresaId !== context.empresaId) return false;
   if (config.subetapaId != null && config.subetapaId !== context.subetapaId) return false;
-  if (config.lineaNegocio != null && config.lineaNegocio !== context.lineaNegocio) return false;
-  if (config.tipoVehiculo != null && config.tipoVehiculo !== context.tipoVehiculo) return false;
+  if (config.tipoVehiculoId != null && config.tipoVehiculoId !== context.tipoVehiculoId) return false;
   return true;
 }
 

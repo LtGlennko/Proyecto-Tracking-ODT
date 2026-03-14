@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Empresa } from '../empresa/empresa.entity';
 import { Subetapa } from '../hitos/subetapa.entity';
+import { TipoVehiculo } from '../tipo-vehiculo/tipo-vehiculo.entity';
 
 @Entity('sla_config')
 export class SlaConfig {
@@ -21,11 +22,12 @@ export class SlaConfig {
   @JoinColumn({ name: 'subetapa_id' })
   subetapa: Subetapa;
 
-  @Column({ name: 'linea_negocio', nullable: true })
-  lineaNegocio: string;
+  @Column({ name: 'tipo_vehiculo_id', nullable: true })
+  tipoVehiculoId: number;
 
-  @Column({ name: 'tipo_vehiculo', nullable: true })
-  tipoVehiculo: string;
+  @ManyToOne(() => TipoVehiculo)
+  @JoinColumn({ name: 'tipo_vehiculo_id' })
+  tipoVehiculo: TipoVehiculo;
 
   @Column({ name: 'dias_objetivo', nullable: true })
   diasObjetivo: number;

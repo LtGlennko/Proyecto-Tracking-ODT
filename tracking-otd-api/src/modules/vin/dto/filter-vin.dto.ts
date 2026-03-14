@@ -4,15 +4,11 @@ import { Type } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 export class FilterVinDto extends PaginationDto {
-  @ApiPropertyOptional({ example: 'Camiones' })
+  @ApiPropertyOptional({ example: 1, description: 'Filtrar por tipo de vehículo (ID)' })
   @IsOptional()
-  @IsString()
-  lineaNegocio?: string;
-
-  @ApiPropertyOptional({ example: 'Bus' })
-  @IsOptional()
-  @IsString()
-  tipoVehiculo?: string;
+  @Type(() => Number)
+  @IsInt()
+  tipoVehiculoId?: number;
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()

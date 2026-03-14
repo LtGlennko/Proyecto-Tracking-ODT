@@ -47,9 +47,9 @@ import { HitoTracking } from '@kaufmann/shared/models';
         {{ hito().name }}
       </span>
       <!-- Tooltip on hover -->
-      <div class="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-white rounded-lg shadow-md border border-slate-200 p-3 min-w-48 text-xs">
+      <div class="absolute bottom-full mb-2 hidden group-hover:block z-20 bg-white rounded-lg shadow-lg border border-slate-200 p-3 min-w-56 text-xs">
         <p class="font-semibold text-slate-800 mb-1">{{ hito().name }}</p>
-        <div class="space-y-1 text-slate-600">
+        <div class="space-y-1 text-slate-600 mb-2">
           <div class="flex justify-between gap-4">
             <span class="text-slate-400">Baseline:</span>
             <span>{{ formatD(hito().baseline.end) }}</span>
@@ -65,6 +65,23 @@ import { HitoTracking } from '@kaufmann/shared/models';
             </span>
           </div>
         </div>
+        <!-- Subetapas -->
+        @if (hito().subStages.length > 0) {
+          <div class="border-t border-slate-100 pt-2 mt-2 space-y-1.5">
+            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Subetapas</p>
+            @for (sub of hito().subStages; track sub.id) {
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span [class]="subDotClass(sub.status)"></span>
+                  <span class="truncate text-slate-600">{{ sub.name }}</span>
+                </div>
+                <span [class]="sub.real.end ? 'text-slate-700 font-medium' : 'text-slate-400'" class="whitespace-nowrap">
+                  {{ sub.real.end ? formatD(sub.real.end) : '—' }}
+                </span>
+              </div>
+            }
+          </div>
+        }
       </div>
     </div>
     `
@@ -77,6 +94,16 @@ export class StageNodeComponent {
     if (!d) return '-';
     const date = new Date(d);
     return new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: 'short' }).format(date);
+  }
+
+  subDotClass(status: string): string {
+    const base = 'w-1.5 h-1.5 rounded-full flex-shrink-0';
+    switch (status) {
+      case 'completed': return `${base} bg-emerald-500`;
+      case 'active':    return `${base} bg-blue-500`;
+      case 'delayed':   return `${base} bg-red-500`;
+      default:          return `${base} bg-slate-300`;
+    }
   }
 
   nodeClass = computed(() => {

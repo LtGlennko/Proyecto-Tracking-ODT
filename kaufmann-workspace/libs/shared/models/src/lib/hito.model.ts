@@ -24,6 +24,7 @@ export interface HitoTracking {
   carril?: CarrilHito;
   status: EstadoHito;
   isParallel?: boolean;
+  grupoParaleloId?: number | null;
   baseline: DateSet;
   plan: DateSet;
   real: DateSet;

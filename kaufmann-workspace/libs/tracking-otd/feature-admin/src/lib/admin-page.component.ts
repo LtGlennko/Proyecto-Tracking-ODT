@@ -2,6 +2,7 @@ import { Component, signal, inject, OnInit, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDragPreview, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SlaConfigModel } from '@kaufmann/shared/models';
 import { MOCK_SLA_CONFIGS } from '@kaufmann/tracking-otd/data-access';
 import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
@@ -101,16 +102,15 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
 ];
 
 const TIPO_VEHICULO_OPTIONS = [
-  { value: 'camion', label: 'Camiones' },
-  { value: 'bus', label: 'Buses' },
-  { value: 'maquinaria', label: 'Maquinaria' },
-  { value: 'vehiculo_ligero', label: 'Vehículo Ligero' },
-  { value: 'leasing', label: 'Leasing' },
+  { id: 1, label: 'Camiones' },
+  { id: 2, label: 'Buses' },
+  { id: 3, label: 'Maquinaria' },
+  { id: 4, label: 'Vehículo Ligero' },
 ];
 
 @Component({
     selector: 'kf-admin-page',
-    imports: [FormsModule, HitoConfigSwimlaneComponent, ProcessPreviewComponent],
+    imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPreview, HitoConfigSwimlaneComponent, ProcessPreviewComponent],
     template: `
     <div class="p-6 space-y-5">
       <div>
@@ -133,25 +133,45 @@ const TIPO_VEHICULO_OPTIONS = [
       <!-- ═══ Tab 1: Hitos Maestros ═══ -->
       @if (activeTab() === 'hitos') {
         <div class="space-y-3">
-          <p class="text-xs text-slate-400">Catálogo maestro de hitos y subetapas. Edita nombre, categoría y el campo de staging_vin asociado.</p>
+          <p class="text-xs text-slate-400">Catálogo maestro de hitos y subetapas. Arrastra para reordenar, selecciona el carril por defecto y edita subetapas.</p>
 
           @if (loadingMaster()) {
             <div class="flex justify-center py-8">
               <span class="text-slate-400 text-sm">Cargando hitos...</span>
             </div>
           } @else {
+            <div cdkDropList [cdkDropListData]="hitosMaster()" (cdkDropListDropped)="onDropHito($event)" class="space-y-3">
             @for (hito of hitosMaster(); track hito.id) {
-              <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              <div cdkDrag [cdkDragData]="hito" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <!-- Hito header -->
-                <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
-                  (click)="toggleMasterExpanded(hito.id)">
-                  <span class="text-slate-400 text-xs w-5 text-center">{{ expandedMasterHitoId() === hito.id ? '▼' : '▶' }}</span>
-                  <span class="text-sm font-semibold text-slate-800 flex-1">{{ hito.nombre }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full font-medium"
-                    [class]="getCarrilClass(hito.carril)">
-                    {{ hito.carril }}
+                <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors">
+                  <!-- Drag handle -->
+                  <span cdkDragHandle class="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" title="Arrastrar para reordenar">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8-16a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
                   </span>
-                  <span class="text-xs text-slate-400">{{ hito.subetapas.length }} subetapas</span>
+                  <span class="text-sm font-semibold text-slate-800 flex-1 select-none" (click)="toggleMasterExpanded(hito.id)">{{ hito.nombre }}</span>
+
+                  <!-- Carril selector -->
+                  <div class="flex rounded-md border border-slate-200 overflow-hidden">
+                    <button (click)="changeMasterCarril(hito, 'financiero'); $event.stopPropagation()"
+                      class="px-2 py-1 text-xs font-medium transition-colors"
+                      [class]="hito.carril === 'financiero' ? 'bg-violet-600 text-white' : 'bg-white text-slate-400 hover:bg-slate-50'">
+                      Financiero
+                    </button>
+                    <button (click)="changeMasterCarril(hito, 'operativo'); $event.stopPropagation()"
+                      class="px-2 py-1 text-xs font-medium border-l border-slate-200 transition-colors"
+                      [class]="hito.carril === 'operativo' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 hover:bg-slate-50'">
+                      Operativo
+                    </button>
+                  </div>
+
+                  <span class="text-xs text-slate-400 select-none" (click)="toggleMasterExpanded(hito.id)">{{ hito.subetapas.length }} subetapas</span>
+                  <span class="text-slate-400 text-xs w-5 text-center select-none" (click)="toggleMasterExpanded(hito.id)">{{ expandedMasterHitoId() === hito.id ? '▼' : '▶' }}</span>
+                </div>
+
+                <!-- Drag preview -->
+                <div *cdkDragPreview class="bg-white rounded-lg border-2 border-blue-400 shadow-lg px-4 py-3 text-sm font-semibold text-slate-800 w-64">
+                  {{ hito.nombre }}
                 </div>
 
                 <!-- Subetapas table -->
@@ -159,7 +179,8 @@ const TIPO_VEHICULO_OPTIONS = [
                   <table class="w-full text-sm">
                     <thead class="bg-slate-50 border-b border-slate-200">
                       <tr>
-                        <th class="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase w-10">#</th>
+                        <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-8"></th>
+                        <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-10">#</th>
                         <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Subetapa</th>
                         <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Categoría</th>
                         <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Campo staging_vin</th>
@@ -168,10 +189,15 @@ const TIPO_VEHICULO_OPTIONS = [
                         }
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody cdkDropList [cdkDropListData]="hito.subetapas" (cdkDropListDropped)="onDropSubetapa(hito.id, $event)">
                       @for (sub of hito.subetapas; track sub.id; let i = $index) {
-                        <tr class="border-b border-slate-100 hover:bg-slate-50">
-                          <td class="px-4 py-2.5 text-slate-400 text-xs">{{ i + 1 }}</td>
+                        <tr cdkDrag [cdkDragData]="sub" class="border-b border-slate-100 hover:bg-slate-50">
+                          <td class="px-2 py-2.5 text-center">
+                            <span cdkDragHandle class="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing inline-block">
+                              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8-16a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+                            </span>
+                          </td>
+                          <td class="px-2 py-2.5 text-slate-400 text-xs">{{ i + 1 }}</td>
                           <td class="px-3 py-2.5">
                             @if (editingMasterSubId() === sub.id) {
                               <input type="text" [ngModel]="editSubNombre()" (ngModelChange)="editSubNombre.set($event)"
@@ -237,7 +263,7 @@ const TIPO_VEHICULO_OPTIONS = [
                         </tr>
                       } @empty {
                         <tr>
-                          <td colspan="5" class="px-4 py-6 text-center text-slate-400 text-sm">Sin subetapas</td>
+                          <td colspan="6" class="px-4 py-6 text-center text-slate-400 text-sm">Sin subetapas</td>
                         </tr>
                       }
                     </tbody>
@@ -249,6 +275,7 @@ const TIPO_VEHICULO_OPTIONS = [
                 No hay hitos configurados
               </div>
             }
+            </div>
           }
         </div>
       }
@@ -262,10 +289,10 @@ const TIPO_VEHICULO_OPTIONS = [
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium text-slate-600">Tipo de vehículo:</span>
             <div class="flex gap-1">
-              @for (tv of tipoVehiculoOptions; track tv.value) {
-                <button (click)="selectTipoVehiculo(tv.value)"
+              @for (tv of tipoVehiculoOptions; track tv.id) {
+                <button (click)="selectTipoVehiculo(tv.id)"
                   class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border"
-                  [class]="selectedTipoVehiculo() === tv.value
+                  [class]="selectedTipoVehiculo() === tv.id
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
                   {{ tv.label }}
@@ -301,7 +328,56 @@ const TIPO_VEHICULO_OPTIONS = [
                 Vista previa
               </span>
             </button>
+
+            @if (auth.isSuperAdmin()) {
+              <div class="ml-auto">
+                <button (click)="showResetConfirm.set(true)"
+                  class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  [disabled]="resetting() || loadingConfig()">
+                  <span class="flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    {{ resetting() ? 'Restableciendo...' : 'Restablecer por defecto' }}
+                  </span>
+                </button>
+              </div>
+            }
           </div>
+
+          <!-- Modal confirmación reset -->
+          @if (showResetConfirm()) {
+            <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" (click)="showResetConfirm.set(false)">
+              <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4 space-y-4" (click)="$event.stopPropagation()">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-800">Restablecer flujo por defecto</h3>
+                    <p class="text-xs text-slate-500">{{ getTipoVehiculoLabel(selectedTipoVehiculo()) }}</p>
+                  </div>
+                </div>
+                <p class="text-sm text-slate-600">
+                  Se eliminarán todas las configuraciones personalizadas de hitos y subetapas para este tipo de vehículo. El flujo volverá al orden y carriles definidos en los hitos maestros.
+                </p>
+                <p class="text-xs text-amber-600 font-medium">Esta acción no se puede deshacer.</p>
+                <div class="flex justify-end gap-2 pt-2">
+                  <button (click)="showResetConfirm.set(false)"
+                    class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                    Cancelar
+                  </button>
+                  <button (click)="resetConfigToDefault()"
+                    class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                    [disabled]="resetting()">
+                    {{ resetting() ? 'Restableciendo...' : 'Restablecer' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
 
           @if (loadingConfig()) {
             <div class="flex justify-center py-8">
@@ -347,7 +423,6 @@ const TIPO_VEHICULO_OPTIONS = [
                 <tr>
                   <th class="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">ID</th>
                   <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Empresa</th>
-                  <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Línea</th>
                   <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Tipo Vehículo</th>
                   <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Objetivo</th>
                   <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Tolerancia</th>
@@ -359,8 +434,7 @@ const TIPO_VEHICULO_OPTIONS = [
                   <tr class="border-b border-slate-100 hover:bg-slate-50">
                     <td class="px-4 py-2.5 text-slate-500 text-xs">{{ sla.id }}</td>
                     <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.empresaId ?? '— Todas' }}</td>
-                    <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.lineaNegocio ?? '— Todas' }}</td>
-                    <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.tipoVehiculo ?? '— Todos' }}</td>
+                    <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.tipoVehiculoId ?? '— Todos' }}</td>
                     <td class="px-3 py-2.5 text-center">
                       <span class="text-emerald-700 font-semibold text-xs">{{ sla.diasObjetivo }}d</span>
                     </td>
@@ -546,11 +620,13 @@ export class AdminPageComponent implements OnInit {
 
   // ── Tab 2: Config por Tipo ──
   tipoVehiculoOptions = TIPO_VEHICULO_OPTIONS;
-  selectedTipoVehiculo = signal('camion');
+  selectedTipoVehiculo = signal(1);
   hitoConfigs = signal<HitoConfigView[]>([]);
   gruposParalelos = signal<GrupoParaleloApi[]>([]);
   loadingConfig = signal(false);
   showPreview = signal(false);
+  showResetConfirm = signal(false);
+  resetting = signal(false);
 
   // ── Tab 3: SLA ──
   slaConfigs = signal<SlaConfigModel[]>([...MOCK_SLA_CONFIGS]);
@@ -655,19 +731,78 @@ export class AdminPageComponent implements OnInit {
     }
   }
 
+  /** Drag-drop: reorder master hitos */
+  async onDropHito(event: CdkDragDrop<HitoMaster[]>): Promise<void> {
+    if (event.previousIndex === event.currentIndex) return;
+    const items = [...this.hitosMaster()];
+    moveItemInArray(items, event.previousIndex, event.currentIndex);
+    this.hitosMaster.set(items);
+
+    // Persist new order via PATCH /v1/hitos/:id
+    const patchCalls = items.map((hito, i) =>
+      firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/${hito.id}`, { orden: i + 1 }))
+    );
+    try {
+      await Promise.all(patchCalls);
+    } catch (err) {
+      console.error('Error reordering master hitos:', err);
+      await this.loadMasterHitos();
+    }
+  }
+
+  /** Drag-drop: reorder subetapas within a master hito */
+  async onDropSubetapa(hitoId: number, event: CdkDragDrop<SubetapaMaster[]>): Promise<void> {
+    if (event.previousIndex === event.currentIndex) return;
+    const hitos = this.hitosMaster();
+    const hito = hitos.find(h => h.id === hitoId);
+    if (!hito) return;
+
+    const subs = [...hito.subetapas];
+    moveItemInArray(subs, event.previousIndex, event.currentIndex);
+
+    // Optimistic update
+    this.hitosMaster.set(hitos.map(h => h.id === hitoId ? { ...h, subetapas: subs } : h));
+
+    // Persist new order via PATCH /v1/hitos/subetapas/:id
+    const patchCalls = subs.map((sub, i) =>
+      firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/subetapas/${sub.id}`, { orden: i + 1 }))
+    );
+    try {
+      await Promise.all(patchCalls);
+    } catch (err) {
+      console.error('Error reordering master subetapas:', err);
+      await this.loadMasterHitos();
+    }
+  }
+
+  /** Change default carril for a master hito */
+  async changeMasterCarril(hito: HitoMaster, carril: string): Promise<void> {
+    if (hito.carril === carril) return;
+
+    // Optimistic update
+    this.hitosMaster.set(this.hitosMaster().map(h => h.id === hito.id ? { ...h, carril } : h));
+
+    try {
+      await firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/${hito.id}`, { carril }));
+    } catch (err) {
+      console.error('Error updating carril:', err);
+      await this.loadMasterHitos();
+    }
+  }
+
   // ══════════════════════════════════════════
   // Tab 2: Config por Tipo de Vehículo
   // ══════════════════════════════════════════
 
-  selectTipoVehiculo(tipo: string): void {
-    this.selectedTipoVehiculo.set(tipo);
+  selectTipoVehiculo(tipoId: number): void {
+    this.selectedTipoVehiculo.set(tipoId);
   }
 
-  async loadHitoConfig(tipoVehiculo: string, silent = false): Promise<void> {
+  async loadHitoConfig(tipoVehiculoId: number, silent = false): Promise<void> {
     if (!silent) this.loadingConfig.set(true);
     try {
       const data = await firstValueFrom(
-        this.http.get<HitoConfigView[]>(`${this.apiUrl}/v1/hitos/config/${tipoVehiculo}`)
+        this.http.get<HitoConfigView[]>(`${this.apiUrl}/v1/hitos/config/${tipoVehiculoId}`)
       );
       this.hitoConfigs.set(data);
     } catch (err) {
@@ -801,7 +936,7 @@ export class AdminPageComponent implements OnInit {
         if (!stillUsed) {
           try {
             await firstValueFrom(
-              this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${oldGrupoId}?tipoVehiculo=${tipo}`)
+              this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${oldGrupoId}?tipoVehiculoId=${tipo}`)
             );
             await this.loadGruposParalelos();
             await this.loadHitoConfig(tipo, true);
@@ -880,7 +1015,7 @@ export class AdminPageComponent implements OnInit {
     const tipo = this.selectedTipoVehiculo();
     try {
       await firstValueFrom(
-        this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${grupoId}?tipoVehiculo=${tipo}`)
+        this.http.delete(`${this.apiUrl}/v1/hitos/grupos-paralelos/${grupoId}?tipoVehiculoId=${tipo}`)
       );
       await this.loadGruposParalelos();
       await this.loadHitoConfig(tipo, true);
@@ -931,6 +1066,28 @@ export class AdminPageComponent implements OnInit {
       console.error('Error toggling subetapa:', err);
       await this.loadHitoConfig(tipo, true);
     }
+  }
+
+  /** Reset config to defaults — deletes all per-tipo config, then reloads (auto-creates defaults) */
+  async resetConfigToDefault(): Promise<void> {
+    const tipo = this.selectedTipoVehiculo();
+    this.resetting.set(true);
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/v1/hitos/config/${tipo}/reset`)
+      );
+      this.showResetConfirm.set(false);
+      await this.loadGruposParalelos();
+      await this.loadHitoConfig(tipo);
+    } catch (err) {
+      console.error('Error resetting config:', err);
+    } finally {
+      this.resetting.set(false);
+    }
+  }
+
+  getTipoVehiculoLabel(id: number): string {
+    return this.tipoVehiculoOptions.find(t => t.id === id)?.label ?? '';
   }
 
   // ══════════════════════════════════════════

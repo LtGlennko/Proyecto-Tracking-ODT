@@ -12,17 +12,20 @@ export class SlaService {
     private repo: Repository<SlaConfig>,
   ) {}
 
-  async findAll(filters: { empresaId?: number; subetapaId?: number; lineaNegocio?: string }) {
-    const qb = this.repo.createQueryBuilder('s').leftJoinAndSelect('s.empresa', 'empresa').leftJoinAndSelect('s.subetapa', 'subetapa');
+  async findAll(filters: { empresaId?: number; subetapaId?: number; tipoVehiculoId?: number }) {
+    const qb = this.repo.createQueryBuilder('s')
+      .leftJoinAndSelect('s.empresa', 'empresa')
+      .leftJoinAndSelect('s.subetapa', 'subetapa')
+      .leftJoinAndSelect('s.tipoVehiculo', 'tv');
     if (filters.empresaId) qb.andWhere('s.empresa_id = :empresaId', { empresaId: filters.empresaId });
     if (filters.subetapaId) qb.andWhere('s.subetapa_id = :subetapaId', { subetapaId: filters.subetapaId });
-    if (filters.lineaNegocio) qb.andWhere('s.linea_negocio = :lineaNegocio', { lineaNegocio: filters.lineaNegocio });
+    if (filters.tipoVehiculoId) qb.andWhere('s.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId: filters.tipoVehiculoId });
     const items = await qb.getMany();
     return items.map(i => ({ ...i, diasCritico: (i.diasObjetivo || 0) + (i.diasTolerancia || 0) }));
   }
 
   async findOne(id: number) {
-    const sla = await this.repo.findOne({ where: { id }, relations: ['empresa', 'subetapa'] });
+    const sla = await this.repo.findOne({ where: { id }, relations: ['empresa', 'subetapa', 'tipoVehiculo'] });
     if (!sla) throw new NotFoundException(`Regla SLA ${id} no encontrada`);
     return { ...sla, diasCritico: (sla.diasObjetivo || 0) + (sla.diasTolerancia || 0) };
   }
@@ -47,15 +50,14 @@ export class SlaService {
     const candidates = all.filter(s => {
       if (ctx.empresaId && s.empresaId && s.empresaId !== ctx.empresaId) return false;
       if (ctx.subetapaId && s.subetapaId && s.subetapaId !== ctx.subetapaId) return false;
-      if (ctx.lineaNegocio && s.lineaNegocio && s.lineaNegocio !== ctx.lineaNegocio) return false;
-      if (ctx.tipoVehiculo && s.tipoVehiculo && s.tipoVehiculo !== ctx.tipoVehiculo) return false;
+      if (ctx.tipoVehiculoId && s.tipoVehiculoId && s.tipoVehiculoId !== ctx.tipoVehiculoId) return false;
       return true;
     });
 
     if (candidates.length === 0) return null;
 
     const score = (s: SlaConfig) =>
-      [s.empresaId, s.subetapaId, s.lineaNegocio, s.tipoVehiculo].filter(Boolean).length;
+      [s.empresaId, s.subetapaId, s.tipoVehiculoId].filter(Boolean).length;
 
     const best = candidates.reduce((a, b) => (score(a) >= score(b) ? a : b));
     return { ...best, diasCritico: (best.diasObjetivo || 0) + (best.diasTolerancia || 0) };

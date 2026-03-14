@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Subetapa } from './subetapa.entity';
+import { TipoVehiculo } from '../tipo-vehiculo/tipo-vehiculo.entity';
 
 @Entity('subetapa_config')
 export class SubetapaConfig {
@@ -19,8 +20,12 @@ export class SubetapaConfig {
   @Column({ nullable: true })
   segmento: string;
 
-  @Column({ name: 'tipo_vehiculo', nullable: true })
-  tipoVehiculo: string;
+  @Column({ name: 'tipo_vehiculo_id', nullable: true })
+  tipoVehiculoId: number;
+
+  @ManyToOne(() => TipoVehiculo)
+  @JoinColumn({ name: 'tipo_vehiculo_id' })
+  tipoVehiculo: TipoVehiculo;
 
   @Column({ nullable: true })
   activo: boolean;

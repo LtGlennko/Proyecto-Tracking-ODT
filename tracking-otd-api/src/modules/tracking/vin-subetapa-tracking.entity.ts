@@ -25,11 +25,7 @@ export class VinSubetapaTracking {
   fechaPlan: Date;
 
   @Column({ name: 'fecha_real', type: 'date', nullable: true })
-  fechaReal: Date;
-
-  // diferencia_dias: NEVER persisted, calculated at service level
-  @Column({ nullable: true })
-  estado: string;
+  fechaReal: Date;  // Needed for GAP manuales (subetapas without campo_staging_vin)
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

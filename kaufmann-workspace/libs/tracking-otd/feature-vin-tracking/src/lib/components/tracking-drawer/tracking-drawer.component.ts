@@ -1,16 +1,12 @@
-import { Component, input, output, signal, computed, HostListener } from '@angular/core';
+import { Component, input, output, signal, computed, effect, HostListener } from '@angular/core';
 
 import { VinModel, HitoTracking, HITO_LABELS } from '@kaufmann/shared/models';
 import { StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
 import { formatDate, calculateDiff } from '@kaufmann/shared/utils';
-import { VisualMapComponent } from '../visual-map/visual-map.component';
-import { GanttViewComponent } from '../gantt-view/gantt-view.component';
-
-type DrawerTab = 'subetapas' | 'visual' | 'gantt';
 
 @Component({
     selector: 'kf-tracking-drawer',
-    imports: [StatusBadgeComponent, VehicleIconComponent, VisualMapComponent, GanttViewComponent],
+    imports: [StatusBadgeComponent, VehicleIconComponent],
     templateUrl: './tracking-drawer.component.html'
 })
 export class TrackingDrawerComponent {
@@ -19,26 +15,30 @@ export class TrackingDrawerComponent {
   isOpen = input<boolean>(false);
   closed = output<void>();
 
-  activeTab = signal<DrawerTab>('subetapas');
   expandedHitoId = signal<string | null>(null);
+
+  /** The selected hito (from the visual map click) */
+  selectedHito = computed(() => {
+    const stageId = this.selectedStageId();
+    if (!stageId) return null;
+    return this.vin().stages.find((s: HitoTracking) => s.id === stageId) ?? null;
+  });
 
   readonly HITO_LABELS = HITO_LABELS;
   readonly formatDate = formatDate;
   readonly calculateDiff = calculateDiff;
 
-  tabs: { id: DrawerTab; label: string }[] = [
-    { id: 'subetapas', label: 'Subetapas' },
-    { id: 'visual', label: 'Vista General' },
-    //{ id: 'gantt', label: 'Gantt' },
-  ];
+  constructor() {
+    // Auto-expand the selected hito when it changes
+    effect(() => {
+      const stageId = this.selectedStageId();
+      if (stageId) this.expandedHitoId.set(stageId);
+    });
+  }
 
   @HostListener('document:keydown.escape')
   onEscape() {
     this.closed.emit();
-  }
-
-  setTab(tab: DrawerTab) {
-    this.activeTab.set(tab);
   }
 
   toggleHito(hitoId: string) {
@@ -77,7 +77,6 @@ export class TrackingDrawerComponent {
   }
 
   onVisualMapNodeClick(hitoId: string) {
-    this.activeTab.set('subetapas');
     this.expandedHitoId.set(hitoId);
   }
 }

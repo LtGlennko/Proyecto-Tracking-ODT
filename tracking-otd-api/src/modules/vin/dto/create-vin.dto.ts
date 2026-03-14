@@ -18,18 +18,8 @@ export class CreateVinDto {
   @IsString()
   marca?: string;
 
-  @ApiPropertyOptional({ example: 'Actros 2651' })
+  @ApiPropertyOptional({ example: 1, description: 'ID del tipo de vehículo' })
   @IsOptional()
-  @IsString()
-  modelo?: string;
-
-  @ApiPropertyOptional({ example: 'Camiones' })
-  @IsOptional()
-  @IsString()
-  lineaNegocio?: string;
-
-  @ApiPropertyOptional({ example: 'Bus' })
-  @IsOptional()
-  @IsString()
-  tipoVehiculo?: string;
+  @IsInt()
+  tipoVehiculoId?: number;
 }

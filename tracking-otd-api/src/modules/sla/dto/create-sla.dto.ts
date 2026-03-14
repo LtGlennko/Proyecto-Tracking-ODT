@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsInt, IsString, Min } from 'class-validator';
+import { IsOptional, IsInt, Min } from 'class-validator';
 
 export class CreateSlaDto {
   @ApiPropertyOptional({ example: 1 })
@@ -12,15 +12,10 @@ export class CreateSlaDto {
   @IsInt()
   subetapaId?: number;
 
-  @ApiPropertyOptional({ example: 'Camiones' })
+  @ApiPropertyOptional({ example: 1, description: 'ID del tipo de vehículo' })
   @IsOptional()
-  @IsString()
-  lineaNegocio?: string;
-
-  @ApiPropertyOptional({ example: 'Bus' })
-  @IsOptional()
-  @IsString()
-  tipoVehiculo?: string;
+  @IsInt()
+  tipoVehiculoId?: number;
 
   @ApiPropertyOptional({ example: 3 })
   @IsOptional()

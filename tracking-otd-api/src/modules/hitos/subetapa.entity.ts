@@ -22,6 +22,9 @@ export class Subetapa {
   @Column({ name: 'campo_staging_vin', nullable: true })
   campoStagingVin: string;
 
+  @Column({ default: 0 })
+  orden: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
