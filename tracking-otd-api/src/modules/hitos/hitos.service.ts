@@ -59,6 +59,30 @@ export class HitosService {
     return this.subetapaRepo.findOne({ where: { id } });
   }
 
+  async deleteHito(id: number): Promise<void> {
+    const hito = await this.hitoRepo.findOne({ where: { id }, relations: ['subetapas'] });
+    if (!hito) throw new NotFoundException(`Hito ${id} no encontrado`);
+
+    // Clean up per-vehicle-type configs for each subetapa
+    for (const sub of hito.subetapas) {
+      await this.subTvRepo.delete({ subetapaId: sub.id });
+    }
+    await this.hitoTvRepo.delete({ hitoId: id });
+
+    // Delete subetapas then hito
+    await this.subetapaRepo.delete({ hitoId: id });
+    await this.hitoRepo.delete(id);
+  }
+
+  async deleteSubetapa(id: number): Promise<void> {
+    const sub = await this.subetapaRepo.findOne({ where: { id } });
+    if (!sub) throw new NotFoundException(`Subetapa ${id} no encontrada`);
+
+    // Clean up per-vehicle-type configs
+    await this.subTvRepo.delete({ subetapaId: id });
+    await this.subetapaRepo.delete(id);
+  }
+
   // ── Grupos paralelos ──
 
   findGrupos(): Promise<GrupoParalelo[]> {
@@ -209,7 +233,6 @@ export class HitosService {
           subetapaConfigId: sc?.id ?? null,
           subetapaId: sub.id,
           nombre: sub.nombre,
-          categoria: sub.categoria,
           campoStagingVin: sub.campoStagingVin,
           orden: sc?.orden ?? 0,
           activo: sc?.activo ?? true,

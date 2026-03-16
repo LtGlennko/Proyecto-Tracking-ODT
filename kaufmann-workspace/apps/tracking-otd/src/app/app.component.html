@@ -82,18 +82,28 @@
       </div>
 
       <!-- Empresa global filter -->
-      <div class="hidden md:flex items-center gap-2">
-        <span class="text-xs text-slate-400 font-medium">Empresa:</span>
-        <select
-          (change)="onEmpresaChange($event)"
-          [value]="empresaFilter.selectedEmpresaId() ?? ''"
-          class="text-sm rounded-lg border border-slate-200 bg-slate-50 pl-2 pr-7 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+      <div class="hidden md:flex items-center gap-1.5">
+        <span class="text-xs text-slate-400 font-medium mr-1">Empresa:</span>
+        <button
+          (click)="empresaFilter.select(null)"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+          [class]="empresaFilter.selectedEmpresaId() === null
+            ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
           >
-          <option value="">Todas</option>
-          @for (emp of empresaFilter.availableEmpresas(); track emp.id) {
-            <option [value]="emp.id">{{ emp.nombre }}</option>
-          }
-        </select>
+          Todas
+        </button>
+        @for (emp of empresaFilter.availableEmpresas(); track emp.id) {
+          <button
+            (click)="empresaFilter.select(emp.id)"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+            [class]="empresaFilter.selectedEmpresaId() === emp.id
+              ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+            >
+            {{ emp.nombre }}
+          </button>
+        }
       </div>
 
       <!-- Alerts bell -->

@@ -23,7 +23,6 @@ interface SubetapaMaster {
   id: number;
   hitoId: number;
   nombre: string;
-  categoria: string;
   campoStagingVin: string | null;
 }
 
@@ -43,7 +42,6 @@ interface SubetapaConfigView {
   subetapaConfigId: number | null;
   subetapaId: number;
   nombre: string;
-  categoria: string;
   campoStagingVin: string | null;
   orden: number;
   activo: boolean;
@@ -133,7 +131,45 @@ const TIPO_VEHICULO_OPTIONS = [
       <!-- ═══ Tab 1: Hitos Maestros ═══ -->
       @if (activeTab() === 'hitos') {
         <div class="space-y-3">
-          <p class="text-xs text-slate-400">Catálogo maestro de hitos y subetapas. Arrastra para reordenar, selecciona el carril por defecto y edita subetapas.</p>
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-400">Catálogo maestro de hitos y subetapas. Arrastra para reordenar, selecciona el carril por defecto y edita subetapas.</p>
+            @if (auth.isSuperAdmin()) {
+              <button (click)="showNewHitoForm.set(true)"
+                class="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 ml-4"
+                [class.hidden]="showNewHitoForm()">
+                + Nuevo hito
+              </button>
+            }
+          </div>
+
+          <!-- Formulario nuevo hito -->
+          @if (showNewHitoForm() && auth.isSuperAdmin()) {
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-end gap-3">
+              <div class="flex-1">
+                <label class="text-xs font-medium text-slate-600 block mb-1">Nombre del hito</label>
+                <input type="text" [ngModel]="newHitoNombre()" (ngModelChange)="newHitoNombre.set($event)"
+                  placeholder="Ej: Importación"
+                  class="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="text-xs font-medium text-slate-600 block mb-1">Carril</label>
+                <select [ngModel]="newHitoCarril()" (ngModelChange)="newHitoCarril.set($event)"
+                  class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="financiero">Financiero</option>
+                  <option value="operativo">Operativo</option>
+                </select>
+              </div>
+              <button (click)="createMasterHito()"
+                class="px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                [disabled]="!newHitoNombre().trim() || savingNewHito()">
+                {{ savingNewHito() ? '...' : 'Crear' }}
+              </button>
+              <button (click)="showNewHitoForm.set(false); newHitoNombre.set('')"
+                class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                Cancelar
+              </button>
+            </div>
+          }
 
           @if (loadingMaster()) {
             <div class="flex justify-center py-8">
@@ -166,6 +202,26 @@ const TIPO_VEHICULO_OPTIONS = [
                   </div>
 
                   <span class="text-xs text-slate-400 select-none" (click)="toggleMasterExpanded(hito.id)">{{ hito.subetapas.length }} subetapas</span>
+
+                  @if (auth.isSuperAdmin()) {
+                    @if (confirmDeleteHitoId() === hito.id) {
+                      <div class="flex items-center gap-1" (click)="$event.stopPropagation()">
+                        <span class="text-xs text-red-600 font-medium">¿Eliminar?</span>
+                        <button (click)="deleteMasterHito(hito.id)"
+                          class="px-2 py-0.5 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors">Sí</button>
+                        <button (click)="confirmDeleteHitoId.set(null)"
+                          class="px-2 py-0.5 text-xs bg-slate-200 text-slate-600 rounded hover:bg-slate-300 transition-colors">No</button>
+                      </div>
+                    } @else {
+                      <button (click)="confirmDeleteHitoId.set(hito.id); $event.stopPropagation()"
+                        class="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar hito">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    }
+                  }
+
                   <span class="text-slate-400 text-xs w-5 text-center select-none" (click)="toggleMasterExpanded(hito.id)">{{ expandedMasterHitoId() === hito.id ? '▼' : '▶' }}</span>
                 </div>
 
@@ -182,7 +238,6 @@ const TIPO_VEHICULO_OPTIONS = [
                         <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-8"></th>
                         <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-10">#</th>
                         <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Subetapa</th>
-                        <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Categoría</th>
                         <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Campo staging_vin</th>
                         @if (auth.isSuperAdmin()) {
                           <th class="text-center px-3 py-2 text-xs font-semibold text-slate-500 uppercase w-28">Acciones</th>
@@ -204,21 +259,6 @@ const TIPO_VEHICULO_OPTIONS = [
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             } @else {
                               <span class="text-sm text-slate-800 font-medium">{{ sub.nombre }}</span>
-                            }
-                          </td>
-                          <td class="px-3 py-2.5">
-                            @if (editingMasterSubId() === sub.id) {
-                              <select [ngModel]="editSubCategoria()" (ngModelChange)="editSubCategoria.set($event)"
-                                class="text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                @for (cat of categorias; track cat) {
-                                  <option [value]="cat">{{ cat }}</option>
-                                }
-                              </select>
-                            } @else {
-                              <span class="text-xs px-1.5 py-0.5 rounded font-medium"
-                                [class]="getCategoriaClass(sub.categoria)">
-                                {{ sub.categoria }}
-                              </span>
                             }
                           </td>
                           <td class="px-3 py-2.5">
@@ -252,11 +292,25 @@ const TIPO_VEHICULO_OPTIONS = [
                                     X
                                   </button>
                                 </div>
+                              } @else if (confirmDeleteSubId() === sub.id) {
+                                <div class="flex items-center justify-center gap-1">
+                                  <span class="text-xs text-red-600">¿Eliminar?</span>
+                                  <button (click)="deleteMasterSub(sub.id)"
+                                    class="px-2 py-0.5 text-xs bg-red-600 text-white rounded hover:bg-red-700">Sí</button>
+                                  <button (click)="confirmDeleteSubId.set(null)"
+                                    class="px-2 py-0.5 text-xs bg-slate-200 text-slate-600 rounded hover:bg-slate-300">No</button>
+                                </div>
                               } @else {
-                                <button (click)="startMasterSubEdit(sub)"
-                                  class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                                  Editar
-                                </button>
+                                <div class="flex items-center justify-center gap-1">
+                                  <button (click)="startMasterSubEdit(sub)"
+                                    class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                                    Editar
+                                  </button>
+                                  <button (click)="confirmDeleteSubId.set(sub.id)"
+                                    class="px-2 py-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                                    Eliminar
+                                  </button>
+                                </div>
                               }
                             </td>
                           }
@@ -267,6 +321,53 @@ const TIPO_VEHICULO_OPTIONS = [
                         </tr>
                       }
                     </tbody>
+                    <!-- Fila para añadir subetapa -->
+                    @if (auth.isSuperAdmin()) {
+                      <tfoot>
+                        @if (addingSubToHitoId() === hito.id) {
+                          <tr class="bg-blue-50/50">
+                            <td class="px-2 py-2"></td>
+                            <td class="px-2 py-2"></td>
+                            <td class="px-3 py-2">
+                              <input type="text" [ngModel]="newSubNombre()" (ngModelChange)="newSubNombre.set($event)"
+                                placeholder="Nombre de la subetapa"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </td>
+                            <td class="px-3 py-2">
+                              <select [ngModel]="newSubCampo()" (ngModelChange)="newSubCampo.set($event)"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">— GAP manual —</option>
+                                @for (col of stagingVinColumns; track col.value) {
+                                  <option [value]="col.value">{{ col.label }}</option>
+                                }
+                              </select>
+                            </td>
+                            <td class="px-3 py-2 text-center">
+                              <div class="flex items-center justify-center gap-1">
+                                <button (click)="createMasterSub(hito.id)"
+                                  class="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                                  [disabled]="!newSubNombre().trim() || savingNewSub()">
+                                  {{ savingNewSub() ? '...' : 'Crear' }}
+                                </button>
+                                <button (click)="addingSubToHitoId.set(null); newSubNombre.set('')"
+                                  class="px-2 py-1 text-xs bg-slate-200 text-slate-600 rounded hover:bg-slate-300 transition-colors">
+                                  X
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        } @else {
+                          <tr>
+                            <td colspan="5" class="px-4 py-2">
+                              <button (click)="addingSubToHitoId.set(hito.id); newSubNombre.set(''); newSubCampo.set('')"
+                                class="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                                + Añadir subetapa
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tfoot>
+                    }
                   </table>
                 }
               </div>
@@ -610,13 +711,28 @@ export class AdminPageComponent implements OnInit {
   loadingMaster = signal(false);
   expandedMasterHitoId = signal<number | null>(null);
   stagingVinColumns = STAGING_VIN_DATE_COLUMNS;
-  categorias = ['COMEX', 'LOGISTICA', 'COMERCIAL', 'TALLER'];
-
   editingMasterSubId = signal<number | null>(null);
   editSubNombre = signal('');
-  editSubCategoria = signal('');
   editSubCampo = signal('');
   savingMasterSub = signal(false);
+
+  // Create hito
+  showNewHitoForm = signal(false);
+  newHitoNombre = signal('');
+  newHitoCarril = signal('financiero');
+  savingNewHito = signal(false);
+
+  // Delete hito
+  confirmDeleteHitoId = signal<number | null>(null);
+
+  // Create subetapa
+  addingSubToHitoId = signal<number | null>(null);
+  newSubNombre = signal('');
+  newSubCampo = signal('');
+  savingNewSub = signal(false);
+
+  // Delete subetapa
+  confirmDeleteSubId = signal<number | null>(null);
 
   // ── Tab 2: Config por Tipo ──
   tipoVehiculoOptions = TIPO_VEHICULO_OPTIONS;
@@ -704,7 +820,6 @@ export class AdminPageComponent implements OnInit {
   startMasterSubEdit(sub: SubetapaMaster): void {
     this.editingMasterSubId.set(sub.id);
     this.editSubNombre.set(sub.nombre);
-    this.editSubCategoria.set(sub.categoria);
     this.editSubCampo.set(sub.campoStagingVin ?? '');
   }
 
@@ -718,7 +833,6 @@ export class AdminPageComponent implements OnInit {
       await firstValueFrom(
         this.http.patch(`${this.apiUrl}/v1/hitos/subetapas/${sub.id}`, {
           nombre: this.editSubNombre(),
-          categoria: this.editSubCategoria(),
           campoStagingVin: this.editSubCampo() || null,
         })
       );
@@ -786,6 +900,92 @@ export class AdminPageComponent implements OnInit {
       await firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/${hito.id}`, { carril }));
     } catch (err) {
       console.error('Error updating carril:', err);
+      await this.loadMasterHitos();
+    }
+  }
+
+  /** Create a new master hito */
+  async createMasterHito(): Promise<void> {
+    const nombre = this.newHitoNombre().trim();
+    if (!nombre) return;
+    this.savingNewHito.set(true);
+    try {
+      const maxOrden = this.hitosMaster().length > 0
+        ? Math.max(...this.hitosMaster().map(h => h.subetapas.length)) // use array length as proxy
+        : 0;
+      await firstValueFrom(
+        this.http.post(`${this.apiUrl}/v1/hitos`, {
+          nombre,
+          carril: this.newHitoCarril(),
+          orden: this.hitosMaster().length + 1,
+        })
+      );
+      this.showNewHitoForm.set(false);
+      this.newHitoNombre.set('');
+      await this.loadMasterHitos();
+    } catch (err) {
+      console.error('Error creating hito:', err);
+    } finally {
+      this.savingNewHito.set(false);
+    }
+  }
+
+  /** Delete a master hito and all its subetapas */
+  async deleteMasterHito(hitoId: number): Promise<void> {
+    this.confirmDeleteHitoId.set(null);
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/v1/hitos/master/${hitoId}`)
+      );
+      this.hitosMaster.update(list => list.filter(h => h.id !== hitoId));
+      if (this.expandedMasterHitoId() === hitoId) this.expandedMasterHitoId.set(null);
+    } catch (err) {
+      console.error('Error deleting hito:', err);
+      await this.loadMasterHitos();
+    }
+  }
+
+  /** Create a new subetapa under a master hito */
+  async createMasterSub(hitoId: number): Promise<void> {
+    const nombre = this.newSubNombre().trim();
+    if (!nombre) return;
+    this.savingNewSub.set(true);
+    try {
+      const hito = this.hitosMaster().find(h => h.id === hitoId);
+      await firstValueFrom(
+        this.http.post(`${this.apiUrl}/v1/hitos/${hitoId}/subetapas`, {
+          nombre,
+          campoStagingVin: this.newSubCampo() || null,
+          orden: (hito?.subetapas.length ?? 0) + 1,
+        })
+      );
+      this.addingSubToHitoId.set(null);
+      this.newSubNombre.set('');
+      this.newSubCampo.set('');
+      await this.loadMasterHitos();
+    } catch (err) {
+      console.error('Error creating subetapa:', err);
+    } finally {
+      this.savingNewSub.set(false);
+    }
+  }
+
+  /** Delete a master subetapa */
+  async deleteMasterSub(subId: number): Promise<void> {
+    this.confirmDeleteSubId.set(null);
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/v1/hitos/subetapas/${subId}`)
+      );
+      // Optimistic removal
+      this.hitosMaster.update(list =>
+        list.map(h => ({
+          ...h,
+          subetapas: h.subetapas.filter(s => s.id !== subId),
+        }))
+      );
+    } catch (err) {
+      console.error('Error deleting subetapa:', err);
       await this.loadMasterHitos();
     }
   }
@@ -1099,16 +1299,6 @@ export class AdminPageComponent implements OnInit {
       case 'financiero': return 'bg-violet-100 text-violet-700';
       case 'comercial': return 'bg-blue-100 text-blue-700';
       default: return 'bg-emerald-100 text-emerald-700';
-    }
-  }
-
-  getCategoriaClass(cat: string): string {
-    switch (cat) {
-      case 'COMEX': return 'bg-blue-100 text-blue-700';
-      case 'LOGISTICA': return 'bg-emerald-100 text-emerald-700';
-      case 'COMERCIAL': return 'bg-purple-100 text-purple-700';
-      case 'TALLER': return 'bg-orange-100 text-orange-700';
-      default: return 'bg-slate-100 text-slate-600';
     }
   }
 

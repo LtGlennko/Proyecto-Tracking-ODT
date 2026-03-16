@@ -99,7 +99,6 @@ CREATE TABLE subetapa (
     id SERIAL PRIMARY KEY,
     hito_id INT REFERENCES hito(id),
     nombre VARCHAR(255),
-    categoria VARCHAR(100),
     orden INT,
     activo_default BOOLEAN,
     created_at TIMESTAMP,
@@ -375,30 +374,30 @@ FROM (VALUES
 JOIN grupo_paralelo gp ON gp.nombre = s.grupo_nombre
 ON CONFLICT DO NOTHING;
 
-INSERT INTO subetapa (hito_id, nombre, categoria, orden, activo_default, created_at, updated_at)
-SELECT h.id, s.nombre, s.categoria, s.orden, s.activo_default, NOW(), NOW()
+INSERT INTO subetapa (hito_id, nombre, orden, activo_default, created_at, updated_at)
+SELECT h.id, s.nombre, s.orden, s.activo_default, NOW(), NOW()
 FROM (VALUES
-  ('Importación',     'Solicitud negocio',   'COMEX',     1, TRUE),
-  ('Importación',     'Pedido fábrica',       'COMEX',     2, TRUE),
-  ('Importación',     'Producción',           'COMEX',     3, TRUE),
-  ('Importación',     'Embarque',             'LOGISTICA', 4, TRUE),
-  ('Importación',     'En aduana',            'LOGISTICA', 5, TRUE),
-  ('Importación',     'En almacén',           'LOGISTICA', 6, TRUE),
-  ('PDI (Carrozado)', 'Inicio PDI',           'LOGISTICA', 1, FALSE),
-  ('PDI (Carrozado)', 'En Carrocero Local',   'LOGISTICA', 2, FALSE),
-  ('PDI (Carrozado)', 'Salida PDI',           'LOGISTICA', 3, FALSE),
-  ('Asignación',      'Reserva',              'COMERCIAL', 1, TRUE),
-  ('Asignación',      'Asig. Definitiva',     'COMERCIAL', 2, TRUE),
-  ('Crédito',         'Solicitud crédito',    'COMERCIAL', 1, TRUE),
-  ('Crédito',         'Aprobación',           'COMERCIAL', 2, TRUE),
-  ('Facturación',     'Emisión Factura',      'COMERCIAL', 1, TRUE),
-  ('Pago',            'Pago Confirmado',      'COMERCIAL', 1, TRUE),
-  ('Inmatriculación', 'Inicio Trámite',       'LOGISTICA', 1, TRUE),
-  ('Inmatriculación', 'Placas Recibidas',     'LOGISTICA', 2, TRUE),
-  ('Programación',    'Unidad Lista',         'COMERCIAL', 1, TRUE),
-  ('Programación',    'Cita Agendada',        'COMERCIAL', 2, TRUE),
-  ('Entrega',         'Entregado al Cliente', 'COMERCIAL', 1, TRUE)
-) AS s(hito_nombre, nombre, categoria, orden, activo_default)
+  ('Importación',     'Solicitud negocio',   1, TRUE),
+  ('Importación',     'Pedido fábrica',       2, TRUE),
+  ('Importación',     'Producción',           3, TRUE),
+  ('Importación',     'Embarque',             4, TRUE),
+  ('Importación',     'En aduana',            5, TRUE),
+  ('Importación',     'En almacén',           6, TRUE),
+  ('PDI (Carrozado)', 'Inicio PDI',           1, FALSE),
+  ('PDI (Carrozado)', 'En Carrocero Local',   2, FALSE),
+  ('PDI (Carrozado)', 'Salida PDI',           3, FALSE),
+  ('Asignación',      'Reserva',              1, TRUE),
+  ('Asignación',      'Asig. Definitiva',     2, TRUE),
+  ('Crédito',         'Solicitud crédito',    1, TRUE),
+  ('Crédito',         'Aprobación',           2, TRUE),
+  ('Facturación',     'Emisión Factura',      1, TRUE),
+  ('Pago',            'Pago Confirmado',      1, TRUE),
+  ('Inmatriculación', 'Inicio Trámite',       1, TRUE),
+  ('Inmatriculación', 'Placas Recibidas',     2, TRUE),
+  ('Programación',    'Unidad Lista',         1, TRUE),
+  ('Programación',    'Cita Agendada',        2, TRUE),
+  ('Entrega',         'Entregado al Cliente', 1, TRUE)
+) AS s(hito_nombre, nombre, orden, activo_default)
 JOIN hito h ON h.nombre = s.hito_nombre
 ON CONFLICT DO NOTHING;
 

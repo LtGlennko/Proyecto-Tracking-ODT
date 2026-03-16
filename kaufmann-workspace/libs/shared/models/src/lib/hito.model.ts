@@ -1,5 +1,4 @@
 export type EstadoHito = 'pending' | 'active' | 'completed' | 'delayed';
-export type CategoriaSubetapa = 'COMEX' | 'LOGISTICA' | 'COMERCIAL' | 'TALLER';
 export type CarrilHito = 'financiero' | 'operativo';
 
 export interface DateSet {
@@ -10,7 +9,6 @@ export interface DateSet {
 export interface SubetapaTracking {
   id: string;
   name: string;
-  category: CategoriaSubetapa;
   baseline: DateSet;
   plan: DateSet;
   real: DateSet;

@@ -6,10 +6,6 @@ export class CreateSubetapaDto {
   @IsString()
   nombre: string;
 
-  @ApiProperty({ example: 'COMERCIAL', description: 'COMEX | LOGISTICA | COMERCIAL' })
-  @IsString()
-  categoria: string;
-
   @ApiProperty({ example: 1 })
   @IsInt()
   orden: number;

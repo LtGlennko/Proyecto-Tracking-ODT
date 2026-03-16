@@ -51,7 +51,6 @@ interface SubetapaDef {
   id: number;
   hitoId: number;
   nombre: string;
-  categoria: string;
   campoStagingVin: string | null;
 }
 
@@ -189,7 +188,6 @@ export class TrackingService {
       .select('s.id', 'id')
       .addSelect('s.hito_id', 'hitoId')
       .addSelect('s.nombre', 'nombre')
-      .addSelect('s.categoria', 'categoria')
       .addSelect('s.campo_staging_vin', 'campoStagingVin')
       .from('subetapa', 's')
       .getRawMany();
@@ -200,7 +198,6 @@ export class TrackingService {
         id: s.id,
         hitoId: s.hitoId,
         nombre: s.nombre,
-        categoria: s.categoria,
         campoStagingVin: s.campoStagingVin,
       });
     }
@@ -387,11 +384,15 @@ export class TrackingService {
         });
 
       const subStages = filteredSubs.map(sd => {
-        // fecha_real: ONLY from staging_vin via campo_staging_vin
         let fechaReal: string = '';
         if (sd.campoStagingVin && stagingRow) {
+          // Non-GAP: read from staging_vin via campo_staging_vin
           const val = stagingRow[sd.campoStagingVin];
           if (val) fechaReal = fmtDate(val);
+        } else if (!sd.campoStagingVin) {
+          // GAP manual: read from vin_subetapa_tracking.fecha_real
+          const st = subTrackMap.get(sd.id);
+          if (st?.fechaReal) fechaReal = fmtDate(st.fechaReal);
         }
 
         // Derive status from fecha_real presence (no SLA = no plan dates = no delay)
@@ -400,7 +401,6 @@ export class TrackingService {
         return {
           id: `sub-${sd.id}`,
           name: sd.nombre || '',
-          category: sd.categoria || '',
           baseline: { start: '', end: '' }, // Empty until SLA is configured
           plan: { start: '', end: '' },     // Empty until SLA is configured
           real: { start: fechaReal, end: fechaReal },

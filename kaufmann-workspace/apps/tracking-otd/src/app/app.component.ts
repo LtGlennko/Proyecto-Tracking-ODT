@@ -32,7 +32,7 @@ export class AppComponent {
     //{ label: 'Chat',         route: '/chat',      icon: '💬' },
     //{ label: 'Analytics',    route: '/analytics', icon: '📈' },
     { label: 'Configuración',        route: '/admin',     icon: '⚙️', adminOnly: true },
-    { label: 'Staging',      route: '/staging',   icon: '⬆️', adminOnly: true },
+    //{ label: 'Staging',      route: '/staging',   icon: '⬆️', adminOnly: true },
   ];
 
   visibleNavItems = computed(() =>
@@ -41,11 +41,6 @@ export class AppComponent {
 
   toggleSidebar() {
     this.sidebarCollapsed.update(v => !v);
-  }
-
-  onEmpresaChange(e: Event) {
-    const val = (e.target as HTMLSelectElement).value;
-    this.empresaFilter.select(val ? Number(val) : null);
   }
 
   toggleProfileMenu() {

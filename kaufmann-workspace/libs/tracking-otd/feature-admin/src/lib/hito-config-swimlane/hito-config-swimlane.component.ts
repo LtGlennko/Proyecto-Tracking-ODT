@@ -25,7 +25,6 @@ interface SubetapaConfigView {
   subetapaConfigId: number | null;
   subetapaId: number;
   nombre: string;
-  categoria: string;
   campoStagingVin: string | null;
   orden: number;
   activo: boolean;
@@ -316,12 +315,6 @@ interface Bloque {
               <!-- Nombre subetapa -->
               <span class="flex-1 font-medium text-slate-700">{{ sub.nombre }}</span>
 
-              <!-- Badge categoría -->
-              <span class="px-1.5 py-0.5 rounded text-xs font-medium shrink-0"
-                [class]="categoriaClass(sub.categoria)">
-                {{ sub.categoria }}
-              </span>
-
               <!-- Badge campo staging -->
               @if (sub.campoStagingVin) {
                 <code class="text-xs bg-slate-100 text-slate-600 px-1 py-0.5 rounded font-mono shrink-0 hidden xl:inline">
@@ -505,15 +498,5 @@ export class HitoConfigSwimlaneComponent {
 
   countActiveSubs(hito: HitoConfigView): number {
     return hito.subetapas.filter(s => s.activo).length;
-  }
-
-  categoriaClass(cat: string): string {
-    const map: Record<string, string> = {
-      COMEX: 'bg-blue-100 text-blue-700',
-      LOGISTICA: 'bg-emerald-100 text-emerald-700',
-      COMERCIAL: 'bg-purple-100 text-purple-700',
-      TALLER: 'bg-orange-100 text-orange-700',
-    };
-    return map[cat] ?? 'bg-slate-100 text-slate-600';
   }
 }

@@ -50,6 +50,20 @@ export class HitosController {
     return this.service.updateSubetapa(id, dto);
   }
 
+  @Delete('subetapas/:id')
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Eliminar subetapa maestro [solo superadmin]' })
+  deleteSubetapa(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteSubetapa(id);
+  }
+
+  @Delete('master/:id')
+  @Roles('superadministrador')
+  @ApiOperation({ summary: 'Eliminar hito maestro y sus subetapas [solo superadmin]' })
+  deleteHito(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteHito(id);
+  }
+
   // ── Config por tipo de vehículo ──
 
   @Get('config/:tipoVehiculoId')
