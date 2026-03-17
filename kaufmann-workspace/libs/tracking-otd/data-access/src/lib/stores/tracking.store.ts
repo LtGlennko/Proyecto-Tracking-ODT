@@ -120,7 +120,7 @@ export const TrackingStore = signalStore(
         patchState(store, { loading: true, error: null });
         try {
           const clientes = await firstValueFrom(api.getClientesHierarchy());
-          const allVins = clientes.flatMap(c => c.fichas.flatMap(f => f.vins));
+          const allVins = clientes.flatMap(c => c.fichas.flatMap(f => f.vins.map(v => ({ ...v, isVic: c.isVic ?? false }))));
           patchState(store, { clientes, vins: allVins, loading: false });
         } catch (err: any) {
           console.error('Error loading tracking data:', err);

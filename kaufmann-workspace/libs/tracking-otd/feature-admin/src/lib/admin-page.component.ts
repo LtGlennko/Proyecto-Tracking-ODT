@@ -1,10 +1,9 @@
-import { Component, signal, inject, OnInit, effect } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDragPreview, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SlaConfigModel } from '@kaufmann/shared/models';
-import { MOCK_SLA_CONFIGS } from '@kaufmann/tracking-otd/data-access';
 import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
 import { HitoConfigSwimlaneComponent } from './hito-config-swimlane/hito-config-swimlane.component';
 import { ProcessPreviewComponent } from './process-preview/process-preview.component';
@@ -67,6 +66,19 @@ interface EmpresaApi {
   id: number;
   nombre: string;
   codigo: string;
+}
+
+interface SlaConfigApi {
+  id: number;
+  empresaId: number | null;
+  empresa: { id: number; nombre: string } | null;
+  subetapaId: number | null;
+  subetapa: { id: number; nombre: string; hitoId: number; hito?: { id: number; nombre: string } } | null;
+  tipoVehiculoId: number | null;
+  tipoVehiculo: { id: number; nombre: string } | null;
+  diasObjetivo: number;
+  diasTolerancia: number;
+  diasCritico: number;
 }
 
 const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
@@ -512,63 +524,198 @@ const TIPO_VEHICULO_OPTIONS = [
       <!-- ═══ Tab 3: SLA Config ═══ -->
       @if (activeTab() === 'sla') {
         <div class="space-y-4">
-          <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-              <h3 class="text-sm font-semibold text-slate-800">Reglas SLA</h3>
-              <button class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-400">Reglas de Lead Time (SLA) por tipo de vehículo y subetapa. Objetivo = días meta, Tolerancia = días adicionales, Crítico = suma.</p>
+            @if (auth.isSuperAdmin()) {
+              <button (click)="showNewSlaForm.set(true)"
+                class="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 ml-4"
+                [class.hidden]="showNewSlaForm()">
                 + Nueva regla
               </button>
+            }
+          </div>
+
+          <!-- Formulario nueva regla -->
+          @if (showNewSlaForm() && auth.isSuperAdmin()) {
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <h4 class="text-xs font-semibold text-slate-700">Nueva Regla SLA</h4>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Tipo Vehículo</label>
+                  <select [ngModel]="newSlaTipoVehiculoId()" (ngModelChange)="newSlaTipoVehiculoId.set($event ? +$event : null)"
+                    class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option [ngValue]="null">— Todos —</option>
+                    @for (tv of tipoVehiculoOptions; track tv.id) {
+                      <option [ngValue]="tv.id">{{ tv.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Subetapa</label>
+                  <select [ngModel]="newSlaSubetapaId()" (ngModelChange)="newSlaSubetapaId.set($event ? +$event : null)"
+                    class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option [ngValue]="null">— Todas —</option>
+                    @for (sub of allSubetapas(); track sub.id) {
+                      <option [ngValue]="sub.id">{{ sub.hitoNombre }} → {{ sub.nombre }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Objetivo (días)</label>
+                  <input type="number" [ngModel]="newSlaObjetivo()" (ngModelChange)="newSlaObjetivo.set(+$event)" min="1"
+                    class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Tolerancia (días)</label>
+                  <input type="number" [ngModel]="newSlaTolerance()" (ngModelChange)="newSlaTolerance.set(+$event)" min="0"
+                    class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4 text-xs">
+                  <span class="text-slate-500">Crítico calculado:
+                    <span class="font-bold text-red-600">{{ newSlaObjetivo() + newSlaTolerance() }}d</span>
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button (click)="showNewSlaForm.set(false)" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                  <button (click)="createSlaRule()" [disabled]="savingSla()"
+                    class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                    {{ savingSla() ? 'Guardando...' : 'Guardar' }}
+                  </button>
+                </div>
+              </div>
             </div>
-            <table class="w-full text-sm">
-              <thead class="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th class="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase">ID</th>
-                  <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Empresa</th>
-                  <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Tipo Vehículo</th>
-                  <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Objetivo</th>
-                  <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Tolerancia</th>
-                  <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Crítico</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (sla of slaConfigs(); track sla) {
-                  <tr class="border-b border-slate-100 hover:bg-slate-50">
-                    <td class="px-4 py-2.5 text-slate-500 text-xs">{{ sla.id }}</td>
-                    <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.empresaId ?? '— Todas' }}</td>
-                    <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.tipoVehiculoId ?? '— Todos' }}</td>
-                    <td class="px-3 py-2.5 text-center">
-                      <span class="text-emerald-700 font-semibold text-xs">{{ sla.diasObjetivo }}d</span>
-                    </td>
-                    <td class="px-3 py-2.5 text-center">
-                      <span class="text-amber-600 font-semibold text-xs">+{{ sla.diasTolerancia }}d</span>
-                    </td>
-                    <td class="px-3 py-2.5 text-center">
-                      <span class="text-red-600 font-semibold text-xs">{{ sla.diasObjetivo + sla.diasTolerancia }}d</span>
-                    </td>
-                  </tr>
+          }
+
+          @if (loadingSla()) {
+            <div class="flex justify-center py-8">
+              <span class="text-slate-400 text-sm">Cargando reglas SLA...</span>
+            </div>
+          } @else {
+            <!-- Filtros y búsqueda -->
+            <div class="flex flex-wrap items-center gap-3">
+              <input type="text" placeholder="Buscar por tipo, hito o subetapa..."
+                [ngModel]="slaSearchQuery()" (ngModelChange)="slaSearchQuery.set($event)"
+                class="flex-1 min-w-[200px] px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+              <select [ngModel]="slaFilterTipoVehiculo()" (ngModelChange)="slaFilterTipoVehiculo.set($event ? +$event : null)"
+                class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <option [ngValue]="null">Tipo: Todos</option>
+                @for (tv of tipoVehiculoOptions; track tv.id) {
+                  <option [ngValue]="tv.id">{{ tv.label }}</option>
                 }
-              </tbody>
-            </table>
-          </div>
-          <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-            <h3 class="text-sm font-semibold text-slate-800 mb-4">Nueva Regla SLA</h3>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-xs font-medium text-slate-600 block mb-1">Días Objetivo</label>
-                <input type="number" [(ngModel)]="newSlaObjetivo" min="1"
-                  class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label class="text-xs font-medium text-slate-600 block mb-1">Días Tolerancia</label>
-                <input type="number" [(ngModel)]="newSlaTolerance" min="0"
-                  class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
+              </select>
+              <select [ngModel]="slaFilterHitoId()" (ngModelChange)="slaFilterHitoId.set($event !== '' && $event !== null ? +$event : null)"
+                class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <option [ngValue]="null">Hito: Todos</option>
+                @for (hito of slaHitoOptions(); track hito; let i = $index) {
+                  <option [ngValue]="i">{{ hito }}</option>
+                }
+              </select>
+              <span class="text-xs text-slate-400">{{ filteredSlaRules().length }} reglas</span>
             </div>
-            <div class="mt-3 p-3 bg-slate-50 rounded-lg text-sm">
-              <span class="text-slate-500">Días crítico calculado: </span>
-              <span class="font-bold text-red-600">{{ newSlaObjetivo + newSlaTolerance }}d</span>
+
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="text-center px-2 py-2.5 text-xs font-semibold text-slate-500 uppercase w-16">Prioridad</th>
+                    <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Tipo Vehículo</th>
+                    <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Hito</th>
+                    <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Subetapa</th>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Objetivo
+                      </span>
+                    </th>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Tolerancia
+                      </span>
+                    </th>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span> Crítico
+                      </span>
+                    </th>
+                    @if (auth.isSuperAdmin()) {
+                      <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (sla of filteredSlaRules(); track sla.id) {
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                      <!-- Prioridad (score) -->
+                      <td class="px-2 py-2.5 text-center">
+                        @switch (slaScore(sla)) {
+                          @case (3) { <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">3</span> }
+                          @case (2) { <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">2</span> }
+                          @case (1) { <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">1</span> }
+                          @default { <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">0</span> }
+                        }
+                      </td>
+                      <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.tipoVehiculo?.nombre ?? '— Todos' }}</td>
+                      <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.subetapa?.hito?.nombre ?? '— Todos' }}</td>
+                      <td class="px-3 py-2.5 text-slate-600 text-xs">{{ sla.subetapa?.nombre ?? '— Todas' }}</td>
+
+                      @if (editingSlaId() === sla.id) {
+                        <td class="px-3 py-2.5 text-center">
+                          <input type="number" [ngModel]="editSlaObjetivo()" (ngModelChange)="editSlaObjetivo.set(+$event)" min="1"
+                            class="w-16 px-1.5 py-1 text-xs text-center border border-emerald-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <input type="number" [ngModel]="editSlaTolerance()" (ngModelChange)="editSlaTolerance.set(+$event)" min="0"
+                            class="w-16 px-1.5 py-1 text-xs text-center border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <span class="text-red-600 font-semibold text-xs">{{ editSlaObjetivo() + editSlaTolerance() }}d</span>
+                        </td>
+                        @if (auth.isSuperAdmin()) {
+                          <td class="px-3 py-2.5 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                              <button (click)="saveSlaEdit(sla.id)" class="px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50 rounded transition-colors">Guardar</button>
+                              <button (click)="editingSlaId.set(null)" class="px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 rounded transition-colors">Cancelar</button>
+                            </div>
+                          </td>
+                        }
+                      } @else {
+                        <td class="px-3 py-2.5 text-center">
+                          <span class="text-emerald-700 font-semibold text-xs">{{ sla.diasObjetivo }}d</span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <span class="text-amber-600 font-semibold text-xs">+{{ sla.diasTolerancia }}d</span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <span class="text-red-600 font-semibold text-xs">{{ sla.diasCritico }}d</span>
+                        </td>
+                        @if (auth.isSuperAdmin()) {
+                          <td class="px-3 py-2.5 text-center">
+                            @if (confirmDeleteSlaId() === sla.id) {
+                              <div class="flex items-center justify-center gap-1">
+                                <span class="text-xs text-red-600">¿Eliminar?</span>
+                                <button (click)="deleteSlaRule(sla.id)" class="px-2 py-0.5 text-xs text-red-700 font-medium hover:bg-red-50 rounded">Sí</button>
+                                <button (click)="confirmDeleteSlaId.set(null)" class="px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100 rounded">No</button>
+                              </div>
+                            } @else {
+                              <div class="flex items-center justify-center gap-1">
+                                <button (click)="startEditSla(sla)" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">✏️</button>
+                                <button (click)="confirmDeleteSlaId.set(sla.id)" class="px-2 py-1 text-xs text-red-500 hover:bg-red-50 rounded transition-colors" title="Eliminar">🗑️</button>
+                              </div>
+                            }
+                          </td>
+                        }
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8" class="px-4 py-8 text-center text-slate-400 text-xs">No hay reglas SLA que coincidan</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
             </div>
-          </div>
+          }
         </div>
       }
 
@@ -745,9 +892,73 @@ export class AdminPageComponent implements OnInit {
   resetting = signal(false);
 
   // ── Tab 3: SLA ──
-  slaConfigs = signal<SlaConfigModel[]>([...MOCK_SLA_CONFIGS]);
-  newSlaObjetivo = 30;
-  newSlaTolerance = 5;
+  slaRules = signal<SlaConfigApi[]>([]);
+  slaLoaded = signal(false);
+  loadingSla = signal(false);
+  showNewSlaForm = signal(false);
+  savingSla = signal(false);
+  newSlaTipoVehiculoId = signal<number | null>(null);
+  newSlaSubetapaId = signal<number | null>(null);
+  newSlaObjetivo = signal(5);
+  newSlaTolerance = signal(2);
+  editingSlaId = signal<number | null>(null);
+  editSlaObjetivo = signal(0);
+  editSlaTolerance = signal(0);
+  confirmDeleteSlaId = signal<number | null>(null);
+  allSubetapas = signal<{ id: number; nombre: string; hitoNombre: string }[]>([]);
+  slaSearchQuery = signal('');
+  slaFilterTipoVehiculo = signal<number | null>(null);
+  slaFilterHitoId = signal<number | null>(null);
+
+  // Hitos únicos para el filtro (derivados de allSubetapas)
+  slaHitoOptions = computed(() => {
+    const subs = this.allSubetapas();
+    const seen = new Map<string, string>();
+    for (const s of subs) {
+      if (!seen.has(s.hitoNombre)) seen.set(s.hitoNombre, s.hitoNombre);
+    }
+    return [...seen.keys()];
+  });
+
+  // Score helper
+  slaScore(sla: SlaConfigApi): number {
+    return [sla.empresaId, sla.subetapaId, sla.tipoVehiculoId].filter(v => v != null).length;
+  }
+
+  // Filtered + sorted SLA rules
+  filteredSlaRules = computed(() => {
+    let rules = this.slaRules();
+    const query = this.slaSearchQuery().toLowerCase().trim();
+    const filterTv = this.slaFilterTipoVehiculo();
+    const filterHito = this.slaFilterHitoId();
+
+    if (filterTv !== null) {
+      rules = rules.filter(r => r.tipoVehiculoId === filterTv);
+    }
+    if (filterHito !== null) {
+      const hitoName = this.slaHitoOptions()[filterHito] ?? '';
+      rules = rules.filter(r => r.subetapa?.hito?.nombre === hitoName);
+    }
+    if (query) {
+      rules = rules.filter(r => {
+        const tv = (r.tipoVehiculo?.nombre ?? 'todos').toLowerCase();
+        const sub = (r.subetapa?.nombre ?? 'todas').toLowerCase();
+        const hito = (r.subetapa?.hito?.nombre ?? '').toLowerCase();
+        return tv.includes(query) || sub.includes(query) || hito.includes(query);
+      });
+    }
+    // Sort by score desc, then by tipo vehiculo name, then subetapa
+    return [...rules].sort((a, b) => {
+      const scoreDiff = this.slaScore(b) - this.slaScore(a);
+      if (scoreDiff !== 0) return scoreDiff;
+      const tvA = a.tipoVehiculo?.nombre ?? '';
+      const tvB = b.tipoVehiculo?.nombre ?? '';
+      if (tvA !== tvB) return tvA.localeCompare(tvB);
+      const subA = a.subetapa?.nombre ?? '';
+      const subB = b.subetapa?.nombre ?? '';
+      return subA.localeCompare(subB);
+    });
+  });
 
   // ── Tab 4: Usuarios ──
   users = signal<UsuarioApi[]>([]);
@@ -779,6 +990,12 @@ export class AdminPageComponent implements OnInit {
       if (this.activeTab() === 'config') {
         const tipo = this.selectedTipoVehiculo();
         this.loadHitoConfig(tipo);
+      }
+    });
+    // Load SLA when tab opens
+    effect(() => {
+      if (this.activeTab() === 'sla' && !this.slaLoaded()) {
+        this.loadSlaRules();
       }
     });
     // Load users when tab opens
@@ -1299,6 +1516,105 @@ export class AdminPageComponent implements OnInit {
       case 'financiero': return 'bg-violet-100 text-violet-700';
       case 'comercial': return 'bg-blue-100 text-blue-700';
       default: return 'bg-emerald-100 text-emerald-700';
+    }
+  }
+
+  // ══════════════════════════════════════════
+  // Tab 3: SLA Config
+  // ══════════════════════════════════════════
+
+  async loadSlaRules(): Promise<void> {
+    this.loadingSla.set(true);
+    try {
+      const data = await firstValueFrom(
+        this.http.get<SlaConfigApi[]>(`${this.apiUrl}/v1/sla`)
+      );
+      this.slaRules.set(data);
+      // Also load subetapas for the dropdown
+      if (this.allSubetapas().length === 0) {
+        await this.loadAllSubetapas();
+      }
+    } catch (err) {
+      console.error('Error loading SLA rules:', err);
+    } finally {
+      this.slaLoaded.set(true);
+      this.loadingSla.set(false);
+    }
+  }
+
+  async loadAllSubetapas(): Promise<void> {
+    try {
+      const hitos = await firstValueFrom(
+        this.http.get<HitoMaster[]>(`${this.apiUrl}/v1/hitos`)
+      );
+      const subs: { id: number; nombre: string; hitoNombre: string }[] = [];
+      for (const h of hitos) {
+        for (const s of h.subetapas || []) {
+          subs.push({ id: s.id, nombre: s.nombre, hitoNombre: h.nombre });
+        }
+      }
+      this.allSubetapas.set(subs);
+    } catch (err) {
+      console.error('Error loading subetapas:', err);
+    }
+  }
+
+  async createSlaRule(): Promise<void> {
+    this.savingSla.set(true);
+    try {
+      const body: any = {
+        diasObjetivo: this.newSlaObjetivo(),
+        diasTolerancia: this.newSlaTolerance(),
+      };
+      if (this.newSlaTipoVehiculoId()) body.tipoVehiculoId = this.newSlaTipoVehiculoId();
+      if (this.newSlaSubetapaId()) body.subetapaId = this.newSlaSubetapaId();
+
+      await firstValueFrom(
+        this.http.post(`${this.apiUrl}/v1/sla`, body)
+      );
+      this.showNewSlaForm.set(false);
+      this.newSlaTipoVehiculoId.set(null);
+      this.newSlaSubetapaId.set(null);
+      this.newSlaObjetivo.set(5);
+      this.newSlaTolerance.set(2);
+      await this.loadSlaRules();
+    } catch (err) {
+      console.error('Error creating SLA rule:', err);
+    } finally {
+      this.savingSla.set(false);
+    }
+  }
+
+  startEditSla(sla: SlaConfigApi): void {
+    this.editingSlaId.set(sla.id);
+    this.editSlaObjetivo.set(sla.diasObjetivo);
+    this.editSlaTolerance.set(sla.diasTolerancia);
+  }
+
+  async saveSlaEdit(id: number): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.apiUrl}/v1/sla/${id}`, {
+          diasObjetivo: this.editSlaObjetivo(),
+          diasTolerancia: this.editSlaTolerance(),
+        })
+      );
+      this.editingSlaId.set(null);
+      await this.loadSlaRules();
+    } catch (err) {
+      console.error('Error updating SLA rule:', err);
+    }
+  }
+
+  async deleteSlaRule(id: number): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/v1/sla/${id}`)
+      );
+      this.confirmDeleteSlaId.set(null);
+      this.slaRules.update(rules => rules.filter(r => r.id !== id));
+    } catch (err) {
+      console.error('Error deleting SLA rule:', err);
     }
   }
 

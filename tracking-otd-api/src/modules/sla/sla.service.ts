@@ -16,6 +16,7 @@ export class SlaService {
     const qb = this.repo.createQueryBuilder('s')
       .leftJoinAndSelect('s.empresa', 'empresa')
       .leftJoinAndSelect('s.subetapa', 'subetapa')
+      .leftJoinAndSelect('subetapa.hito', 'hito')
       .leftJoinAndSelect('s.tipoVehiculo', 'tv');
     if (filters.empresaId) qb.andWhere('s.empresa_id = :empresaId', { empresaId: filters.empresaId });
     if (filters.subetapaId) qb.andWhere('s.subetapa_id = :subetapaId', { subetapaId: filters.subetapaId });

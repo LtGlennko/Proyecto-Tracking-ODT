@@ -26,6 +26,21 @@ function fmtDate(d: Date | null | undefined): string {
   return new Date(d).toISOString().slice(0, 10);
 }
 
+/** Add days to a YYYY-MM-DD date string */
+function addDaysStr(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+interface SlaRow {
+  empresaId: number | null;
+  subetapaId: number | null;
+  tipoVehiculoId: number | null;
+  diasObjetivo: number;
+  diasTolerancia: number;
+}
+
 interface HierarchyFilters {
   empresaId?: number;
   estado?: string;
@@ -202,6 +217,16 @@ export class TrackingService {
       });
     }
 
+    // 6b. Load all SLA configs (for baseline/plan computation)
+    const slaConfigs: SlaRow[] = await this.dataSource.createQueryBuilder()
+      .select('s.empresa_id', 'empresaId')
+      .addSelect('s.subetapa_id', 'subetapaId')
+      .addSelect('s.tipo_vehiculo_id', 'tipoVehiculoId')
+      .addSelect('s.dias_objetivo', 'diasObjetivo')
+      .addSelect('s.dias_tolerancia', 'diasTolerancia')
+      .from('sla_config', 's')
+      .getRawMany();
+
     // 7. Load full staging_vin rows for date resolution via campo_staging_vin
     const stagingRows: any[] = await this.dataSource.createQueryBuilder()
       .select('sv.*')
@@ -240,7 +265,7 @@ export class TrackingService {
       const subConfig = subConfigByTipo.get(tvId);
       const stagingRow = stagingByVin.get(row.vinId);
 
-      const stages = this.buildStages(vinHitos, vinSubs, hitoConfig, subConfig, subetapaById, stagingRow);
+      const stages = this.buildStages(vinHitos, vinSubs, hitoConfig, subConfig, subetapaById, stagingRow, slaConfigs, tvId, row.empresaDbId);
 
       // Derive estado from actual stage statuses (not from stored values)
       const estadoGeneral = this.deriveEstadoGeneral(stages);
@@ -338,6 +363,9 @@ export class TrackingService {
     subConfig: SubConfig[] | undefined,
     subetapaById: Map<number, SubetapaDef>,
     stagingRow: any | undefined,
+    slaConfigs: SlaRow[],
+    tipoVehiculoId: number,
+    empresaId: number | null,
   ): any[] {
     const hitoTrackMap = new Map<number, VinHitoTracking>();
     for (const ht of hitos) hitoTrackMap.set(ht.hitoId, ht);
@@ -365,13 +393,13 @@ export class TrackingService {
       .filter(c => c.activo !== false)
       .map(c => ({ hitoId: c.hitoId, carril: c.carril, grupoParaleloId: c.grupoParaleloId }));
 
-    return orderedHitoIds.map(({ hitoId, carril, grupoParaleloId }) => {
+    // 1. Build stages with subStages (real dates only)
+    const stages = orderedHitoIds.map(({ hitoId, carril, grupoParaleloId }) => {
       const ht = hitoTrackMap.get(hitoId);
       const slug = HITO_SLUG[hitoId] || `hito_${hitoId}`;
 
       const hitoSubDefs = subDefsByHito.get(hitoId) || [];
 
-      // Only show subetapas configured for this tipo_vehiculo — no fallback
       const filteredSubs = (!subConfig || subConfig.length === 0) ? [] : hitoSubDefs
         .filter(sd => {
           const sc = subConfigMap.get(sd.id);
@@ -386,53 +414,146 @@ export class TrackingService {
       const subStages = filteredSubs.map(sd => {
         let fechaReal: string = '';
         if (sd.campoStagingVin && stagingRow) {
-          // Non-GAP: read from staging_vin via campo_staging_vin
           const val = stagingRow[sd.campoStagingVin];
           if (val) fechaReal = fmtDate(val);
         } else if (!sd.campoStagingVin) {
-          // GAP manual: read from vin_subetapa_tracking.fecha_real
           const st = subTrackMap.get(sd.id);
           if (st?.fechaReal) fechaReal = fmtDate(st.fechaReal);
         }
 
-        // Derive status from fecha_real presence (no SLA = no plan dates = no delay)
         const subStatus = fechaReal ? 'completed' : 'pending';
 
         return {
           id: `sub-${sd.id}`,
+          _dbSubId: sd.id, // temporary — used for SLA resolution, removed before return
           name: sd.nombre || '',
-          baseline: { start: '', end: '' }, // Empty until SLA is configured
-          plan: { start: '', end: '' },     // Empty until SLA is configured
+          baseline: { start: '', end: '' },
+          plan: { start: '', end: '' },
           real: { start: fechaReal, end: fechaReal },
           status: subStatus,
         };
       });
-
-      // Derive hito status from its subetapas
-      let hitoStatus: string;
-      if (subStages.length === 0) {
-        hitoStatus = 'pending';
-      } else if (subStages.every(s => s.status === 'completed')) {
-        hitoStatus = 'completed';
-      } else if (subStages.some(s => s.status === 'completed')) {
-        hitoStatus = 'active';
-      } else {
-        hitoStatus = 'pending';
-      }
 
       return {
         id: slug,
         name: HITO_LABELS[slug] || ht?.hito?.nombre || slug,
         carril: carril || ht?.hito?.carril || 'operativo',
         grupoParaleloId: grupoParaleloId || null,
-        status: hitoStatus,
+        status: 'pending', // will be derived after baseline/plan pass
         isParallel: grupoParaleloId != null,
-        baseline: { start: '', end: '' }, // Empty until SLA is configured
-        plan: { start: '', end: '' },     // Empty until SLA is configured
-        real: { start: '', end: '' },     // Hito-level real dates not applicable
+        baseline: { start: '', end: '' },
+        plan: { start: '', end: '' },
+        real: { start: '', end: '' },
         subStages,
       };
     });
+
+    // 2. Compute baseline & plan
+    //    - First sub of entire flow: no baseline (already has real date)
+    //    - Within same hito: sequential chain (sub → sub)
+    //    - New group: first sub baseline = previous group's last end (same carril preferred, fallback other)
+    //    - Same parallel group: each hito starts from previous group's end (parallel execution)
+    //    - If previous has no date: chain breaks → no baseline, no plan
+    let prevGroupEndByCarril: Record<string, string> = {};
+    let currentGroupEndByCarril: Record<string, string> = {};
+    let currentGroupId: number | null | undefined = undefined;
+
+    for (const stage of stages) {
+      const gid = stage.grupoParaleloId;
+      const isNewGroup = gid == null || gid !== currentGroupId;
+
+      if (isNewGroup) {
+        // Finalize: previous group ends become the reference for the next group
+        if (Object.keys(currentGroupEndByCarril).length > 0) {
+          prevGroupEndByCarril = { ...currentGroupEndByCarril };
+        }
+        currentGroupEndByCarril = {};
+        currentGroupId = gid;
+      }
+
+      const carril = stage.carril || 'operativo';
+      const otherCarril = carril === 'financiero' ? 'operativo' : 'financiero';
+
+      // Starting point: previous group's end for same carril, fallback to other carril
+      let prevEnd = prevGroupEndByCarril[carril] || prevGroupEndByCarril[otherCarril] || '';
+
+      for (const sub of stage.subStages) {
+        if (prevEnd) {
+          sub.baseline = { start: prevEnd, end: prevEnd };
+
+          // Plan = baseline.start + SLA diasObjetivo
+          const sla = this.resolveSlaInline(slaConfigs, (sub as any)._dbSubId, tipoVehiculoId, empresaId);
+          if (sla) {
+            sub.plan = { start: prevEnd, end: addDaysStr(prevEnd, sla.diasObjetivo) };
+          }
+        }
+
+        // Advance chain: real has priority, then plan. Empty = chain breaks.
+        prevEnd = sub.real.end || sub.plan.end || '';
+      }
+
+      // Track this hito's last end for the current group (by carril)
+      if (prevEnd) {
+        if (!currentGroupEndByCarril[carril] || prevEnd > currentGroupEndByCarril[carril]) {
+          currentGroupEndByCarril[carril] = prevEnd;
+        }
+      }
+    }
+
+    // 3. Derive hito-level status and dates from subStages, then clean up _dbSubId
+    for (const stage of stages) {
+      const subs = stage.subStages;
+
+      // Hito status
+      if (subs.length === 0) {
+        stage.status = 'pending';
+      } else if (subs.every(s => s.status === 'completed')) {
+        stage.status = 'completed';
+      } else if (subs.some(s => s.status === 'completed')) {
+        stage.status = 'active';
+      } else {
+        stage.status = 'pending';
+      }
+
+      // Hito-level dates: aggregate from subStages
+      const firstSub = subs[0];
+      const lastSub = subs[subs.length - 1];
+      if (firstSub) {
+        stage.baseline.start = firstSub.baseline.start;
+        stage.plan.start = firstSub.plan.start;
+        stage.real.start = firstSub.real.start;
+      }
+      if (lastSub) {
+        stage.baseline.end = lastSub.baseline.end;
+        stage.plan.end = lastSub.plan.end;
+        stage.real.end = lastSub.real.end;
+      }
+
+      // Clean up temporary field
+      for (const sub of subs) {
+        delete (sub as any)._dbSubId;
+      }
+    }
+
+    return stages;
+  }
+
+  /** Resolve the best SLA config for a subetapa (inline, no DB call) */
+  private resolveSlaInline(
+    configs: SlaRow[],
+    subetapaDbId: number,
+    tipoVehiculoId: number,
+    empresaId: number | null,
+  ): SlaRow | null {
+    const candidates = configs.filter(s => {
+      if (s.subetapaId && s.subetapaId !== subetapaDbId) return false;
+      if (s.tipoVehiculoId && s.tipoVehiculoId !== tipoVehiculoId) return false;
+      if (s.empresaId && empresaId && s.empresaId !== empresaId) return false;
+      return true;
+    });
+    if (candidates.length === 0) return null;
+    const score = (s: SlaRow) => [s.empresaId, s.subetapaId, s.tipoVehiculoId].filter(Boolean).length;
+    return candidates.reduce((a, b) => score(a) >= score(b) ? a : b);
   }
 
   // ── Single VIN tracking ──

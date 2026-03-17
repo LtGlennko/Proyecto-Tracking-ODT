@@ -13,6 +13,7 @@ export interface VinModel {
   id: string;
   fichaId: string;
   clientName: string;
+  isVic?: boolean;
   tipoVehiculo?: TipoVehiculoModel;
   modelo: string;
   lote: string;

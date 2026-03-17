@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SlaService } from './sla.service';
 import { CreateSlaDto } from './dto/create-sla.dto';
@@ -8,7 +9,7 @@ import { ResolveSlaDto } from './dto/resolve-sla.dto';
 
 @ApiTags('sla')
 @ApiBearerAuth('azure-ad-b2c')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('v1/sla')
 export class SlaController {
   constructor(private service: SlaService) {}

@@ -9,6 +9,7 @@ import { StatusBadgeComponent } from '@kaufmann/shared/ui';
 import { VehicleIconComponent } from '@kaufmann/shared/ui';
 import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracking-drawer.component';
 import { VisualMapComponent } from '../../components/visual-map/visual-map.component';
+import { GanttViewComponent } from '../../components/gantt-view/gantt-view.component';
 import { formatDate } from '@kaufmann/shared/utils';
 
 /** Known tipo vehiculo options for filter dropdown */
@@ -21,7 +22,7 @@ const TIPO_VEHICULO_FILTER_OPTIONS: TipoVehiculoModel[] = [
 
 @Component({
     selector: 'kf-tracking-list-page',
-    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent],
+    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent],
     templateUrl: './tracking-list-page.component.html'
 })
 export class TrackingListPageComponent implements OnInit {
@@ -45,6 +46,9 @@ export class TrackingListPageComponent implements OnInit {
 
   // VIN selected for inline visual map (null = show list)
   visualMapVin = signal<VinModel | null>(null);
+
+  // Toggle between visual map and gantt within VIN detail view
+  vinViewMode = signal<'map' | 'gantt'>('map');
 
   estadoOptions: EstadoVin[] = ['A TIEMPO', 'DEMORADO', 'FINALIZADO'];
   tipoVehiculoOptions: TipoVehiculoModel[] = TIPO_VEHICULO_FILTER_OPTIONS;
@@ -161,6 +165,31 @@ export class TrackingListPageComponent implements OnInit {
   }
 
   formatDate = formatDate;
+
+  private readonly shortDateFmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+
+  /** F. Inicial: fecha de la primera subetapa del flujo */
+  getFirstDate(vin: VinModel): string {
+    const first = vin.stages?.[0]?.subStages?.[0];
+    if (!first) return '—';
+    const d = first.plan.start || first.real.start || first.baseline.start;
+    return d ? this.fmtDate(d) : '—';
+  }
+
+  /** F. Estimada: fecha de la última subetapa del flujo */
+  getLastDate(vin: VinModel): string {
+    const lastStage = vin.stages?.[vin.stages.length - 1];
+    const last = lastStage?.subStages?.[lastStage.subStages.length - 1];
+    if (!last) return '—';
+    const d = last.plan.end || last.real.end || last.baseline.end;
+    return d ? this.fmtDate(d) : '—';
+  }
+
+  private fmtDate(d: string): string {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '—';
+    return this.shortDateFmt.format(date);
+  }
 
   prevPage() { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
   nextPage() { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
