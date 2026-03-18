@@ -3,7 +3,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
+import { TrackingStore, TipoVehiculoService } from '@kaufmann/tracking-otd/data-access';
 import { VinModel, EstadoVin, TipoVehiculoModel, FichaModel, HitoTracking, HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
 import { StatusBadgeComponent } from '@kaufmann/shared/ui';
 import { VehicleIconComponent } from '@kaufmann/shared/ui';
@@ -12,13 +12,6 @@ import { VisualMapComponent } from '../../components/visual-map/visual-map.compo
 import { GanttViewComponent } from '../../components/gantt-view/gantt-view.component';
 import { formatDate } from '@kaufmann/shared/utils';
 
-/** Known tipo vehiculo options for filter dropdown */
-const TIPO_VEHICULO_FILTER_OPTIONS: TipoVehiculoModel[] = [
-  { id: 1, nombre: 'Camión', slug: 'camion', color: '#2563eb' },
-  { id: 2, nombre: 'Bus', slug: 'bus', color: '#0ea5e9' },
-  { id: 3, nombre: 'Maquinaria', slug: 'maquinaria', color: '#f97316' },
-  { id: 4, nombre: 'Vehículo Ligero', slug: 'vehiculo_ligero', color: '#a855f7' },
-];
 
 @Component({
     selector: 'kf-tracking-list-page',
@@ -50,8 +43,9 @@ export class TrackingListPageComponent implements OnInit {
   // Toggle between visual map and gantt within VIN detail view
   vinViewMode = signal<'map' | 'gantt'>('map');
 
+  private readonly tvService = inject(TipoVehiculoService);
   estadoOptions: EstadoVin[] = ['A TIEMPO', 'DEMORADO', 'FINALIZADO'];
-  tipoVehiculoOptions: TipoVehiculoModel[] = TIPO_VEHICULO_FILTER_OPTIONS;
+  tipoVehiculoOptions = this.tvService.items;
 
   pagedVins = computed(() => {
     const all = this.store.vinsFiltrados();
@@ -76,6 +70,7 @@ export class TrackingListPageComponent implements OnInit {
     const storeBusqueda = this.store.filtros().busqueda;
     if (storeBusqueda) this.searchValue.set(storeBusqueda);
 
+    this.tvService.load();
     this.store.loadClientes();
   }
 
@@ -95,8 +90,18 @@ export class TrackingListPageComponent implements OnInit {
     this.currentPage.set(1);
   }
 
+  setEstadoValue(val: string) {
+    this.store.setFiltro('estado', val || null);
+    this.currentPage.set(1);
+  }
+
   setTipoVehiculo(e: Event) {
     const val = (e.target as HTMLSelectElement).value;
+    this.store.setFiltro('tipoVehiculoId', val ? Number(val) : null);
+    this.currentPage.set(1);
+  }
+
+  setTipoVehiculoValue(val: string) {
     this.store.setFiltro('tipoVehiculoId', val ? Number(val) : null);
     this.currentPage.set(1);
   }

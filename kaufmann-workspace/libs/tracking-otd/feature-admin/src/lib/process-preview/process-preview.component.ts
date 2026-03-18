@@ -15,7 +15,8 @@ interface SubetapaConfigView {
   subetapaConfigId: number | null;
   subetapaId: number;
   nombre: string;
-  campoStagingVin: string | null;
+  campoStagingReal: string | null;
+  campoStagingPlan: string | null;
   orden: number;
   activo: boolean;
 }

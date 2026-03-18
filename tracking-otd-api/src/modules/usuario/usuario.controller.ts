@@ -29,8 +29,8 @@ export class UsuarioController {
   }
 
   @Patch(':id')
-  @Roles('superadministrador')
-  @ApiOperation({ summary: 'Actualiza perfil o estado de un usuario (solo superadmin)' })
+  @Roles('superadministrador', 'administrador')
+  @ApiOperation({ summary: 'Actualiza perfil o estado de un usuario' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUsuarioDto,
@@ -39,8 +39,8 @@ export class UsuarioController {
   }
 
   @Put(':id/empresas')
-  @Roles('superadministrador')
-  @ApiOperation({ summary: 'Asigna empresas a un usuario (reemplaza las existentes)' })
+  @Roles('superadministrador', 'administrador')
+  @ApiOperation({ summary: 'Asigna empresas a un usuario' })
   assignEmpresas(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignEmpresasDto,

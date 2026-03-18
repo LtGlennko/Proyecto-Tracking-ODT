@@ -62,7 +62,8 @@ interface SubetapaDef {
   id: number;
   hitoId: number;
   nombre: string;
-  campoStagingVin: string | null;
+  campoStagingReal: string | null;
+  campoStagingPlan: string | null;
 }
 
 @Injectable()
@@ -176,12 +177,13 @@ export class TrackingService {
       });
     }
 
-    // 6. Load all subetapa definitions (for campo_staging_vin lookup)
+    // 6. Load all subetapa definitions (for campo_staging_real/plan lookup)
     const allSubetapas: any[] = await this.dataSource.createQueryBuilder()
       .select('s.id', 'id')
       .addSelect('s.hito_id', 'hitoId')
       .addSelect('s.nombre', 'nombre')
-      .addSelect('s.campo_staging_vin', 'campoStagingVin')
+      .addSelect('s.campo_staging_real', 'campoStagingReal')
+      .addSelect('s.campo_staging_plan', 'campoStagingPlan')
       .from('subetapa', 's')
       .getRawMany();
 
@@ -191,7 +193,8 @@ export class TrackingService {
         id: s.id,
         hitoId: s.hitoId,
         nombre: s.nombre,
-        campoStagingVin: s.campoStagingVin,
+        campoStagingReal: s.campoStagingReal,
+        campoStagingPlan: s.campoStagingPlan,
       });
     }
 
@@ -371,9 +374,15 @@ export class TrackingService {
 
       const subStages = filteredSubs.map(sd => {
         let fechaReal: string = '';
-        if (sd.campoStagingVin && stagingRow) {
-          const val = stagingRow[sd.campoStagingVin];
+        if (sd.campoStagingReal && stagingRow) {
+          const val = stagingRow[sd.campoStagingReal];
           if (val) fechaReal = fmtDate(val);
+        }
+
+        let fechaPlanStaging: string = '';
+        if (sd.campoStagingPlan && stagingRow) {
+          const val = stagingRow[sd.campoStagingPlan];
+          if (val) fechaPlanStaging = fmtDate(val);
         }
 
         const subStatus = fechaReal ? 'completed' : 'pending';
@@ -383,7 +392,7 @@ export class TrackingService {
           _dbSubId: sd.id, // temporary — used for SLA resolution, removed before return
           name: sd.nombre || '',
           baseline: { start: '', end: '' },
-          plan: { start: '', end: '' },
+          plan: { start: fechaPlanStaging, end: fechaPlanStaging },
           real: { start: fechaReal, end: fechaReal },
           status: subStatus,
         };
@@ -406,12 +415,15 @@ export class TrackingService {
     // 2. Compute baseline & plan
     //    - First sub of entire flow: no baseline (already has real date)
     //    - Within same hito: sequential chain (sub → sub)
-    //    - New group: first sub baseline = previous group's last end (same carril preferred, fallback other)
-    //    - Same parallel group: each hito starts from previous group's end (parallel execution)
+    //    - New group: starting point = previous group's last end (same carril preferred, fallback other)
+    //    - Same group, same carril: sequential chain (hito chains from previous hito in same carril)
+    //    - Same group, different carril: parallel (each carril starts from previous group's end)
     //    - If previous has no date: chain breaks → no baseline, no plan
     let prevGroupEndByCarril: Record<string, string> = {};
     let currentGroupEndByCarril: Record<string, string> = {};
     let currentGroupId: number | null | undefined = undefined;
+    // Track running end per carril WITHIN the current group (for same-carril chaining)
+    let inGroupRunningByCarril: Record<string, string> = {};
 
     for (const stage of stages) {
       const gid = stage.grupoParaleloId;
@@ -423,23 +435,31 @@ export class TrackingService {
           prevGroupEndByCarril = { ...currentGroupEndByCarril };
         }
         currentGroupEndByCarril = {};
+        inGroupRunningByCarril = {};
         currentGroupId = gid;
       }
 
       const carril = stage.carril || 'operativo';
       const otherCarril = carril === 'financiero' ? 'operativo' : 'financiero';
 
-      // Starting point: previous group's end for same carril, fallback to other carril
-      let prevEnd = prevGroupEndByCarril[carril] || prevGroupEndByCarril[otherCarril] || '';
+      // Starting point for this hito:
+      // - If same carril already has a running end within this group → chain from it (sequential within carril)
+      // - Otherwise → previous group's end for same carril, fallback to other carril
+      let prevEnd = inGroupRunningByCarril[carril]
+        || prevGroupEndByCarril[carril]
+        || prevGroupEndByCarril[otherCarril]
+        || '';
 
       for (const sub of stage.subStages) {
         if (prevEnd) {
           sub.baseline = { start: prevEnd, end: prevEnd };
 
-          // Plan = baseline.start + SLA diasObjetivo
-          const sla = this.resolveSlaInline(slaConfigs, (sub as any)._dbSubId, tipoVehiculoId, empresaId);
-          if (sla) {
-            sub.plan = { start: prevEnd, end: addDaysStr(prevEnd, sla.diasObjetivo) };
+          // Plan from staging_vin takes priority; SLA as fallback
+          if (!sub.plan.start) {
+            const sla = this.resolveSlaInline(slaConfigs, (sub as any)._dbSubId, tipoVehiculoId, empresaId);
+            if (sla) {
+              sub.plan = { start: prevEnd, end: addDaysStr(prevEnd, sla.diasObjetivo) };
+            }
           }
         }
 
@@ -447,7 +467,12 @@ export class TrackingService {
         prevEnd = sub.real.end || sub.plan.end || '';
       }
 
-      // Track this hito's last end for the current group (by carril)
+      // Track running end for this carril within the current group
+      if (prevEnd) {
+        inGroupRunningByCarril[carril] = prevEnd;
+      }
+
+      // Track this hito's last end for the current group (by carril) — for cross-group reference
       if (prevEnd) {
         if (!currentGroupEndByCarril[carril] || prevEnd > currentGroupEndByCarril[carril]) {
           currentGroupEndByCarril[carril] = prevEnd;

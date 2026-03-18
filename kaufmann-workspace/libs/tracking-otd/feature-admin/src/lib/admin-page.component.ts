@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDragPreview, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SlaConfigModel } from '@kaufmann/shared/models';
 import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
+import { TipoVehiculoService } from '@kaufmann/tracking-otd/data-access';
 import { HitoConfigSwimlaneComponent } from './hito-config-swimlane/hito-config-swimlane.component';
 import { ProcessPreviewComponent } from './process-preview/process-preview.component';
 
@@ -22,7 +23,8 @@ interface SubetapaMaster {
   id: number;
   hitoId: number;
   nombre: string;
-  campoStagingVin: string | null;
+  campoStagingReal: string | null;
+  campoStagingPlan: string | null;
 }
 
 // GET /v1/hitos/config/:tipoVehiculo
@@ -41,7 +43,8 @@ interface SubetapaConfigView {
   subetapaConfigId: number | null;
   subetapaId: number;
   nombre: string;
-  campoStagingVin: string | null;
+  campoStagingReal: string | null;
+  campoStagingPlan: string | null;
   orden: number;
   activo: boolean;
 }
@@ -134,12 +137,6 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
   { value: 'fecha_entrega_cliente', label: 'fecha_entrega_cliente' },
 ];
 
-const TIPO_VEHICULO_OPTIONS = [
-  { id: 1, label: 'Camiones' },
-  { id: 2, label: 'Buses' },
-  { id: 3, label: 'Maquinaria' },
-  { id: 4, label: 'Vehículo Ligero' },
-];
 
 @Component({
     selector: 'kf-admin-page',
@@ -153,13 +150,18 @@ const TIPO_VEHICULO_OPTIONS = [
 
       <!-- Tabs -->
       <div class="flex border-b border-slate-200 gap-1">
-        @for (tab of tabs; track tab) {
+        @for (tab of visibleTabs(); track tab.id) {
           <button (click)="activeTab.set(tab.id)"
-            class="px-5 py-2.5 text-sm font-medium transition-colors rounded-t-md"
+            class="px-5 py-2.5 text-sm font-medium transition-colors rounded-t-md flex items-center gap-1.5"
           [class]="activeTab() === tab.id
-            ? 'bg-white border border-b-white border-slate-200 text-slate-800 -mb-px'
-            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
-          >{{ tab.label }}</button>
+            ? (tab.superOnly ? 'bg-red-50 border border-b-white border-red-200 text-red-800 -mb-px' : 'bg-white border border-b-white border-slate-200 text-slate-800 -mb-px')
+            : (tab.superOnly ? 'text-red-400 hover:text-red-600 hover:bg-red-50/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50')"
+          >
+            @if (tab.superOnly) {
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            }
+            {{ tab.label }}
+          </button>
         }
       </div>
 
@@ -273,7 +275,8 @@ const TIPO_VEHICULO_OPTIONS = [
                         <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-8"></th>
                         <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-10">#</th>
                         <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Subetapa</th>
-                        <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Campo staging_vin</th>
+                        <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Campo Fecha Plan</th>
+                        <th class="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Campo Fecha Real</th>
                         @if (auth.isSuperAdmin()) {
                           <th class="text-center px-3 py-2 text-xs font-semibold text-slate-500 uppercase w-28">Acciones</th>
                         }
@@ -298,18 +301,35 @@ const TIPO_VEHICULO_OPTIONS = [
                           </td>
                           <td class="px-3 py-2.5">
                             @if (editingMasterSubId() === sub.id) {
-                              <select [ngModel]="editSubCampo()" (ngModelChange)="editSubCampo.set($event)"
+                              <select [ngModel]="editSubCampoPlan()" (ngModelChange)="editSubCampoPlan.set($event)"
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">— GAP manual —</option>
+                                <option value="">— No asignado —</option>
                                 @for (col of stagingVinColumns; track col.value) {
                                   <option [value]="col.value">{{ col.label }}</option>
                                 }
                               </select>
                             } @else {
-                              @if (sub.campoStagingVin) {
-                                <code class="text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">{{ sub.campoStagingVin }}</code>
+                              @if (sub.campoStagingPlan) {
+                                <code class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono">{{ sub.campoStagingPlan }}</code>
                               } @else {
-                                <span class="text-xs text-amber-600 font-medium">GAP manual</span>
+                                <span class="text-xs text-slate-400">No asignado</span>
+                              }
+                            }
+                          </td>
+                          <td class="px-3 py-2.5">
+                            @if (editingMasterSubId() === sub.id) {
+                              <select [ngModel]="editSubCampoReal()" (ngModelChange)="editSubCampoReal.set($event)"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">— No asignado —</option>
+                                @for (col of stagingVinColumns; track col.value) {
+                                  <option [value]="col.value">{{ col.label }}</option>
+                                }
+                              </select>
+                            } @else {
+                              @if (sub.campoStagingReal) {
+                                <code class="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-mono">{{ sub.campoStagingReal }}</code>
+                              } @else {
+                                <span class="text-xs text-slate-400">No asignado</span>
                               }
                             }
                           </td>
@@ -369,9 +389,18 @@ const TIPO_VEHICULO_OPTIONS = [
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             </td>
                             <td class="px-3 py-2">
-                              <select [ngModel]="newSubCampo()" (ngModelChange)="newSubCampo.set($event)"
+                              <select [ngModel]="newSubCampoPlan()" (ngModelChange)="newSubCampoPlan.set($event)"
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">— GAP manual —</option>
+                                <option value="">— No asignado —</option>
+                                @for (col of stagingVinColumns; track col.value) {
+                                  <option [value]="col.value">{{ col.label }}</option>
+                                }
+                              </select>
+                            </td>
+                            <td class="px-3 py-2">
+                              <select [ngModel]="newSubCampoReal()" (ngModelChange)="newSubCampoReal.set($event)"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">— No asignado —</option>
                                 @for (col of stagingVinColumns; track col.value) {
                                   <option [value]="col.value">{{ col.label }}</option>
                                 }
@@ -393,8 +422,8 @@ const TIPO_VEHICULO_OPTIONS = [
                           </tr>
                         } @else {
                           <tr>
-                            <td colspan="5" class="px-4 py-2">
-                              <button (click)="addingSubToHitoId.set(hito.id); newSubNombre.set(''); newSubCampo.set('')"
+                            <td colspan="6" class="px-4 py-2">
+                              <button (click)="addingSubToHitoId.set(hito.id); newSubNombre.set(''); newSubCampoReal.set(''); newSubCampoPlan.set('')"
                                 class="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
                                 + Añadir subetapa
                               </button>
@@ -425,7 +454,7 @@ const TIPO_VEHICULO_OPTIONS = [
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium text-slate-600">Tipo de vehículo:</span>
             <div class="flex gap-1">
-              @for (tv of tipoVehiculoOptions; track tv.id) {
+              @for (tv of tipoVehiculoOptions(); track tv.id) {
                 <button (click)="selectTipoVehiculo(tv.id)"
                   class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border"
                   [class]="selectedTipoVehiculo() === tv.id
@@ -465,7 +494,7 @@ const TIPO_VEHICULO_OPTIONS = [
               </span>
             </button>
 
-            @if (auth.isSuperAdmin()) {
+            @if (auth.isAdmin()) {
               <div class="ml-auto">
                 <button (click)="showResetConfirm.set(true)"
                   class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
@@ -530,7 +559,7 @@ const TIPO_VEHICULO_OPTIONS = [
               <kf-hito-config-swimlane
                 [hitos]="hitoConfigs()"
                 [grupos]="gruposParalelos()"
-                [isSuperAdmin]="auth.isSuperAdmin()"
+                [isSuperAdmin]="auth.isAdmin()"
                 (reorderHitos)="handleReorderHitos($event)"
                 (moveHitoToTarget)="handleMoveHitoToTarget($event)"
                 (reorderGroups)="handleReorderGroups($event)"
@@ -549,7 +578,7 @@ const TIPO_VEHICULO_OPTIONS = [
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <p class="text-xs text-slate-400">Reglas de Lead Time (SLA) por tipo de vehículo y subetapa. Objetivo = días meta, Tolerancia = días adicionales, Crítico = suma.</p>
-            @if (auth.isSuperAdmin()) {
+            @if (auth.isAdmin()) {
               <button (click)="showNewSlaForm.set(true)"
                 class="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 ml-4"
                 [class.hidden]="showNewSlaForm()">
@@ -559,7 +588,7 @@ const TIPO_VEHICULO_OPTIONS = [
           </div>
 
           <!-- Formulario nueva regla -->
-          @if (showNewSlaForm() && auth.isSuperAdmin()) {
+          @if (showNewSlaForm() && auth.isAdmin()) {
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
               <h4 class="text-xs font-semibold text-slate-700">Nueva Regla SLA</h4>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -568,7 +597,7 @@ const TIPO_VEHICULO_OPTIONS = [
                   <select [ngModel]="newSlaTipoVehiculoId()" (ngModelChange)="newSlaTipoVehiculoId.set($event ? +$event : null)"
                     class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option [ngValue]="null">— Todos —</option>
-                    @for (tv of tipoVehiculoOptions; track tv.id) {
+                    @for (tv of tipoVehiculoOptions(); track tv.id) {
                       <option [ngValue]="tv.id">{{ tv.label }}</option>
                     }
                   </select>
@@ -594,6 +623,23 @@ const TIPO_VEHICULO_OPTIONS = [
                     class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
+              <!-- Alerta de regla existente -->
+              @if (existingSlaMatch(); as match) {
+                <div class="bg-amber-50 border border-amber-300 rounded-lg p-3 flex items-start gap-2">
+                  <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                  </svg>
+                  <div class="text-xs">
+                    <p class="font-semibold text-amber-800">Ya existe una regla para esta combinación</p>
+                    <p class="text-amber-700 mt-0.5">
+                      Objetivo: <span class="font-bold">{{ match.diasObjetivo }}d</span> ·
+                      Tolerancia: <span class="font-bold">{{ match.diasTolerancia }}d</span> ·
+                      Crítico: <span class="font-bold text-red-600">{{ match.diasCritico }}d</span>
+                    </p>
+                  </div>
+                </div>
+              }
+
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4 text-xs">
                   <span class="text-slate-500">Crítico calculado:
@@ -602,10 +648,17 @@ const TIPO_VEHICULO_OPTIONS = [
                 </div>
                 <div class="flex gap-2">
                   <button (click)="showNewSlaForm.set(false)" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
-                  <button (click)="createSlaRule()" [disabled]="savingSla()"
-                    class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                    {{ savingSla() ? 'Guardando...' : 'Guardar' }}
-                  </button>
+                  @if (existingSlaMatch()) {
+                    <button (click)="updateExistingSla()" [disabled]="savingSla()"
+                      class="px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors">
+                      {{ savingSla() ? 'Actualizando...' : 'Actualizar existente' }}
+                    </button>
+                  } @else {
+                    <button (click)="createSlaRule()" [disabled]="savingSla()"
+                      class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                      {{ savingSla() ? 'Guardando...' : 'Guardar' }}
+                    </button>
+                  }
                 </div>
               </div>
             </div>
@@ -624,7 +677,7 @@ const TIPO_VEHICULO_OPTIONS = [
               <select [ngModel]="slaFilterTipoVehiculo()" (ngModelChange)="slaFilterTipoVehiculo.set($event ? +$event : null)"
                 class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option [ngValue]="null">Tipo: Todos</option>
-                @for (tv of tipoVehiculoOptions; track tv.id) {
+                @for (tv of tipoVehiculoOptions(); track tv.id) {
                   <option [ngValue]="tv.id">{{ tv.label }}</option>
                 }
               </select>
@@ -661,7 +714,7 @@ const TIPO_VEHICULO_OPTIONS = [
                         <span class="w-2 h-2 rounded-full bg-red-500"></span> Crítico
                       </span>
                     </th>
-                    @if (auth.isSuperAdmin()) {
+                    @if (auth.isAdmin()) {
                       <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Acciones</th>
                     }
                   </tr>
@@ -694,7 +747,7 @@ const TIPO_VEHICULO_OPTIONS = [
                         <td class="px-3 py-2.5 text-center">
                           <span class="text-red-600 font-semibold text-xs">{{ editSlaObjetivo() + editSlaTolerance() }}d</span>
                         </td>
-                        @if (auth.isSuperAdmin()) {
+                        @if (auth.isAdmin()) {
                           <td class="px-3 py-2.5 text-center">
                             <div class="flex items-center justify-center gap-1">
                               <button (click)="saveSlaEdit(sla.id)" class="px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50 rounded transition-colors">Guardar</button>
@@ -712,7 +765,7 @@ const TIPO_VEHICULO_OPTIONS = [
                         <td class="px-3 py-2.5 text-center">
                           <span class="text-red-600 font-semibold text-xs">{{ sla.diasCritico }}d</span>
                         </td>
-                        @if (auth.isSuperAdmin()) {
+                        @if (auth.isAdmin()) {
                           <td class="px-3 py-2.5 text-center">
                             @if (confirmDeleteSlaId() === sla.id) {
                               <div class="flex items-center justify-center gap-1">
@@ -917,7 +970,7 @@ const TIPO_VEHICULO_OPTIONS = [
                     <th class="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Perfil</th>
                     <th class="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Empresas</th>
                     <th class="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                    @if (auth.isSuperAdmin()) {
+                    @if (auth.isAdmin()) {
                       <th class="text-center px-3 py-3 text-xs font-semibold text-slate-500 uppercase">Acciones</th>
                     }
                   </tr>
@@ -982,7 +1035,7 @@ const TIPO_VEHICULO_OPTIONS = [
                             [class]="user.activo ? 'bg-emerald-500' : 'bg-slate-300'"></span>
                         }
                       </td>
-                      @if (auth.isSuperAdmin()) {
+                      @if (auth.isAdmin()) {
                         <td class="px-3 py-3 text-center">
                           @if (editingUserId() === user.id) {
                             <div class="flex items-center justify-center gap-1">
@@ -1026,14 +1079,18 @@ export class AdminPageComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(API_BASE_URL);
 
-  activeTab = signal<AdminTab>('hitos');
+  activeTab = signal<AdminTab>('config');
   tabs = [
-    { id: 'hitos' as AdminTab, label: 'Hitos Maestros' },
-    { id: 'config' as AdminTab, label: 'Config por Tipo' },
-    { id: 'sla' as AdminTab, label: 'SLA Config' },
-    { id: 'usuarios' as AdminTab, label: 'Usuarios' },
-    { id: 'mapeo' as AdminTab, label: 'Mapeo Campos' },
+    { id: 'config' as AdminTab, label: 'Config por Tipo', superOnly: false },
+    { id: 'sla' as AdminTab, label: 'SLA Config', superOnly: false },
+    { id: 'usuarios' as AdminTab, label: 'Usuarios', superOnly: false },
+    { id: 'hitos' as AdminTab, label: 'Hitos Maestros', superOnly: true },
+    { id: 'mapeo' as AdminTab, label: 'Mapeo Campos', superOnly: true },
   ];
+
+  visibleTabs = computed(() =>
+    this.tabs.filter(t => !t.superOnly || this.auth.isSuperAdmin())
+  );
 
   // ── Tab 1: Hitos Maestros ──
   hitosMaster = signal<HitoMaster[]>([]);
@@ -1042,7 +1099,8 @@ export class AdminPageComponent implements OnInit {
   stagingVinColumns = STAGING_VIN_DATE_COLUMNS;
   editingMasterSubId = signal<number | null>(null);
   editSubNombre = signal('');
-  editSubCampo = signal('');
+  editSubCampoReal = signal('');
+  editSubCampoPlan = signal('');
   savingMasterSub = signal(false);
 
   // Create hito
@@ -1057,14 +1115,18 @@ export class AdminPageComponent implements OnInit {
   // Create subetapa
   addingSubToHitoId = signal<number | null>(null);
   newSubNombre = signal('');
-  newSubCampo = signal('');
+  newSubCampoReal = signal('');
+  newSubCampoPlan = signal('');
   savingNewSub = signal(false);
 
   // Delete subetapa
   confirmDeleteSubId = signal<number | null>(null);
 
   // ── Tab 2: Config por Tipo ──
-  tipoVehiculoOptions = TIPO_VEHICULO_OPTIONS;
+  private readonly tvService = inject(TipoVehiculoService);
+  tipoVehiculoOptions = computed(() =>
+    this.tvService.items().map(tv => ({ id: tv.id, label: tv.nombre }))
+  );
   selectedTipoVehiculo = signal(1);
   hitoConfigs = signal<HitoConfigView[]>([]);
   gruposParalelos = signal<GrupoParaleloApi[]>([]);
@@ -1087,6 +1149,17 @@ export class AdminPageComponent implements OnInit {
   editSlaObjetivo = signal(0);
   editSlaTolerance = signal(0);
   confirmDeleteSlaId = signal<number | null>(null);
+
+  /** Detects if an existing SLA rule matches the current new form selections */
+  existingSlaMatch = computed(() => {
+    const tipoId = this.newSlaTipoVehiculoId();
+    const subId = this.newSlaSubetapaId();
+    if (!this.showNewSlaForm()) return null;
+    return this.slaRules().find(s =>
+      (s.tipoVehiculoId || null) === (tipoId || null) &&
+      (s.subetapaId || null) === (subId || null)
+    ) || null;
+  });
   allSubetapas = signal<{ id: number; nombre: string; hitoNombre: string }[]>([]);
   slaSearchQuery = signal('');
   slaFilterTipoVehiculo = signal<number | null>(null);
@@ -1242,6 +1315,7 @@ export class AdminPageComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.tvService.load();
     this.loadEmpresas();
     this.loadGruposParalelos();
   }
@@ -1272,7 +1346,8 @@ export class AdminPageComponent implements OnInit {
   startMasterSubEdit(sub: SubetapaMaster): void {
     this.editingMasterSubId.set(sub.id);
     this.editSubNombre.set(sub.nombre);
-    this.editSubCampo.set(sub.campoStagingVin ?? '');
+    this.editSubCampoReal.set(sub.campoStagingReal ?? '');
+    this.editSubCampoPlan.set(sub.campoStagingPlan ?? '');
   }
 
   cancelMasterSubEdit(): void {
@@ -1285,7 +1360,8 @@ export class AdminPageComponent implements OnInit {
       await firstValueFrom(
         this.http.patch(`${this.apiUrl}/v1/hitos/subetapas/${sub.id}`, {
           nombre: this.editSubNombre(),
-          campoStagingVin: this.editSubCampo() || null,
+          campoStagingReal: this.editSubCampoReal() || null,
+          campoStagingPlan: this.editSubCampoPlan() || null,
         })
       );
       this.editingMasterSubId.set(null);
@@ -1407,13 +1483,14 @@ export class AdminPageComponent implements OnInit {
       await firstValueFrom(
         this.http.post(`${this.apiUrl}/v1/hitos/${hitoId}/subetapas`, {
           nombre,
-          campoStagingVin: this.newSubCampo() || null,
+          campoStagingReal: this.newSubCampoReal() || null,
+          campoStagingPlan: this.newSubCampoPlan() || null,
           orden: (hito?.subetapas.length ?? 0) + 1,
         })
       );
       this.addingSubToHitoId.set(null);
       this.newSubNombre.set('');
-      this.newSubCampo.set('');
+      this.newSubCampoReal.set(''); this.newSubCampoPlan.set('');
       await this.loadMasterHitos();
     } catch (err) {
       console.error('Error creating subetapa:', err);
@@ -1739,7 +1816,7 @@ export class AdminPageComponent implements OnInit {
   }
 
   getTipoVehiculoLabel(id: number): string {
-    return this.tipoVehiculoOptions.find(t => t.id === id)?.label ?? '';
+    return this.tipoVehiculoOptions().find(t => t.id === id)?.label ?? '';
   }
 
   // ══════════════════════════════════════════
@@ -1815,6 +1892,30 @@ export class AdminPageComponent implements OnInit {
       await this.loadSlaRules();
     } catch (err) {
       console.error('Error creating SLA rule:', err);
+    } finally {
+      this.savingSla.set(false);
+    }
+  }
+
+  async updateExistingSla(): Promise<void> {
+    const match = this.existingSlaMatch();
+    if (!match) return;
+    this.savingSla.set(true);
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.apiUrl}/v1/sla/${match.id}`, {
+          diasObjetivo: this.newSlaObjetivo(),
+          diasTolerancia: this.newSlaTolerance(),
+        })
+      );
+      this.showNewSlaForm.set(false);
+      this.newSlaTipoVehiculoId.set(null);
+      this.newSlaSubetapaId.set(null);
+      this.newSlaObjetivo.set(5);
+      this.newSlaTolerance.set(2);
+      await this.loadSlaRules();
+    } catch (err) {
+      console.error('Error updating existing SLA rule:', err);
     } finally {
       this.savingSla.set(false);
     }
@@ -1947,8 +2048,8 @@ export class AdminPageComponent implements OnInit {
 
   // ── Tab 5: Mapeo Campos ──
 
-  async loadMapeoData() {
-    this.loadingMapeo.set(true);
+  async loadMapeoData(silent = false) {
+    if (!silent) this.loadingMapeo.set(true);
     try {
       const [columns, fuentes, grouped] = await Promise.all([
         firstValueFrom(this.http.get<StagingColumnInfo[]>(`${this.apiUrl}/v1/mapeo-campos-vin/staging-columns`)),
@@ -1960,7 +2061,7 @@ export class AdminPageComponent implements OnInit {
       this.mapeosByCampo.set(grouped);
       this.mapeoLoaded.set(true);
     } catch (err) { console.error('Error loading mapeo data:', err); }
-    finally { this.loadingMapeo.set(false); }
+    finally { if (!silent) this.loadingMapeo.set(false); }
   }
 
   startEditMapeo(m: MapeoCampoApi) {
@@ -1971,25 +2072,61 @@ export class AdminPageComponent implements OnInit {
   }
 
   async saveEditMapeo(id: number) {
-    this.savingMapeo.set(true);
+    const fuente = this.fuentesVin().find(f => f.id === this.editMapeoFuenteId());
+    // Optimistic update
+    this.mapeosByCampo.update(grouped => {
+      const result = { ...grouped };
+      for (const [campo, mapeos] of Object.entries(result)) {
+        const idx = mapeos.findIndex(m => m.id === id);
+        if (idx >= 0) {
+          const updated = [...mapeos];
+          updated[idx] = {
+            ...updated[idx],
+            idFuente: this.editMapeoFuenteId(),
+            nombreColumnaFuente: this.editMapeoColumna(),
+            activo: this.editMapeoActivo(),
+            fuente: fuente || updated[idx].fuente,
+          };
+          result[campo] = updated;
+          break;
+        }
+      }
+      return result;
+    });
+    this.editingMapeoId.set(null);
+
     try {
       await firstValueFrom(this.http.patch(`${this.apiUrl}/v1/mapeo-campos-vin/${id}`, {
         idFuente: this.editMapeoFuenteId(),
         nombreColumnaFuente: this.editMapeoColumna(),
         activo: this.editMapeoActivo(),
       }));
-      this.editingMapeoId.set(null);
-      this.mapeoLoaded.set(false);
-      await this.loadMapeoData();
+      await this.loadMapeoData(true);
     } catch (err) { console.error('Error updating mapeo:', err); }
-    finally { this.savingMapeo.set(false); }
   }
 
   async saveNewMapeo(campo: string) {
     if (!this.newMapeoFuenteId() || !this.newMapeoColumna()) return;
-    this.savingMapeo.set(true);
     const existing = this.mapeosByCampo()[campo] || [];
     const nextPriority = existing.length > 0 ? Math.max(...existing.map(m => m.prioridad)) + 1 : 1;
+    const fuente = this.fuentesVin().find(f => f.id === this.newMapeoFuenteId());
+
+    // Optimistic update — add a temporary entry
+    const tempMapeo: MapeoCampoApi = {
+      id: -Date.now(),
+      nombreCampo: campo,
+      idFuente: this.newMapeoFuenteId(),
+      fuente: fuente!,
+      nombreColumnaFuente: this.newMapeoColumna(),
+      prioridad: nextPriority,
+      activo: true,
+    };
+    this.mapeosByCampo.update(grouped => ({
+      ...grouped,
+      [campo]: [...(grouped[campo] || []), tempMapeo],
+    }));
+    this.addingMapeoForCampo.set(null);
+
     try {
       await firstValueFrom(this.http.post(`${this.apiUrl}/v1/mapeo-campos-vin`, {
         nombreCampo: campo,
@@ -1998,18 +2135,27 @@ export class AdminPageComponent implements OnInit {
         prioridad: nextPriority,
         activo: true,
       }));
-      this.addingMapeoForCampo.set(null);
-      this.mapeoLoaded.set(false);
-      await this.loadMapeoData();
+      await this.loadMapeoData(true);
     } catch (err) { console.error('Error creating mapeo:', err); }
-    finally { this.savingMapeo.set(false); }
   }
 
   async deleteMapeo(id: number) {
+    // Optimistic update — remove from signal
+    this.mapeosByCampo.update(grouped => {
+      const result = { ...grouped };
+      for (const [campo, mapeos] of Object.entries(result)) {
+        const idx = mapeos.findIndex(m => m.id === id);
+        if (idx >= 0) {
+          result[campo] = mapeos.filter(m => m.id !== id);
+          break;
+        }
+      }
+      return result;
+    });
+
     try {
       await firstValueFrom(this.http.delete(`${this.apiUrl}/v1/mapeo-campos-vin/${id}`));
-      this.mapeoLoaded.set(false);
-      await this.loadMapeoData();
+      await this.loadMapeoData(true);
     } catch (err) { console.error('Error deleting mapeo:', err); }
   }
 
@@ -2017,14 +2163,12 @@ export class AdminPageComponent implements OnInit {
     const mapeos = [...(this.mapeosByCampo()[campo] || [])];
     moveItemInArray(mapeos, event.previousIndex, event.currentIndex);
     // Optimistic UI update
-    const updated = { ...this.mapeosByCampo(), [campo]: mapeos };
-    this.mapeosByCampo.set(updated);
-    // Persist new order
+    this.mapeosByCampo.update(grouped => ({ ...grouped, [campo]: mapeos }));
+
     const orderedIds = mapeos.map(m => m.id);
     try {
       await firstValueFrom(this.http.post(`${this.apiUrl}/v1/mapeo-campos-vin/reorder`, { nombreCampo: campo, orderedIds }));
-      this.mapeoLoaded.set(false);
-      await this.loadMapeoData();
+      await this.loadMapeoData(true);
     } catch (err) { console.error('Error reordering:', err); }
   }
 }

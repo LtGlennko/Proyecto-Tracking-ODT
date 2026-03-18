@@ -16,8 +16,11 @@ export class Subetapa {
   @Column({ nullable: true })
   nombre: string;
 
-  @Column({ name: 'campo_staging_vin', nullable: true })
-  campoStagingVin: string;
+  @Column({ name: 'campo_staging_real', nullable: true })
+  campoStagingReal: string;
+
+  @Column({ name: 'campo_staging_plan', nullable: true })
+  campoStagingPlan: string;
 
   @Column({ default: 0 })
   orden: number;

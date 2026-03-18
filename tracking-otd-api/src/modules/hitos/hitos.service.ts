@@ -231,7 +231,8 @@ export class HitosService {
           subetapaConfigId: sc?.id ?? null,
           subetapaId: sub.id,
           nombre: sub.nombre,
-          campoStagingVin: sub.campoStagingVin,
+          campoStagingReal: sub.campoStagingReal,
+          campoStagingPlan: sub.campoStagingPlan,
           orden: sc?.orden ?? 0,
           activo: sc?.activo ?? true,
         };

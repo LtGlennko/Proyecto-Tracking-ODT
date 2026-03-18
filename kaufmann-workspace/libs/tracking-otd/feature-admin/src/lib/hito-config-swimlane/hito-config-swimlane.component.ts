@@ -25,7 +25,8 @@ interface SubetapaConfigView {
   subetapaConfigId: number | null;
   subetapaId: number;
   nombre: string;
-  campoStagingVin: string | null;
+  campoStagingReal: string | null;
+  campoStagingPlan: string | null;
   orden: number;
   activo: boolean;
 }
@@ -316,9 +317,9 @@ interface Bloque {
               <span class="flex-1 font-medium text-slate-700">{{ sub.nombre }}</span>
 
               <!-- Badge campo staging -->
-              @if (sub.campoStagingVin) {
-                <code class="text-xs bg-slate-100 text-slate-600 px-1 py-0.5 rounded font-mono shrink-0 hidden xl:inline">
-                  {{ sub.campoStagingVin }}
+              @if (sub.campoStagingReal) {
+                <code class="text-xs bg-emerald-50 text-emerald-600 px-1 py-0.5 rounded font-mono shrink-0 hidden xl:inline">
+                  {{ sub.campoStagingReal }}
                 </code>
               } @else {
                 <span class="text-xs text-amber-500 font-medium shrink-0 hidden xl:inline">GAP</span>
