@@ -16,9 +16,6 @@ export class Ficha {
   @Column({ nullable: true })
   codigo: string;
 
-  @Column({ name: 'forma_pago', nullable: true })
-  formaPago: string;
-
   @Column({ name: 'fecha_creacion', type: 'date', nullable: true })
   fechaCreacion: Date;
 

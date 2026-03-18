@@ -209,9 +209,11 @@
                 <div class="flex items-center gap-4 text-xs text-slate-500">
                   <span>{{ ficha.dateCreated }}</span>
                   <span>{{ ficha.executive }}</span>
-                  <span class="px-1.5 py-0.5 rounded text-xs font-semibold" [class]="pagoPill(ficha.formaPago)">
-                    {{ ficha.formaPago }}
-                  </span>
+                  @for (fp of ficha.formasPago; track fp) {
+                    <span class="px-1.5 py-0.5 rounded text-xs font-semibold" [class]="pagoPill(fp)">
+                      {{ fp }}
+                    </span>
+                  }
                 </div>
                 @let fStats = calcStats(ficha.vins);
                 <div class="flex gap-2 mr-2">

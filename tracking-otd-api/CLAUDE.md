@@ -64,12 +64,14 @@ src/modules/
   health/       → /api/health (público)
 ```
 
-## DB Credentials (desarrollo local)
-- Host: localhost:5432
+## DB Credentials (desarrollo local — ÚNICA BD)
+- Host: localhost:5432 (Docker local)
 - Database: appwebdb01
 - User: appuser / Pass: 1q2w3e
 - Docker: `cd tracking-otd-api && docker compose up postgres pgadmin -d`
 - pgAdmin: http://localhost:5050
+- **IMPORTANTE:** NO usar servidor remoto `172.20.200.30`. Solo Docker local.
+- Conexión directa: `docker exec tracking-otd-postgres psql -U appuser -d appwebdb01 -c "SQL"`
 
 ## Comandos Frecuentes
 ```bash

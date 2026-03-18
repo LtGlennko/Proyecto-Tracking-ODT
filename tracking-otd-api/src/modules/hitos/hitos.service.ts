@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { Hito } from './hito.entity';
 import { Subetapa } from './subetapa.entity';
 import { GrupoParalelo } from './grupo-paralelo.entity';
-import { SubetapaConfig } from './subetapa-config.entity';
 import { HitoTipoVehiculo } from './hito-tipo-vehiculo.entity';
 import { SubetapaTipoVehiculo } from './subetapa-tipo-vehiculo.entity';
 
@@ -14,7 +13,6 @@ export class HitosService {
     @InjectRepository(Hito) private hitoRepo: Repository<Hito>,
     @InjectRepository(Subetapa) private subetapaRepo: Repository<Subetapa>,
     @InjectRepository(GrupoParalelo) private grupoRepo: Repository<GrupoParalelo>,
-    @InjectRepository(SubetapaConfig) private configRepo: Repository<SubetapaConfig>,
     @InjectRepository(HitoTipoVehiculo) private hitoTvRepo: Repository<HitoTipoVehiculo>,
     @InjectRepository(SubetapaTipoVehiculo) private subTvRepo: Repository<SubetapaTipoVehiculo>,
   ) {}
@@ -293,13 +291,4 @@ export class HitosService {
     }
   }
 
-  // ── Legacy SubetapaConfig ──
-
-  addSubetapaConfig(subetapaId: number, dto: Partial<SubetapaConfig>): Promise<SubetapaConfig> {
-    return this.configRepo.save(this.configRepo.create({ ...dto, subetapaId }));
-  }
-
-  async removeSubetapaConfig(configId: number): Promise<void> {
-    await this.configRepo.delete(configId);
-  }
 }

@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { VinHitoTracking } from './vin-hito-tracking.entity';
-import { VinSubetapaTracking } from './vin-subetapa-tracking.entity';
-import { UpdateTrackingDto } from './dto/update-tracking.dto';
+import { DataSource } from 'typeorm';
 
 // GAP manual subetapa names — never sync from staging
 const GAP_MANUALES = ['Solicitud crédito', 'Aprobación', 'Pago Confirmado', 'Unidad Lista', 'Cita Agendada'];
@@ -72,8 +68,6 @@ interface SubetapaDef {
 @Injectable()
 export class TrackingService {
   constructor(
-    @InjectRepository(VinHitoTracking) private hitoTrackRepo: Repository<VinHitoTracking>,
-    @InjectRepository(VinSubetapaTracking) private subetapaTrackRepo: Repository<VinSubetapaTracking>,
     private dataSource: DataSource,
   ) {}
 
@@ -99,7 +93,7 @@ export class TrackingService {
       .addSelect('v.ultima_actualizacion', 'ultimaActualizacion')
       .addSelect('f.id', 'fichaDbId')
       .addSelect('f.codigo', 'fichaCodigo')
-      .addSelect('f.forma_pago', 'formaPago')
+      .addSelect('sv.descripcion_cond_pago', 'formaPago')
       .addSelect('f.fecha_creacion', 'fechaCreacion')
       .addSelect('COALESCE(sv.nombre_vendedor, f.ejecutivo)', 'ejecutivo')
       .addSelect('c.id', 'clienteDbId')
@@ -131,26 +125,10 @@ export class TrackingService {
 
     const rows: any[] = await qb.getRawMany();
 
-    // 2. Load hito tracking for all VINs in bulk
     const vinIds = rows.map(r => r.vinId);
     if (vinIds.length === 0) return [];
 
-    const hitoRows = await this.hitoTrackRepo
-      .createQueryBuilder('ht')
-      .leftJoinAndSelect('ht.hito', 'h')
-      .where('ht.vin_id IN (:...vinIds)', { vinIds })
-      .orderBy('ht.hito_id', 'ASC')
-      .getMany();
-
-    // 3. Load subetapa tracking for all VINs in bulk
-    const subRows = await this.subetapaTrackRepo
-      .createQueryBuilder('st')
-      .leftJoinAndSelect('st.subetapa', 's')
-      .where('st.vin_id IN (:...vinIds)', { vinIds })
-      .orderBy('st.subetapa_id', 'ASC')
-      .getMany();
-
-    // 4. Load hito_tipo_vehiculo config (per tipo_vehiculo_id)
+    // 2. Load hito_tipo_vehiculo config (per tipo_vehiculo_id)
     const hitoConfigRows: any[] = await this.dataSource.createQueryBuilder()
       .select('htv.hito_id', 'hitoId')
       .addSelect('htv.tipo_vehiculo_id', 'tipoVehiculoId')
@@ -239,33 +217,16 @@ export class TrackingService {
       stagingByVin.set(sv.vin, sv);
     }
 
-    // 8. Group tracking by VIN
-    const hitosByVin = new Map<string, VinHitoTracking[]>();
-    for (const ht of hitoRows) {
-      const arr = hitosByVin.get(ht.vinId) || [];
-      arr.push(ht);
-      hitosByVin.set(ht.vinId, arr);
-    }
-
-    const subsByVin = new Map<string, VinSubetapaTracking[]>();
-    for (const st of subRows) {
-      const arr = subsByVin.get(st.vinId) || [];
-      arr.push(st);
-      subsByVin.set(st.vinId, arr);
-    }
-
-    // 9. Build hierarchical structure
+    // 8. Build hierarchical structure
     const clienteMap = new Map<number, any>();
 
     for (const row of rows) {
-      const vinHitos = hitosByVin.get(row.vinId) || [];
-      const vinSubs = subsByVin.get(row.vinId) || [];
       const tvId = row.tipoVehiculoId as number;
       const hitoConfig = hitoConfigByTipo.get(tvId);
       const subConfig = subConfigByTipo.get(tvId);
       const stagingRow = stagingByVin.get(row.vinId);
 
-      const stages = this.buildStages(vinHitos, vinSubs, hitoConfig, subConfig, subetapaById, stagingRow, slaConfigs, tvId, row.empresaDbId);
+      const stages = this.buildStages(hitoConfig, subConfig, subetapaById, stagingRow, slaConfigs, tvId, row.empresaDbId);
 
       // Derive estado from actual stage statuses (not from stored values)
       const estadoGeneral = this.deriveEstadoGeneral(stages);
@@ -315,17 +276,22 @@ export class TrackingService {
           clientName: row.clienteNombre,
           dateCreated: row.fechaCreacion ? new Date(row.fechaCreacion).toISOString().slice(0, 10) : '',
           executive: row.ejecutivo || '',
-          formaPago: row.formaPago || '',
+          formasPago: new Set<string>(),
           vins: [],
         });
       }
-      client._fichaMap.get(row.fichaDbId).vins.push(vinObj);
+      const ficha = client._fichaMap.get(row.fichaDbId);
+      if (row.formaPago) ficha.formasPago.add(row.formaPago);
+      ficha.vins.push(vinObj);
     }
 
-    // 10. Convert maps to arrays
+    // 10. Convert maps to arrays (Set → array for formasPago)
     const result: any[] = [];
     for (const client of clienteMap.values()) {
-      const fichas = Array.from(client._fichaMap.values());
+      const fichas = Array.from(client._fichaMap.values()).map((f: any) => {
+        f.formasPago = Array.from(f.formasPago);
+        return f;
+      });
       delete client._fichaMap;
       client.fichas = fichas;
       result.push(client);
@@ -357,8 +323,6 @@ export class TrackingService {
   }
 
   private buildStages(
-    hitos: VinHitoTracking[],
-    subs: VinSubetapaTracking[],
     hitoConfig: HitoConfig[] | undefined,
     subConfig: SubConfig[] | undefined,
     subetapaById: Map<number, SubetapaDef>,
@@ -367,11 +331,6 @@ export class TrackingService {
     tipoVehiculoId: number,
     empresaId: number | null,
   ): any[] {
-    const hitoTrackMap = new Map<number, VinHitoTracking>();
-    for (const ht of hitos) hitoTrackMap.set(ht.hitoId, ht);
-
-    const subTrackMap = new Map<number, VinSubetapaTracking>();
-    for (const st of subs) subTrackMap.set(st.subetapaId, st);
 
     const subConfigMap = new Map<number, SubConfig>();
     if (subConfig) {
@@ -395,7 +354,6 @@ export class TrackingService {
 
     // 1. Build stages with subStages (real dates only)
     const stages = orderedHitoIds.map(({ hitoId, carril, grupoParaleloId }) => {
-      const ht = hitoTrackMap.get(hitoId);
       const slug = HITO_SLUG[hitoId] || `hito_${hitoId}`;
 
       const hitoSubDefs = subDefsByHito.get(hitoId) || [];
@@ -416,9 +374,6 @@ export class TrackingService {
         if (sd.campoStagingVin && stagingRow) {
           const val = stagingRow[sd.campoStagingVin];
           if (val) fechaReal = fmtDate(val);
-        } else if (!sd.campoStagingVin) {
-          const st = subTrackMap.get(sd.id);
-          if (st?.fechaReal) fechaReal = fmtDate(st.fechaReal);
         }
 
         const subStatus = fechaReal ? 'completed' : 'pending';
@@ -436,8 +391,8 @@ export class TrackingService {
 
       return {
         id: slug,
-        name: HITO_LABELS[slug] || ht?.hito?.nombre || slug,
-        carril: carril || ht?.hito?.carril || 'operativo',
+        name: HITO_LABELS[slug] || slug,
+        carril: carril || 'operativo',
         grupoParaleloId: grupoParaleloId || null,
         status: 'pending', // will be derived after baseline/plan pass
         isParallel: grupoParaleloId != null,
@@ -554,86 +509,6 @@ export class TrackingService {
     if (candidates.length === 0) return null;
     const score = (s: SlaRow) => [s.empresaId, s.subetapaId, s.tipoVehiculoId].filter(Boolean).length;
     return candidates.reduce((a, b) => score(a) >= score(b) ? a : b);
-  }
-
-  // ── Single VIN tracking ──
-
-  async getTrackingVin(vinId: string) {
-    const hitos = await this.hitoTrackRepo.find({
-      where: { vinId },
-      relations: ['hito'],
-      order: { hitoId: 'ASC' },
-    });
-    const subetapas = await this.subetapaTrackRepo.find({
-      where: { vinId },
-      relations: ['subetapa'],
-      order: { subetapaId: 'ASC' },
-    });
-
-    return {
-      vinId,
-      hitos: hitos.map(h => ({
-        ...h,
-      })),
-      subetapas: subetapas.map(s => ({
-        ...s,
-        diferenciaDias: this.calcularDiferenciaDias(s.fechaPlan, s.fechaReal),
-      })),
-    };
-  }
-
-  async updateHitoTracking(vinId: string, hitoId: number, dto: UpdateTrackingDto): Promise<VinHitoTracking> {
-    let record = await this.hitoTrackRepo.findOne({ where: { vinId, hitoId } });
-    if (!record) {
-      record = this.hitoTrackRepo.create({ vinId, hitoId });
-    }
-    Object.assign(record, dto);
-    return this.hitoTrackRepo.save(record);
-  }
-
-  async updateSubetapaTracking(vinId: string, subetapaId: number, dto: UpdateTrackingDto): Promise<VinSubetapaTracking> {
-    let record = await this.subetapaTrackRepo.findOne({ where: { vinId, subetapaId } });
-    if (!record) {
-      record = this.subetapaTrackRepo.create({ vinId, subetapaId });
-    }
-    Object.assign(record, dto);
-    return this.subetapaTrackRepo.save(record);
-  }
-
-  async syncFromStaging(vinId: string, staging: Record<string, any>): Promise<void> {
-    const mapeo: Array<{ nombre: string; fecha: Date }> = [
-      { nombre: 'Solicitud negocio',   fecha: staging.fechaColocacion },
-      { nombre: 'Pedido fábrica',       fecha: staging.fechaColocacion },
-      { nombre: 'Producción',           fecha: staging.fechaLiberacionFabrica },
-      { nombre: 'Embarque',             fecha: staging.etd ?? staging.fechaEmbarqueSap },
-      { nombre: 'En aduana',            fecha: staging.fechaLlegadaAduana ?? staging.fechaAduanaSap },
-      { nombre: 'En almacén',           fecha: staging.fechaIngresoPatio ?? staging.fechaLiberadoSap },
-      { nombre: 'Reserva',              fecha: staging.fechaPreasignacion },
-      { nombre: 'Asig. Definitiva',     fecha: staging.fechaAsignacion },
-      { nombre: 'Emisión Factura',      fecha: staging.fechaFacturacionSap ?? staging.fechaFacturaComex },
-      { nombre: 'Inicio PDI',           fecha: staging.fechaRecojoCarrZcar },
-      { nombre: 'En Carrocero Local',   fecha: staging.fechaIngresoProdCarrReal },
-      { nombre: 'Salida PDI',           fecha: staging.fechaFinProdCarrReal },
-      { nombre: 'Inicio Trámite',       fecha: staging.fcc },
-      { nombre: 'Placas Recibidas',     fecha: staging.fclr },
-      { nombre: 'Entregado al Cliente', fecha: staging.fechaEntregaCliente ?? staging.fechaEntregaReal },
-    ];
-
-    for (const { nombre, fecha } of mapeo) {
-      if (!fecha || GAP_MANUALES.includes(nombre)) continue;
-
-      const existing = await this.subetapaTrackRepo
-        .createQueryBuilder('vst')
-        .leftJoin('vst.subetapa', 's')
-        .where('vst.vin_id = :vinId', { vinId })
-        .andWhere('s.nombre = :nombre', { nombre })
-        .getOne();
-
-      if (existing) {
-        existing.fechaReal = new Date(fecha);
-        await this.subetapaTrackRepo.save(existing);
-      }
-    }
   }
 
 }

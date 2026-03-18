@@ -6,10 +6,9 @@ import { AlertasService } from './alertas.service';
 import { AlertasController } from './alertas.controller';
 import { AlertasScheduler } from './alertas.scheduler';
 import { SlaModule } from '../sla/sla.module';
-import { TrackingModule } from '../tracking/tracking.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Alerta, AlertaAccion]), SlaModule, TrackingModule],
+  imports: [TypeOrmModule.forFeature([Alerta, AlertaAccion]), SlaModule],
   controllers: [AlertasController],
   providers: [AlertasService, AlertasScheduler],
   exports: [AlertasService],

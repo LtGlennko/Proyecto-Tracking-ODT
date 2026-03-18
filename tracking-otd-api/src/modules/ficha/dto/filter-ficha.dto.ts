@@ -16,8 +16,4 @@ export class FilterFichaDto extends PaginationDto {
   @IsInt()
   empresaId?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  formaPago?: string;
 }

@@ -19,6 +19,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsuarioModule } from './modules/usuario/usuario.module';
 import { TipoVehiculoModule } from './modules/tipo-vehiculo/tipo-vehiculo.module';
 import { HealthModule } from './modules/health/health.module';
+import { FuentesVinModule } from './modules/fuentes-vin/fuentes-vin.module';
+import { MapeoCamposVinModule } from './modules/mapeo-campos-vin/mapeo-campos-vin.module';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { HealthModule } from './modules/health/health.module';
     UsuarioModule,
     TipoVehiculoModule,
     HealthModule,
+    FuentesVinModule,
+    MapeoCamposVinModule,
   ],
   controllers: [AppController],
 })

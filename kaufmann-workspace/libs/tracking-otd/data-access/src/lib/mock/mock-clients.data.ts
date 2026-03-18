@@ -29,7 +29,7 @@ export const MOCK_CLIENTS: ClienteModel[] = [
         clientName: 'Transportes del Norte S.A.',
         dateCreated: '2025-10-20',
         executive: 'Juan Pérez',
-        formaPago: 'Leasing',
+        formasPago: ['Leasing'],
         vins: [
           {
             id: 'WDB9988776655AABC1',
@@ -78,7 +78,7 @@ export const MOCK_CLIENTS: ClienteModel[] = [
         clientName: 'Turismo Andes S.A.',
         dateCreated: '2025-11-05',
         executive: 'Roberto Gomez',
-        formaPago: 'Financiamiento directo',
+        formasPago: ['Financiamiento directo'],
         vins: [
           {
             id: 'WDBBUS44556601BUS1',
@@ -127,7 +127,7 @@ export const MOCK_CLIENTS: ClienteModel[] = [
         clientName: 'Renting Corporativo S.A.C.',
         dateCreated: '2025-10-01',
         executive: 'Maria Lopez',
-        formaPago: 'Renting',
+        formasPago: ['Renting'],
         vins: [
           {
             id: 'JEEP1C4HJXEG8MW12345',
@@ -192,7 +192,7 @@ export const MOCK_CLIENTS: ClienteModel[] = [
         clientName: 'Constructora del Sur S.A.',
         dateCreated: '2025-12-10',
         executive: 'Carlos Ruiz',
-        formaPago: 'Financiamiento BK',
+        formasPago: ['Financiamiento BK'],
         vins: [
           {
             id: 'CATEXC330GC2025MAQ1',
@@ -226,7 +226,7 @@ export const MOCK_CLIENTS: ClienteModel[] = [
         clientName: 'Transportes Línea S.A.',
         dateCreated: '2025-11-15',
         executive: 'Ana Torres',
-        formaPago: 'Leasing',
+        formasPago: ['Leasing'],
         vins: [
           {
             id: 'WDBBUSLNEA001BUS001',

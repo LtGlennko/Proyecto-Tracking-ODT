@@ -8,7 +8,7 @@ import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
 import { HitoConfigSwimlaneComponent } from './hito-config-swimlane/hito-config-swimlane.component';
 import { ProcessPreviewComponent } from './process-preview/process-preview.component';
 
-type AdminTab = 'hitos' | 'config' | 'sla' | 'usuarios';
+type AdminTab = 'hitos' | 'config' | 'sla' | 'usuarios' | 'mapeo';
 
 // GET /v1/hitos → master hitos with subetapas
 interface HitoMaster {
@@ -66,6 +66,29 @@ interface EmpresaApi {
   id: number;
   nombre: string;
   codigo: string;
+}
+
+interface FuenteVinApi {
+  id: number;
+  tipoFuente: string;
+  rutaPatron: string;
+  columnaVin: string;
+  activo: boolean;
+}
+
+interface MapeoCampoApi {
+  id: number;
+  nombreCampo: string;
+  idFuente: number;
+  fuente: FuenteVinApi;
+  nombreColumnaFuente: string;
+  prioridad: number;
+  activo: boolean;
+}
+
+interface StagingColumnInfo {
+  name: string;
+  type: 'fecha' | 'texto' | 'numero';
 }
 
 interface SlaConfigApi {
@@ -719,6 +742,164 @@ const TIPO_VEHICULO_OPTIONS = [
         </div>
       }
 
+      <!-- ═══ Tab 5: Mapeo Campos ═══ -->
+      @if (activeTab() === 'mapeo') {
+        <div class="space-y-3">
+          <p class="text-xs text-slate-400">Mapeo de columnas de staging_vin hacia fuentes Excel. Arrastra los mapeos para reordenar la prioridad.</p>
+
+          @if (loadingMapeo()) {
+            <div class="flex items-center justify-center py-12">
+              <div class="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+              <span class="ml-2 text-sm text-slate-500">Cargando mapeo...</span>
+            </div>
+          } @else {
+            <!-- Filtros -->
+            <div class="space-y-2">
+              <!-- Fila 1: Buscador + tipo de dato -->
+              <div class="flex gap-3 items-center">
+                <input type="text" placeholder="Buscar campo..." [ngModel]="mapeoSearch()" (ngModelChange)="mapeoSearch.set($event)"
+                  class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                <div class="flex gap-1">
+                  <button (click)="mapeoFilterTipo.set('todos')"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                    [class]="mapeoFilterTipo() === 'todos' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">Todos</button>
+                  <button (click)="mapeoFilterTipo.set('fecha')"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                    [class]="mapeoFilterTipo() === 'fecha' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'">Fecha</button>
+                  <button (click)="mapeoFilterTipo.set('texto')"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                    [class]="mapeoFilterTipo() === 'texto' ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-600 hover:bg-sky-100'">Texto</button>
+                  <button (click)="mapeoFilterTipo.set('numero')"
+                    class="px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                    [class]="mapeoFilterTipo() === 'numero' ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-600 hover:bg-violet-100'">Número</button>
+                </div>
+                <span class="text-xs text-slate-400 shrink-0">{{ filteredStagingColumns().length }} campos</span>
+              </div>
+
+              <!-- Fila 2: Filtro por número de fuentes -->
+              <div class="flex gap-2 items-center">
+                <span class="text-xs text-slate-400">N° fuentes:</span>
+                <button (click)="mapeoFilterNumFuentes.set(null)"
+                  class="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
+                  [class]="mapeoFilterNumFuentes() === null ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">
+                  Todas
+                </button>
+                @for (opt of numFuentesOptions(); track opt[0]) {
+                  <button (click)="mapeoFilterNumFuentes.set(mapeoFilterNumFuentes() === opt[0] ? null : opt[0])"
+                    class="px-2.5 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1"
+                    [class]="mapeoFilterNumFuentes() === opt[0]
+                      ? (opt[0] === 0 ? 'bg-amber-600 text-white' : 'bg-blue-600 text-white')
+                      : (opt[0] === 0 ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-blue-50 text-blue-600 hover:bg-blue-100')">
+                    {{ opt[0] === 0 ? 'Sin mapeo' : opt[0] + ' fuente' + (opt[0] > 1 ? 's' : '') }}
+                    <span class="opacity-70">({{ opt[1] }})</span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Lista de campos -->
+            <div class="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
+              @for (col of filteredStagingColumns(); track col.name) {
+                @let mapeos = mapeosByCampo()[col.name] || [];
+                <div class="bg-white">
+                  <!-- Campo header -->
+                  <button (click)="expandedCampo.set(expandedCampo() === col.name ? null : col.name)"
+                    class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-left">
+                    <div class="flex items-center gap-3">
+                      <span class="font-mono text-sm text-slate-700">{{ col.name }}</span>
+                      <span class="px-1.5 py-0.5 text-[10px] font-medium rounded"
+                        [class]="col.type === 'fecha' ? 'bg-amber-50 text-amber-600' : col.type === 'numero' ? 'bg-violet-50 text-violet-600' : 'bg-sky-50 text-sky-600'">{{ col.type }}</span>
+                      @if (mapeos.length > 0) {
+                        <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-50 text-blue-600">{{ mapeos.length }} fuente{{ mapeos.length > 1 ? 's' : '' }}</span>
+                      } @else {
+                        <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-50 text-amber-600">Sin mapeo</span>
+                      }
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 transition-transform" [class.rotate-180]="expandedCampo() === col.name" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </button>
+
+                  <!-- Mapeos expandidos -->
+                  @if (expandedCampo() === col.name) {
+                    <div class="px-4 pb-3 space-y-2 bg-slate-50">
+                      @if (mapeos.length > 0) {
+                        <p class="text-[10px] text-slate-400 pt-1">Arrastra para reordenar prioridad (arriba = mayor prioridad)</p>
+                        <div cdkDropList [cdkDropListData]="mapeos" (cdkDropListDropped)="onMapeoDropped($event, col.name)" class="space-y-1">
+                          @for (m of mapeos; track m.id; let i = $index) {
+                            <div cdkDrag class="flex items-center gap-3 bg-white border border-slate-200 rounded px-3 py-2 cursor-move hover:shadow-sm transition-shadow">
+                              <!-- Drag handle + priority number -->
+                              <div class="flex items-center gap-2 shrink-0">
+                                <svg cdkDragHandle class="w-4 h-4 text-slate-300 cursor-grab" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6h2v2H8zm6 0h2v2h-2zM8 11h2v2H8zm6 0h2v2h-2zM8 16h2v2H8zm6 0h2v2h-2z"/></svg>
+                                <span class="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full" [class]="i === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">{{ i + 1 }}</span>
+                              </div>
+
+                              @if (editingMapeoId() === m.id) {
+                                <!-- Edit mode -->
+                                <select [ngModel]="editMapeoFuenteId()" (ngModelChange)="editMapeoFuenteId.set(+$event)"
+                                  class="px-2 py-1 text-xs border border-slate-200 rounded w-36">
+                                  @for (f of fuentesVin(); track f.id) { <option [value]="f.id">{{ f.tipoFuente }}</option> }
+                                </select>
+                                <input [ngModel]="editMapeoColumna()" (ngModelChange)="editMapeoColumna.set($event)"
+                                  class="flex-1 px-2 py-1 text-xs border border-slate-200 rounded" />
+                                <label class="flex items-center gap-1 text-xs text-slate-500">
+                                  <input type="checkbox" [ngModel]="editMapeoActivo()" (ngModelChange)="editMapeoActivo.set($event)" /> Activo
+                                </label>
+                                <button (click)="saveEditMapeo(m.id)" class="text-xs text-blue-600 hover:underline">Guardar</button>
+                                <button (click)="editingMapeoId.set(null)" class="text-xs text-slate-400 hover:underline">Cancelar</button>
+                              } @else {
+                                <!-- View mode -->
+                                <span class="px-1.5 py-0.5 text-xs rounded shrink-0"
+                                  [class]="m.fuente.tipoFuente === 'Proped' ? 'bg-green-50 text-green-700' : m.fuente.tipoFuente === 'Reporte Fichas' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'">
+                                  {{ m.fuente.tipoFuente }}
+                                </span>
+                                <span class="font-mono text-xs text-slate-600 flex-1">{{ m.nombreColumnaFuente }}</span>
+                                @if (m.activo) {
+                                  <span class="text-emerald-500 text-xs">●</span>
+                                } @else {
+                                  <span class="text-slate-300 text-xs">●</span>
+                                }
+                                <button (click)="startEditMapeo(m)" class="text-xs text-blue-600 hover:underline">Editar</button>
+                                <button (click)="deleteMapeo(m.id)" class="text-xs text-red-500 hover:underline">Eliminar</button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+
+                      <!-- Add new mapping -->
+                      @if (addingMapeoForCampo() === col.name) {
+                        <div class="flex items-end gap-2 pt-2 border-t border-slate-200">
+                          <div class="flex-1">
+                            <label class="text-xs text-slate-400">Fuente</label>
+                            <select [ngModel]="newMapeoFuenteId()" (ngModelChange)="newMapeoFuenteId.set(+$event)"
+                              class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded">
+                              <option [value]="0" disabled>Seleccionar...</option>
+                              @for (f of fuentesVin(); track f.id) { <option [value]="f.id">{{ f.tipoFuente }}</option> }
+                            </select>
+                          </div>
+                          <div class="flex-1">
+                            <label class="text-xs text-slate-400">Columna Excel</label>
+                            <input [ngModel]="newMapeoColumna()" (ngModelChange)="newMapeoColumna.set($event)"
+                              class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded" placeholder="Nombre exacto (case-sensitive)" />
+                          </div>
+                          <button (click)="saveNewMapeo(col.name)" [disabled]="savingMapeo()"
+                            class="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">Guardar</button>
+                          <button (click)="addingMapeoForCampo.set(null)" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700">Cancelar</button>
+                        </div>
+                      } @else {
+                        <button (click)="addingMapeoForCampo.set(col.name); newMapeoFuenteId.set(0); newMapeoColumna.set('')"
+                          class="text-xs text-blue-600 hover:underline mt-1">+ Agregar mapeo</button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
       <!-- ═══ Tab 4: Usuarios ═══ -->
       @if (activeTab() === 'usuarios') {
         <div class="space-y-4">
@@ -851,6 +1032,7 @@ export class AdminPageComponent implements OnInit {
     { id: 'config' as AdminTab, label: 'Config por Tipo' },
     { id: 'sla' as AdminTab, label: 'SLA Config' },
     { id: 'usuarios' as AdminTab, label: 'Usuarios' },
+    { id: 'mapeo' as AdminTab, label: 'Mapeo Campos' },
   ];
 
   // ── Tab 1: Hitos Maestros ──
@@ -978,6 +1160,53 @@ export class AdminPageComponent implements OnInit {
     { value: 'asesor_comercial', label: 'Asesor Comercial' },
   ];
 
+  // ── Tab 5: Mapeo Campos ──
+  stagingColumns = signal<StagingColumnInfo[]>([]);
+  fuentesVin = signal<FuenteVinApi[]>([]);
+  mapeosByCampo = signal<Record<string, MapeoCampoApi[]>>({});
+  loadingMapeo = signal(false);
+  mapeoLoaded = signal(false);
+  expandedCampo = signal<string | null>(null);
+  mapeoSearch = signal('');
+  mapeoFilterTipo = signal<'todos' | 'fecha' | 'texto' | 'numero'>('todos');
+  mapeoFilterNumFuentes = signal<number | null>(null); // null = all, 0 = sin mapeo, 1 = 1 fuente, etc.
+  // Add form
+  addingMapeoForCampo = signal<string | null>(null);
+  newMapeoFuenteId = signal(0);
+  newMapeoColumna = signal('');
+  savingMapeo = signal(false);
+  // Edit form
+  editingMapeoId = signal<number | null>(null);
+  editMapeoFuenteId = signal(0);
+  editMapeoColumna = signal('');
+  editMapeoActivo = signal(true);
+
+  filteredStagingColumns = computed(() => {
+    const q = this.mapeoSearch().toLowerCase();
+    const tipo = this.mapeoFilterTipo();
+    const numFuentes = this.mapeoFilterNumFuentes();
+    const grouped = this.mapeosByCampo();
+    let cols = this.stagingColumns();
+    if (q) cols = cols.filter(c => c.name.toLowerCase().includes(q));
+    if (tipo !== 'todos') cols = cols.filter(c => c.type === tipo);
+    if (numFuentes !== null) {
+      cols = cols.filter(c => (grouped[c.name] || []).length === numFuentes);
+    }
+    return cols;
+  });
+
+  /** Distinct counts of how many campos have 0, 1, 2, 3... fuentes */
+  numFuentesOptions = computed(() => {
+    const grouped = this.mapeosByCampo();
+    const cols = this.stagingColumns();
+    const countMap = new Map<number, number>();
+    for (const col of cols) {
+      const n = (grouped[col.name] || []).length;
+      countMap.set(n, (countMap.get(n) || 0) + 1);
+    }
+    return Array.from(countMap.entries()).sort((a, b) => a[0] - b[0]);
+  });
+
   constructor() {
     // Load master hitos when tab opens
     effect(() => {
@@ -1002,6 +1231,12 @@ export class AdminPageComponent implements OnInit {
     effect(() => {
       if (this.activeTab() === 'usuarios' && this.users().length === 0) {
         this.loadUsers();
+      }
+    });
+    // Load mapeo when tab opens
+    effect(() => {
+      if (this.activeTab() === 'mapeo' && !this.mapeoLoaded()) {
+        this.loadMapeoData();
       }
     });
   }
@@ -1708,5 +1943,88 @@ export class AdminPageComponent implements OnInit {
       case 'supervisor': return 'bg-blue-100 text-blue-700';
       default: return 'bg-slate-100 text-slate-600';
     }
+  }
+
+  // ── Tab 5: Mapeo Campos ──
+
+  async loadMapeoData() {
+    this.loadingMapeo.set(true);
+    try {
+      const [columns, fuentes, grouped] = await Promise.all([
+        firstValueFrom(this.http.get<StagingColumnInfo[]>(`${this.apiUrl}/v1/mapeo-campos-vin/staging-columns`)),
+        firstValueFrom(this.http.get<FuenteVinApi[]>(`${this.apiUrl}/v1/fuentes-vin`)),
+        firstValueFrom(this.http.get<Record<string, MapeoCampoApi[]>>(`${this.apiUrl}/v1/mapeo-campos-vin/grouped`)),
+      ]);
+      this.stagingColumns.set(columns);
+      this.fuentesVin.set(fuentes);
+      this.mapeosByCampo.set(grouped);
+      this.mapeoLoaded.set(true);
+    } catch (err) { console.error('Error loading mapeo data:', err); }
+    finally { this.loadingMapeo.set(false); }
+  }
+
+  startEditMapeo(m: MapeoCampoApi) {
+    this.editingMapeoId.set(m.id);
+    this.editMapeoFuenteId.set(m.idFuente);
+    this.editMapeoColumna.set(m.nombreColumnaFuente);
+    this.editMapeoActivo.set(m.activo);
+  }
+
+  async saveEditMapeo(id: number) {
+    this.savingMapeo.set(true);
+    try {
+      await firstValueFrom(this.http.patch(`${this.apiUrl}/v1/mapeo-campos-vin/${id}`, {
+        idFuente: this.editMapeoFuenteId(),
+        nombreColumnaFuente: this.editMapeoColumna(),
+        activo: this.editMapeoActivo(),
+      }));
+      this.editingMapeoId.set(null);
+      this.mapeoLoaded.set(false);
+      await this.loadMapeoData();
+    } catch (err) { console.error('Error updating mapeo:', err); }
+    finally { this.savingMapeo.set(false); }
+  }
+
+  async saveNewMapeo(campo: string) {
+    if (!this.newMapeoFuenteId() || !this.newMapeoColumna()) return;
+    this.savingMapeo.set(true);
+    const existing = this.mapeosByCampo()[campo] || [];
+    const nextPriority = existing.length > 0 ? Math.max(...existing.map(m => m.prioridad)) + 1 : 1;
+    try {
+      await firstValueFrom(this.http.post(`${this.apiUrl}/v1/mapeo-campos-vin`, {
+        nombreCampo: campo,
+        idFuente: this.newMapeoFuenteId(),
+        nombreColumnaFuente: this.newMapeoColumna(),
+        prioridad: nextPriority,
+        activo: true,
+      }));
+      this.addingMapeoForCampo.set(null);
+      this.mapeoLoaded.set(false);
+      await this.loadMapeoData();
+    } catch (err) { console.error('Error creating mapeo:', err); }
+    finally { this.savingMapeo.set(false); }
+  }
+
+  async deleteMapeo(id: number) {
+    try {
+      await firstValueFrom(this.http.delete(`${this.apiUrl}/v1/mapeo-campos-vin/${id}`));
+      this.mapeoLoaded.set(false);
+      await this.loadMapeoData();
+    } catch (err) { console.error('Error deleting mapeo:', err); }
+  }
+
+  async onMapeoDropped(event: CdkDragDrop<MapeoCampoApi[]>, campo: string) {
+    const mapeos = [...(this.mapeosByCampo()[campo] || [])];
+    moveItemInArray(mapeos, event.previousIndex, event.currentIndex);
+    // Optimistic UI update
+    const updated = { ...this.mapeosByCampo(), [campo]: mapeos };
+    this.mapeosByCampo.set(updated);
+    // Persist new order
+    const orderedIds = mapeos.map(m => m.id);
+    try {
+      await firstValueFrom(this.http.post(`${this.apiUrl}/v1/mapeo-campos-vin/reorder`, { nombreCampo: campo, orderedIds }));
+      this.mapeoLoaded.set(false);
+      await this.loadMapeoData();
+    } catch (err) { console.error('Error reordering:', err); }
   }
 }

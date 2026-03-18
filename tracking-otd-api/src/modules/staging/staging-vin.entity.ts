@@ -5,6 +5,8 @@ export class StagingVin {
   @PrimaryColumn()
   vin: string;
 
+  @Column({ name: 'archivo_fuente', type: 'varchar', length: 255, nullable: true }) archivoFuente: string;
+
   @Column({ name: 'lote_asignado', nullable: true }) loteAsignado: string;
   @Column({ name: 'id_ficha_sap', nullable: true }) idFichaSap: string;
   @Column({ name: 'pedido_interno', nullable: true }) pedidoInterno: string;
@@ -68,6 +70,35 @@ export class StagingVin {
   @Column({ name: 'fecha_sync_sap', type: 'timestamp', nullable: true }) fechaSyncSap: Date;
   @Column({ name: 'fecha_sync_comex', type: 'timestamp', nullable: true }) fechaSyncComex: Date;
   @Column({ name: 'observaciones_comex', type: 'text', nullable: true }) observacionesComex: string;
+
+  @Column({ name: 'cond_pago', type: 'varchar', length: 10, nullable: true }) condPago: string;
+  @Column({ name: 'descripcion_cond_pago', type: 'varchar', length: 100, nullable: true }) descripcionCondPago: string;
+
+  // ── Inmatriculación ──
+  @Column({ name: 'situacion_inmatric', type: 'varchar', length: 100, nullable: true }) situacionInmatric: string;
+  @Column({ name: 'fecha_inicio_inmatric', type: 'date', nullable: true }) fechaInicioInmatric: Date;
+  @Column({ name: 'fecha_titulo', type: 'date', nullable: true }) fechaTitulo: Date;
+  @Column({ name: 'numero_titulo', type: 'varchar', length: 50, nullable: true }) numeroTitulo: string;
+  @Column({ name: 'placa', type: 'varchar', length: 20, nullable: true }) placa: string;
+  @Column({ name: 'fecha_inscrito', type: 'date', nullable: true }) fechaInscrito: Date;
+  @Column({ name: 'fecha_rep_placa', type: 'date', nullable: true }) fechaRepPlaca: Date;
+  @Column({ name: 'fecha_rec_doc_car', type: 'date', nullable: true }) fechaRecDocCar: Date;
+  @Column({ name: 'fecha_rec_doc', type: 'date', nullable: true }) fechaRecDoc: Date;
+  @Column({ name: 'fecha_em_doc', type: 'date', nullable: true }) fechaEmDoc: Date;
+  @Column({ name: 'fecha_obs_app', type: 'date', nullable: true }) fechaObsApp: Date;
+  @Column({ name: 'fecha_cal_sunarp', type: 'date', nullable: true }) fechaCalSunarp: Date;
+  @Column({ name: 'oficina_registral', type: 'varchar', length: 100, nullable: true }) oficinaRegistral: string;
+  @Column({ name: 'fecha_maxima_tramite', type: 'date', nullable: true }) fechaMaximaTramite: Date;
+  @Column({ name: 'fecha_cancelacion', type: 'date', nullable: true }) fechaCancelacion: Date;
+  @Column({ name: 'folio', type: 'varchar', length: 50, nullable: true }) folio: string;
+
+  // ── Datos complementarios (Inmatriculación) ──
+  @Column({ name: 'clase_operacion', type: 'varchar', length: 50, nullable: true }) claseOperacion: string;
+  @Column({ name: 'color', type: 'varchar', length: 100, nullable: true }) color: string;
+  @Column({ name: 'cod_color', type: 'varchar', length: 20, nullable: true }) codColor: string;
+  @Column({ name: 'tapiz', type: 'varchar', length: 100, nullable: true }) tapiz: string;
+  @Column({ name: 'cod_tapiz', type: 'varchar', length: 20, nullable: true }) codTapiz: string;
+  @Column({ name: 'd_canal', type: 'varchar', length: 50, nullable: true }) dCanal: string;
 
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;

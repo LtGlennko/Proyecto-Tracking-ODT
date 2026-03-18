@@ -25,28 +25,22 @@ Este proyecto usa 4 agentes especializados. Lanzar en paralelo cuando la tarea i
 - **Comando:** Lanzar Agent con working directory en `tracking-otd-api/`
 
 ### Agente Base de Datos
-- **Scope:** Docker PostgreSQL (`tracking-otd-postgres`) + remoto `172.20.200.30` + `tracking-otd-api/src/migrations/`
+- **Scope:** Docker PostgreSQL (`tracking-otd-postgres`) + `tracking-otd-api/src/migrations/`
 - **Cuándo usarlo:** Ejecutar migraciones, verificar esquema, seed data, limpiar datos, troubleshoot BD
-- **Conexión Docker:** `docker exec tracking-otd-postgres psql -U appuser -d appwebdb01 -c "SQL"`
-- **Conexión remota:** `DB_HOST=172.20.200.30`, user=appuser, pass=1q2w3e, db=appwebdb01 (requiere VPN/red interna)
+- **Conexión Docker (ÚNICA):** `docker exec tracking-otd-postgres psql -U appuser -d appwebdb01 -c "SQL"`
+- **BD Activa:** Solo Docker local (`localhost:5432`). NO usar servidor remoto `172.20.200.30`.
 - **Responsabilidades:**
   - Ejecutar SQL de migraciones manualmente cuando TypeORM no puede conectar
   - Verificar estado del esquema vs entities
   - Mantener datos seed consistentes
   - Limpiar/resetear configuraciones para testing
-- **Política de Sync Dual-DB:**
-  1. **Siempre** aplicar cambios al Docker local primero (acceso garantizado)
-  2. **Intentar** aplicar al remoto 172.20.200.30 — si falla (ETIMEDOUT), anotar SQL pendiente
-  3. **Próxima conexión:** aplicar cambios pendientes antes de cualquier trabajo nuevo
-  4. Docker local: SQL directo via `docker exec`
-  5. Remoto: via `node pg` client o `npm run migration:run` (con .env apuntando a 172.20.200.30)
 - **Reglas:**
   - NUNCA usar `synchronize: true`
+  - NUNCA apuntar a `172.20.200.30` — solo Docker local
   - Siempre verificar estado actual antes de ejecutar DDL
   - Usar `ON CONFLICT DO UPDATE` para seeds idempotentes
   - Las migraciones en `tracking-otd-api/src/migrations/` son la fuente de verdad del esquema
   - Docker local NO tiene tabla `migrations` — cambios se aplican con SQL directo
-  - Remoto SÍ tiene tabla `migrations` — registrar migraciones aplicadas
 
 ### Agente Documentación
 - **Scope:** Raíz del proyecto + archivos de memoria

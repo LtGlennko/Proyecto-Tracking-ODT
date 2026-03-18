@@ -11,11 +11,6 @@ export class CreateFichaDto {
   @IsString()
   codigo?: string;
 
-  @ApiPropertyOptional({ example: 'CREDITO' })
-  @IsOptional()
-  @IsString()
-  formaPago?: string;
-
   @ApiPropertyOptional({ example: '2024-01-15' })
   @IsOptional()
   @IsDateString()

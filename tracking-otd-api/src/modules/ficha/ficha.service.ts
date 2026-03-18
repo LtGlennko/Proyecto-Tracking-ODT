@@ -14,13 +14,12 @@ export class FichaService {
   ) {}
 
   async findAll(filters: FilterFichaDto) {
-    const { page = 1, limit = 20, clienteId, empresaId, formaPago } = filters;
+    const { page = 1, limit = 20, clienteId, empresaId } = filters;
     const qb = this.repo.createQueryBuilder('f')
       .leftJoinAndSelect('f.cliente', 'cliente')
       .leftJoinAndSelect('cliente.empresa', 'empresa');
     if (clienteId) qb.andWhere('f.cliente_id = :clienteId', { clienteId });
     if (empresaId) qb.andWhere('empresa.id = :empresaId', { empresaId });
-    if (formaPago) qb.andWhere('f.forma_pago = :formaPago', { formaPago });
     const [items, total] = await qb.skip((page - 1) * limit).take(limit).getManyAndCount();
     return { _pagination: { items, total, page, limit } };
   }
