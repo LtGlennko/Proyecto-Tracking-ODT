@@ -1,13 +1,23 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { HitoTracking } from '@kaufmann/shared/models';
 import { LucideAngularModule } from 'lucide-angular';
+
+interface SubNode {
+  name: string;
+  fecha: string;
+  esPlan: boolean;
+  status: string;
+}
 
 interface HitoNode {
   id: string;
   nombre: string;
   icono: string | null;
   status: string;
-  subetapas: { name: string; fecha: string; esPlan: boolean; status: string }[];
+  lastDate: string;
+  lastDateEsPlan: boolean;
+  lastPlanDate: string;
+  subetapas: SubNode[];
 }
 
 interface Bloque {
@@ -20,7 +30,7 @@ interface Bloque {
     selector: 'kf-visual-map',
     imports: [LucideAngularModule],
     template: `
-    <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-x-auto">
+    <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-visible">
 
       @if (bloques().length === 0) {
         <div class="py-8 text-center text-slate-400 text-sm">Sin hitos configurados</div>
@@ -60,8 +70,10 @@ interface Bloque {
               <!-- Financiero lane (top) -->
               <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
                 @for (hito of bloque.financiero; track hito.id; let hlast = $last) {
-                  <div class="flex flex-col items-center shrink-0">
-                    <div class="flex flex-col items-center h-16">
+                  <div class="flex flex-col items-center shrink-0 relative"
+                       (mouseenter)="hoveredHitoId.set(hito.id)"
+                       (mouseleave)="hoveredHitoId.set(null)">
+                    <div class="flex flex-col items-center">
                       <div class="w-9 h-9 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
                            [class]="circleClass(hito.status, 'financiero')"
                            (click)="nodeClick.emit(hito.id)">
@@ -74,16 +86,33 @@ interface Bloque {
                       <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
                         {{ hito.nombre }}
                       </span>
+                      @if (hito.lastDate) {
+                        <span class="text-[9px] font-mono mt-0.5" [class]="hito.lastDateEsPlan ? 'text-blue-500' : 'text-emerald-600'">{{ hito.lastDate }}</span>
+                      }
                     </div>
-                    @if (hito.subetapas.length > 0) {
-                      <div class="w-full bg-blue-50/50 rounded border border-blue-100 px-1.5 py-1 max-w-32">
-                        @for (sub of hito.subetapas; track sub.name) {
-                          <div class="flex items-center gap-1 py-px">
-                            <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
-                            <span class="text-[10px] text-slate-600 leading-tight truncate flex-1" [title]="sub.name">{{ sub.name }}</span>
-                            @if (sub.fecha) {
-                              <span class="text-[9px] font-mono whitespace-nowrap" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
-                            }
+                    <!-- Hover card -->
+                    @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
+                      <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                          <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
+                          <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
+                        </div>
+                        <div class="space-y-1">
+                          @for (sub of hito.subetapas; track sub.name) {
+                            <div class="flex items-center justify-between gap-2">
+                              <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
+                                <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
+                              </div>
+                              @if (sub.fecha) {
+                                <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                        @if (hito.lastPlanDate) {
+                          <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
+                            Plan: <span class="font-medium text-blue-500">{{ hito.lastPlanDate }}</span>
                           </div>
                         }
                       </div>
@@ -106,8 +135,10 @@ interface Bloque {
               <!-- Operativo lane (bottom) -->
               <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
                 @for (hito of bloque.operativo; track hito.id; let hlast = $last) {
-                  <div class="flex flex-col items-center shrink-0">
-                    <div class="flex flex-col items-center h-16">
+                  <div class="flex flex-col items-center shrink-0 relative"
+                       (mouseenter)="hoveredHitoId.set(hito.id)"
+                       (mouseleave)="hoveredHitoId.set(null)">
+                    <div class="flex flex-col items-center">
                       <div class="w-9 h-9 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 transition-all"
                            [class]="circleClass(hito.status, 'operativo')"
                            (click)="nodeClick.emit(hito.id)">
@@ -120,16 +151,33 @@ interface Bloque {
                       <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
                         {{ hito.nombre }}
                       </span>
+                      @if (hito.lastDate) {
+                        <span class="text-[9px] font-mono mt-0.5" [class]="hito.lastDateEsPlan ? 'text-blue-500' : 'text-emerald-600'">{{ hito.lastDate }}</span>
+                      }
                     </div>
-                    @if (hito.subetapas.length > 0) {
-                      <div class="w-full bg-amber-50/50 rounded border border-amber-100 px-1.5 py-1 max-w-32">
-                        @for (sub of hito.subetapas; track sub.name) {
-                          <div class="flex items-center gap-1 py-px">
-                            <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
-                            <span class="text-[10px] text-slate-600 leading-tight truncate flex-1" [title]="sub.name">{{ sub.name }}</span>
-                            @if (sub.fecha) {
-                              <span class="text-[9px] font-mono whitespace-nowrap" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
-                            }
+                    <!-- Hover card -->
+                    @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
+                      <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                          <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
+                          <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
+                        </div>
+                        <div class="space-y-1">
+                          @for (sub of hito.subetapas; track sub.name) {
+                            <div class="flex items-center justify-between gap-2">
+                              <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
+                                <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
+                              </div>
+                              @if (sub.fecha) {
+                                <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                        @if (hito.lastPlanDate) {
+                          <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
+                            Plan: <span class="font-medium text-blue-500">{{ hito.lastPlanDate }}</span>
                           </div>
                         }
                       </div>
@@ -172,6 +220,7 @@ interface Bloque {
 export class VisualMapComponent {
   stages = input.required<HitoTracking[]>();
   nodeClick = output<string>();
+  hoveredHitoId = signal<string | null>(null);
 
   bloques = computed(() => {
     const stages = this.stages();
@@ -183,22 +232,34 @@ export class VisualMapComponent {
       grupoMap.get(gid)!.push(h);
     }
 
-    const toNode = (h: HitoTracking): HitoNode => ({
-      id: h.id,
-      nombre: h.name,
-      icono: h.icono || null,
-      status: h.status,
-      subetapas: h.subStages.map(s => {
+    const toNode = (h: HitoTracking): HitoNode => {
+      const subs: SubNode[] = h.subStages.map((s: any) => {
         const real = s.real?.start ? this.fmtShort(s.real.start) : '';
         const plan = s.plan?.start ? this.fmtShort(s.plan.start) : '';
-        return {
-          name: s.name,
-          fecha: real || plan,
-          esPlan: !real && !!plan,
-          status: s.status,
-        };
-      }),
-    });
+        return { name: s.name, fecha: real || plan, esPlan: !real && !!plan, status: s.status };
+      });
+
+      let lastDate = '';
+      let lastDateEsPlan = false;
+      for (let i = h.subStages.length - 1; i >= 0; i--) {
+        const s = h.subStages[i];
+        const real = s.real?.start ? this.fmtShort(s.real.start) : '';
+        const plan = s.plan?.start ? this.fmtShort(s.plan.start) : '';
+        if (real) { lastDate = real; lastDateEsPlan = false; break; }
+        if (plan) { lastDate = plan; lastDateEsPlan = true; break; }
+      }
+
+      let lastPlanDate = '';
+      for (let i = h.subStages.length - 1; i >= 0; i--) {
+        const p = h.subStages[i].plan?.end || h.subStages[i].plan?.start;
+        if (p) { lastPlanDate = this.fmtShort(p); break; }
+      }
+
+      return {
+        id: h.id, nombre: h.name, icono: h.icono || null, status: h.status,
+        lastDate, lastDateEsPlan, lastPlanDate, subetapas: subs,
+      };
+    };
 
     const bloques: (Bloque & { minIdx: number })[] = [];
     let idx = 0;
@@ -231,6 +292,24 @@ export class VisualMapComponent {
     if (status === 'delayed') return '!';
     if (status === 'active') return '\u25CF';
     return '\u25CB';
+  }
+
+  statusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'Completado';
+      case 'delayed': return 'Demorado';
+      case 'active': return 'En curso';
+      default: return 'Pendiente';
+    }
+  }
+
+  statusLabelClass(status: string): string {
+    switch (status) {
+      case 'completed': return 'text-emerald-600 bg-emerald-50';
+      case 'delayed': return 'text-red-600 bg-red-50';
+      case 'active': return 'text-blue-600 bg-blue-50';
+      default: return 'text-slate-500 bg-slate-100';
+    }
   }
 
   subDotClass(status: string): string {
