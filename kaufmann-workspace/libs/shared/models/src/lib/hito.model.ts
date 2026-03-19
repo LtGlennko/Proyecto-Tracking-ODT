@@ -12,12 +12,12 @@ export interface SubetapaTracking {
   baseline: DateSet;
   plan: DateSet;
   real: DateSet;
-  status: 'pending' | 'active' | 'completed';
+  status: 'on-time' | 'at-risk' | 'delayed' | 'completed' | 'completed-risk' | 'completed-late';
   notes?: string;
 }
 
 export interface HitoTracking {
-  id: string;
+  id: number;
   name: string;
   icono?: string | null;
   carril?: CarrilHito;
@@ -30,22 +30,3 @@ export interface HitoTracking {
   subStages: SubetapaTracking[];
 }
 
-export const HITOS_IDS = [
-  'importacion', 'asignacion', 'pdi',
-  'credito', 'facturacion', 'pago',
-  'inmatriculacion', 'programacion', 'entrega'
-] as const;
-
-export type HitoId = typeof HITOS_IDS[number];
-
-export const HITO_LABELS: Record<string, string> = {
-  'importacion':     'Importación',
-  'asignacion':      'Asignación',
-  'pdi':             'PDI',
-  'credito':         'Crédito',
-  'facturacion':     'Facturación',
-  'pago':            'Pago',
-  'inmatriculacion': 'Inmatr.',
-  'programacion':    'Prog.',
-  'entrega':         'Entrega'
-};

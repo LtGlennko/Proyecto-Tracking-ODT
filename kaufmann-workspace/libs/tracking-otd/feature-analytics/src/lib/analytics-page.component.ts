@@ -1,7 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 
 import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
-import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
 
 @Component({
     selector: 'kf-analytics-page',
@@ -55,18 +54,18 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
         <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 col-span-2">
           <h3 class="text-sm font-semibold text-slate-700 mb-3">Volumen por Hito</h3>
           <div class="space-y-2">
-            @for (hId of HITO_IDS; track hId) {
+            @for (h of hitoList(); track h.id) {
               <div class="flex items-center gap-3">
-                <span class="text-xs w-20 text-right text-slate-600 shrink-0">{{ HITO_LABELS[hId] }}</span>
+                <span class="text-xs w-20 text-right text-slate-600 shrink-0">{{ h.name }}</span>
                 <div class="flex-1 h-5 bg-slate-50 rounded overflow-hidden border border-slate-100 flex">
                   <div class="h-full bg-emerald-400 transition-all flex items-center justify-end pr-1"
-                    [style.width]="hitoOntime(hId) + '%'">
-                    @if (hitoOntime(hId) > 15) {
-                      <span class="text-[10px] text-white font-medium">{{ hitoOntime(hId) }}%</span>
+                    [style.width]="hitoOntime(h.id) + '%'">
+                    @if (hitoOntime(h.id) > 15) {
+                      <span class="text-[10px] text-white font-medium">{{ hitoOntime(h.id) }}%</span>
                     }
                   </div>
                   <div class="h-full bg-red-400 transition-all"
-                    [style.width]="hitoDemorado(hId) + '%'">
+                    [style.width]="hitoDemorado(h.id) + '%'">
                   </div>
                 </div>
               </div>
@@ -98,8 +97,15 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
 })
 export class AnalyticsPageComponent {
   readonly store = inject(TrackingStore);
-  readonly HITO_LABELS = HITO_LABELS;
-  readonly HITO_IDS = [...HITOS_IDS];
+  hitoList = computed(() => {
+    const seen = new Map<number, string>();
+    for (const v of this.store.vins()) {
+      for (const s of v.stages) {
+        if (!seen.has(s.id)) seen.set(s.id, s.name);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  });
 
   otdPct = computed(() => {
     const vins = this.store.vins();
@@ -113,7 +119,7 @@ export class AnalyticsPageComponent {
     const map: Record<string, { nombre: string; color: string; count: number }> = {};
     for (const v of vins) {
       const tv = v.tipoVehiculo;
-      const key = tv?.slug ?? 'desconocido';
+      const key = String(tv?.id ?? 0);
       if (!map[key]) {
         map[key] = { nombre: tv?.nombre ?? 'Desconocido', color: tv?.color ?? '#94a3b8', count: 0 };
       }
@@ -136,13 +142,13 @@ export class AnalyticsPageComponent {
 
   maxTrend = computed(() => Math.max(...this.trendBars().map(b => b.value), 1));
 
-  hitoOntime(hitoId: string): number {
+  hitoOntime(hitoId: number): number {
     const vins = this.store.vins();
     if (!vins.length) return 0;
     return Math.round((vins.filter(v => v.stages.find(s => s.id === hitoId)?.status === 'completed').length / vins.length) * 100);
   }
 
-  hitoDemorado(hitoId: string): number {
+  hitoDemorado(hitoId: number): number {
     const vins = this.store.vins();
     if (!vins.length) return 0;
     return Math.round((vins.filter(v => v.stages.find(s => s.id === hitoId)?.status === 'delayed').length / vins.length) * 100);

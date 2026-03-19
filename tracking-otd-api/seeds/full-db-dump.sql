@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Lcbb2h2uUw1Z3DPiPhcdNC7R6HbOiB90SOKzAGLTwATCDEMOVsRZc161AyTK6VY
+\restrict lrJeMf8wTLcb6rhGlt83XD4FIRnLPr5l0Kd5ad6JuKTN3GOSAsmJ1KVaVFpFf7s
 
 -- Dumped from database version 15.17
 -- Dumped by pg_dump version 15.17
@@ -304,15 +304,13 @@ ALTER SEQUENCE public.grupo_paralelo_id_seq OWNED BY public.grupo_paralelo.id;
 
 CREATE TABLE public.hito (
     id integer NOT NULL,
-    grupo_paralelo_id integer,
-    usuario_responsable_id integer,
     nombre character varying(255),
     carril character varying(100),
     orden integer,
-    tipo_vehiculo character varying(100),
     activo boolean,
     created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    icono character varying(50)
 );
 
 
@@ -519,8 +517,7 @@ CREATE TABLE public.sla_config (
     dias_tolerancia integer,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
-    tipo_vehiculo_id integer,
-    CONSTRAINT chk_sla_min_dimension CHECK (((empresa_id IS NOT NULL) OR (subetapa_id IS NOT NULL) OR (tipo_vehiculo_id IS NOT NULL)))
+    tipo_vehiculo_id integer
 );
 
 
@@ -655,7 +652,8 @@ CREATE TABLE public.subetapa (
     activo_default boolean,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
-    campo_staging_vin character varying
+    campo_staging_real character varying,
+    campo_staging_plan character varying
 );
 
 
@@ -993,11 +991,11 @@ ALTER TABLE ONLY public.usuario_empresa ALTER COLUMN id SET DEFAULT nextval('pub
 -- Data for Name: cliente; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.cliente VALUES (1, NULL, 'Transportes del Norte S.A.', '20100100100', false, NULL, NULL);
-INSERT INTO public.cliente VALUES (2, NULL, 'Turismo Andes S.A.', '20200200200', false, NULL, NULL);
-INSERT INTO public.cliente VALUES (3, NULL, 'Renting Corporativo S.A.C.', '20300300300', false, NULL, NULL);
-INSERT INTO public.cliente VALUES (4, NULL, 'Constructora del Sur S.A.', '20400400400', false, NULL, NULL);
-INSERT INTO public.cliente VALUES (5, NULL, 'Transportes Línea S.A.', '20500500500', true, NULL, NULL);
+INSERT INTO public.cliente VALUES (1, 1, 'Transportes del Norte S.A.', '20100100100', false, NULL, NULL);
+INSERT INTO public.cliente VALUES (2, 1, 'Turismo Andes S.A.', '20200200200', false, NULL, NULL);
+INSERT INTO public.cliente VALUES (3, 2, 'Renting Corporativo S.A.C.', '20300300300', false, NULL, NULL);
+INSERT INTO public.cliente VALUES (4, 3, 'Constructora del Sur S.A.', '20400400400', false, NULL, NULL);
+INSERT INTO public.cliente VALUES (5, 1, 'Transportes Línea S.A.', '20500500500', true, NULL, NULL);
 
 
 --
@@ -1048,15 +1046,15 @@ INSERT INTO public.grupo_paralelo VALUES (10, NULL, NULL, NULL, NULL, NULL);
 -- Data for Name: hito; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.hito VALUES (1, NULL, NULL, 'Importación', 'operativo', 1, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (2, NULL, NULL, 'Asignación', 'comercial', 2, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (3, NULL, NULL, 'PDI', 'operativo', 3, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (4, NULL, NULL, 'Crédito', 'financiero', 4, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (5, NULL, NULL, 'Facturación', 'financiero', 5, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (6, NULL, NULL, 'Pago', 'financiero', 6, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (7, NULL, NULL, 'Inmatriculación', 'operativo', 7, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (8, NULL, NULL, 'Programación', 'operativo', 8, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
-INSERT INTO public.hito VALUES (9, NULL, NULL, 'Entrega', 'comercial', 9, NULL, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424');
+INSERT INTO public.hito VALUES (1, 'Importación', 'operativo', 1, true, '2026-03-11 14:55:30.83424', '2026-03-18 15:17:38.85304', 'anchor');
+INSERT INTO public.hito VALUES (2, 'Asignación', 'comercial', 2, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'user-check');
+INSERT INTO public.hito VALUES (4, 'Crédito', 'financiero', 4, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'credit-card');
+INSERT INTO public.hito VALUES (5, 'Facturación', 'financiero', 5, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'file-text');
+INSERT INTO public.hito VALUES (6, 'Pago', 'financiero', 6, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'banknote');
+INSERT INTO public.hito VALUES (7, 'Inmatriculación', 'operativo', 7, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'file-badge');
+INSERT INTO public.hito VALUES (8, 'Programación', 'operativo', 8, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'calendar-check');
+INSERT INTO public.hito VALUES (9, 'Entrega', 'comercial', 9, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'truck');
+INSERT INTO public.hito VALUES (3, 'PDI', 'operativo', 3, true, '2026-03-11 14:55:30.83424', '2026-03-19 08:55:35.89191', 'wrench');
 
 
 --
@@ -1186,9 +1184,9 @@ INSERT INTO public.mapeo_campos_vin VALUES (81, 'fecha_llegada_sap', 2, 'Fecha L
 INSERT INTO public.mapeo_campos_vin VALUES (82, 'fecha_aduana_sap', 2, 'Fecha Aduana', 2, true);
 INSERT INTO public.mapeo_campos_vin VALUES (83, 'fecha_nacion', 2, 'Fecha Nación', 2, true);
 INSERT INTO public.mapeo_campos_vin VALUES (84, 'fecha_preasignacion', 2, 'Fecha.Preasignacion', 2, true);
-INSERT INTO public.mapeo_campos_vin VALUES (67, 'pedido_externo', 2, 'Pedido Externo', 2, true);
+INSERT INTO public.mapeo_campos_vin VALUES (19, 'pedido_externo', 1, 'Pedido Externo', 2, true);
 INSERT INTO public.mapeo_campos_vin VALUES (6, 'pedido_externo', 3, 'PEDIDO EXTERNO', 3, true);
-INSERT INTO public.mapeo_campos_vin VALUES (19, 'pedido_externo', 1, 'Pedido Externo', 1, true);
+INSERT INTO public.mapeo_campos_vin VALUES (67, 'pedido_externo', 2, 'Pedido Externo', 1, true);
 
 
 --
@@ -1213,6 +1211,7 @@ INSERT INTO public.mapeo_campos_vin VALUES (19, 'pedido_externo', 1, 'Pedido Ext
 -- Data for Name: sla_config; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.sla_config VALUES (8, NULL, NULL, 5, 2, NULL, NULL, NULL);
 
 
 --
@@ -1234,27 +1233,27 @@ INSERT INTO public.staging_vin VALUES ('WDBBUSLNEA001BUS01', 'LOTE-BUS-02', NULL
 -- Data for Name: subetapa; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.subetapa VALUES (1, 1, 'Solicitud negocio', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_colocacion');
-INSERT INTO public.subetapa VALUES (2, 1, 'Pedido fábrica', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_colocacion');
-INSERT INTO public.subetapa VALUES (3, 1, 'Producción', 3, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_liberacion_fabrica');
-INSERT INTO public.subetapa VALUES (4, 1, 'Carrocero Internacional', 4, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_fin_prod_carr_real');
-INSERT INTO public.subetapa VALUES (5, 1, 'Embarque', 5, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_embarque_sap');
-INSERT INTO public.subetapa VALUES (6, 1, 'En aduana', 6, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_llegada_aduana');
-INSERT INTO public.subetapa VALUES (7, 1, 'En almacén', 7, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_ingreso_patio');
-INSERT INTO public.subetapa VALUES (8, 2, 'Reserva', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_preasignacion');
-INSERT INTO public.subetapa VALUES (9, 2, 'Asig. Definitiva', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_asignacion');
-INSERT INTO public.subetapa VALUES (10, 3, 'Inicio PDI', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_ingreso_prod_carr_real');
-INSERT INTO public.subetapa VALUES (11, 3, 'En Carrocero Local', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_fin_prod_carr_real');
-INSERT INTO public.subetapa VALUES (12, 3, 'Salida PDI', 3, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_liberado_sap');
-INSERT INTO public.subetapa VALUES (13, 4, 'Solicitud crédito', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL);
-INSERT INTO public.subetapa VALUES (14, 4, 'Aprobación', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL);
-INSERT INTO public.subetapa VALUES (15, 5, 'Emisión Factura', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_facturacion_sap');
-INSERT INTO public.subetapa VALUES (16, 6, 'Pago Confirmado', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL);
-INSERT INTO public.subetapa VALUES (17, 7, 'Inicio trámite', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fcc');
-INSERT INTO public.subetapa VALUES (18, 7, 'Placas recibidas', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fclr');
-INSERT INTO public.subetapa VALUES (19, 8, 'Unidad Lista', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL);
-INSERT INTO public.subetapa VALUES (20, 8, 'Cita Agendada', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL);
-INSERT INTO public.subetapa VALUES (21, 9, 'Entregado al Cliente', 1, true, NULL, NULL, 'fecha_entrega_cliente');
+INSERT INTO public.subetapa VALUES (1, 1, 'Solicitud negocio', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_colocacion', NULL);
+INSERT INTO public.subetapa VALUES (2, 1, 'Pedido fábrica', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_colocacion', NULL);
+INSERT INTO public.subetapa VALUES (3, 1, 'Producción', 3, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_liberacion_fabrica', NULL);
+INSERT INTO public.subetapa VALUES (4, 1, 'Carrocero Internacional', 4, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_fin_prod_carr_real', NULL);
+INSERT INTO public.subetapa VALUES (5, 1, 'Embarque', 5, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_embarque_sap', NULL);
+INSERT INTO public.subetapa VALUES (6, 1, 'En aduana', 6, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_llegada_aduana', NULL);
+INSERT INTO public.subetapa VALUES (7, 1, 'En almacén', 7, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_ingreso_patio', NULL);
+INSERT INTO public.subetapa VALUES (8, 2, 'Reserva', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_preasignacion', NULL);
+INSERT INTO public.subetapa VALUES (9, 2, 'Asig. Definitiva', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_asignacion', NULL);
+INSERT INTO public.subetapa VALUES (10, 3, 'Inicio PDI', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_ingreso_prod_carr_real', NULL);
+INSERT INTO public.subetapa VALUES (11, 3, 'En Carrocero Local', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_fin_prod_carr_real', NULL);
+INSERT INTO public.subetapa VALUES (12, 3, 'Salida PDI', 3, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_liberado_sap', NULL);
+INSERT INTO public.subetapa VALUES (13, 4, 'Solicitud crédito', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL, NULL);
+INSERT INTO public.subetapa VALUES (14, 4, 'Aprobación', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL, NULL);
+INSERT INTO public.subetapa VALUES (15, 5, 'Emisión Factura', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fecha_facturacion_sap', NULL);
+INSERT INTO public.subetapa VALUES (16, 6, 'Pago Confirmado', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL, NULL);
+INSERT INTO public.subetapa VALUES (17, 7, 'Inicio trámite', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fcc', NULL);
+INSERT INTO public.subetapa VALUES (18, 7, 'Placas recibidas', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', 'fclr', NULL);
+INSERT INTO public.subetapa VALUES (19, 8, 'Unidad Lista', 1, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL, NULL);
+INSERT INTO public.subetapa VALUES (20, 8, 'Cita Agendada', 2, true, '2026-03-11 14:55:30.839151', '2026-03-11 14:55:30.839151', NULL, NULL);
+INSERT INTO public.subetapa VALUES (21, 9, 'Entregado al Cliente', 1, true, NULL, NULL, 'fecha_entrega_cliente', NULL);
 
 
 --
@@ -1361,13 +1360,16 @@ INSERT INTO public.tipo_vehiculo VALUES (4, 'Vehículo Ligero', 'vehiculo_ligero
 -- Data for Name: usuario; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.usuario VALUES (1, '00000000-0000-4000-8000-000000000001', 'Developer Kaufmann', 'dev@kaufmann.cl', 'superadministrador', true, NULL, NULL);
+INSERT INTO public.usuario VALUES (1, '00000000-0000-4000-8000-000000000001', 'Developer Kaufmann', 'dev@kaufmann.cl', 'superadministrador', true, NULL, '2026-03-18 15:17:21.813206');
 
 
 --
 -- Data for Name: usuario_empresa; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.usuario_empresa VALUES (1, 1, 1);
+INSERT INTO public.usuario_empresa VALUES (2, 1, 2);
+INSERT INTO public.usuario_empresa VALUES (3, 1, 3);
 
 
 --
@@ -1487,7 +1489,7 @@ SELECT pg_catalog.setval('public.notificacion_id_seq', 1, false);
 -- Name: sla_config_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.sla_config_id_seq', 1, false);
+SELECT pg_catalog.setval('public.sla_config_id_seq', 8, true);
 
 
 --
@@ -1515,7 +1517,7 @@ SELECT pg_catalog.setval('public.tipo_vehiculo_id_seq', 4, true);
 -- Name: usuario_empresa_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.usuario_empresa_id_seq', 1, false);
+SELECT pg_catalog.setval('public.usuario_empresa_id_seq', 3, true);
 
 
 --
@@ -1972,22 +1974,6 @@ ALTER TABLE ONLY public.vin
 
 
 --
--- Name: hito hito_grupo_paralelo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.hito
-    ADD CONSTRAINT hito_grupo_paralelo_id_fkey FOREIGN KEY (grupo_paralelo_id) REFERENCES public.grupo_paralelo(id);
-
-
---
--- Name: hito hito_usuario_responsable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.hito
-    ADD CONSTRAINT hito_usuario_responsable_id_fkey FOREIGN KEY (usuario_responsable_id) REFERENCES public.usuario(id);
-
-
---
 -- Name: mapeo_campos_vin mapeo_campos_vin_id_fuente_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2095,5 +2081,5 @@ ALTER TABLE ONLY public.vin
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Lcbb2h2uUw1Z3DPiPhcdNC7R6HbOiB90SOKzAGLTwATCDEMOVsRZc161AyTK6VY
+\unrestrict lrJeMf8wTLcb6rhGlt83XD4FIRnLPr5l0Kd5ad6JuKTN3GOSAsmJ1KVaVFpFf7s
 

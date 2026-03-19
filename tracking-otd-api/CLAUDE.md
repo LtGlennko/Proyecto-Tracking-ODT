@@ -36,32 +36,38 @@ Flujo: Solicitud → Compra → Entrega (9 hitos, 20 subetapas).
 - Upsert por VIN (INSERT ON CONFLICT UPDATE)
 - PROPED prevalece sobre SAP para: etd, eta, fecha_llegada_aduana
 - SAP prevalece para: fechas de facturación, preasignación, asignación
-- Después de cada upsert → llamar `TrackingService.syncFromStaging(vinId)`
+- Fechas real: desde `subetapa.campo_staging_real`
+- Fechas plan: `subetapa.campo_staging_plan` tiene prioridad, SLA como fallback
+- Nuevas columnas: `cond_pago`, `descripcion_cond_pago`, `archivo_fuente`, 22 columnas de inmatriculación
+- `syncFromStaging` fue removido — tracking se calcula dinámicamente
 
 ### Chat — constraint XOR
 - Un chat pertenece a una ficha O a un VIN, nunca a ambos
 - Validar en `ChatService.create()` antes de insertar
 
 ### Auth — perfiles
-- `administrador` → acceso completo
+- `superadmin` → acceso completo incluyendo config de hitos maestros y mapeo de campos
+- `administrador` → acceso completo (PATCH/PUT usuarios permitido)
 - `supervisor` → puede actualizar tracking y ver todo
 - `asesor_comercial` → solo lectura + actualizar GAPs manuales de sus VINs
 
 ## Estructura de Módulos
 ```
 src/modules/
-  empresa/      → empresa.entity, empresa.service, empresa.controller
+  empresa/        → empresa.entity, empresa.service, empresa.controller
   cliente/
-  ficha/
-  vin/          → vin.service incluye calcularEstadoGeneral
-  hitos/        → grupo_paralelo, hito, subetapa, subetapa_config
-  tracking/     → vin_hito_tracking, vin_subetapa_tracking, syncFromStaging
-  sla/          → sla_config, SlaService.resolve(), SlaService.getStatus()
-  alertas/      → alerta, alerta_accion, AlertasScheduler (@Cron cada 6h)
-  chat/         → chat, mensaje, mensaje_etiqueta, notificacion
-  staging/      → staging_vin, parse PROPED/SAP Excel, upsert
-  auth/         → AzureAdStrategy, JwtAuthGuard, RolesGuard
-  health/       → /api/health (público)
+  ficha/          → ficha.formasPago (string[]) derivado de staging_vin.descripcion_cond_pago
+  vin/            → vin.service incluye calcularEstadoGeneral
+  hitos/          → grupo_paralelo, hito (con icono), subetapa (campo_staging_real, campo_staging_plan)
+  tracking/       → cálculo dinámico de tracking (sin tablas vin_hito/subetapa_tracking)
+  sla/            → sla_config (sin chk_sla_min_dimension), SlaService.resolve(), SlaService.getStatus()
+  alertas/        → alerta, alerta_accion, AlertasScheduler (@Cron cada 6h)
+  chat/           → chat, mensaje, mensaje_etiqueta, notificacion
+  staging/        → staging_vin, parse PROPED/SAP Excel, upsert
+  fuentes-vin/    → CRUD fuentes de datos
+  mapeo-campos-vin/ → CRUD mapeo campos + grouped + staging-columns + reorder
+  auth/           → AzureAdStrategy, JwtAuthGuard, RolesGuard
+  health/         → /api/health (público)
 ```
 
 ## DB Credentials (desarrollo local — ÚNICA BD)
@@ -84,7 +90,7 @@ npm run test:cov
 
 ## Entidades de Configuración por Tipo de Vehículo
 - `HitoTipoVehiculo` — grupoParaleloId, carril (financiero/operativo), orden, activo
-- `SubetapaTipoVehiculo` — orden, activo, campoStagingVin
+- `SubetapaTipoVehiculo` — orden, activo, campoStagingReal, campoStagingPlan
 - `GrupoParalelo` — Agrupación para ejecución simultánea de hitos
 - Operaciones SIEMPRE scoped por tipo de vehículo
 - Grupos paralelos: crear on-demand, eliminar automáticamente cuando quedan vacíos
@@ -100,6 +106,17 @@ npm run test:cov
 - DTOs con decoradores class-validator (`@IsString()`, `@IsNumber()`, etc.)
 
 ## Cobertura de Fechas en staging_vin
-- 12 directas: auto-poblan desde staging (TrackingService.syncFromStaging)
+- Fechas real: mapeadas dinámicamente via `subetapa.campo_staging_real`
+- Fechas plan: mapeadas via `subetapa.campo_staging_plan` (prioridad) o calculadas por SLA (fallback)
+- Baseline: cálculo group-aware con encadenamiento secuencial same-carril
 - 3 proxy: fcc→InicioTrámite, fclr→PlacasRecibidas, fechaColocacion→PedidoFábrica
 - 5 GAP manual: SolicitudCrédito, Aprobación, PagoConfirmado, UnidadLista, CitaAgendada
+
+## Tablas Eliminadas (2026-03-19)
+- `vin_hito_tracking`, `vin_subetapa_tracking`, `subetapa_config`
+- Columnas eliminadas de `hito`: `grupo_paralelo_id`, `usuario_responsable_id`, `tipo_vehiculo`, `slug`
+- Columna eliminada de `ficha`: `forma_pago`
+- Constraint eliminado: `chk_sla_min_dimension` de `sla_config`
+
+## Métodos Removidos
+- `syncFromStaging`, `getTrackingVin`, `updateHitoTracking`, `updateSubetapaTracking`

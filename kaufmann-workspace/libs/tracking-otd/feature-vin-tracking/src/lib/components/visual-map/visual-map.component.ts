@@ -10,7 +10,7 @@ interface SubNode {
 }
 
 interface HitoNode {
-  id: string;
+  id: number;
   nombre: string;
   icono: string | null;
   status: string;
@@ -99,11 +99,12 @@ interface Bloque {
                         </div>
                         <div class="space-y-1">
                           @for (sub of hito.subetapas; track sub.name) {
-                            <div class="flex items-center justify-between gap-2">
-                              <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="flex items-center justify-between gap-1.5">
+                              <div class="flex items-center gap-1.5 min-w-0 flex-1">
                                 <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
                                 <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
                               </div>
+                              <span class="px-1 py-0.5 text-[9px] font-medium rounded shrink-0" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
                               @if (sub.fecha) {
                                 <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
                               }
@@ -164,11 +165,12 @@ interface Bloque {
                         </div>
                         <div class="space-y-1">
                           @for (sub of hito.subetapas; track sub.name) {
-                            <div class="flex items-center justify-between gap-2">
-                              <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="flex items-center justify-between gap-1.5">
+                              <div class="flex items-center gap-1.5 min-w-0 flex-1">
                                 <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
                                 <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
                               </div>
+                              <span class="px-1 py-0.5 text-[9px] font-medium rounded shrink-0" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
                               @if (sub.fecha) {
                                 <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
                               }
@@ -219,8 +221,8 @@ interface Bloque {
 })
 export class VisualMapComponent {
   stages = input.required<HitoTracking[]>();
-  nodeClick = output<string>();
-  hoveredHitoId = signal<string | null>(null);
+  nodeClick = output<number>();
+  hoveredHitoId = signal<number | null>(null);
 
   bloques = computed(() => {
     const stages = this.stages();
@@ -312,9 +314,36 @@ export class VisualMapComponent {
     }
   }
 
+  subStatusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'A tiempo';
+      case 'completed-risk': return 'En tolerancia';
+      case 'completed-late': return 'Crítico';
+      case 'on-time': return 'A tiempo';
+      case 'at-risk': return 'En tolerancia';
+      case 'delayed': return 'Crítico';
+      default: return 'Pendiente';
+    }
+  }
+
+  subStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'completed': return 'bg-emerald-50 text-emerald-600';
+      case 'completed-risk': return 'bg-amber-50 text-amber-600';
+      case 'completed-late': return 'bg-red-50 text-red-600';
+      case 'on-time': return 'bg-slate-50 text-slate-400';
+      case 'at-risk': return 'bg-amber-50 text-amber-600';
+      case 'delayed': return 'bg-red-50 text-red-600';
+      default: return 'bg-slate-50 text-slate-400';
+    }
+  }
+
   subDotClass(status: string): string {
     if (status === 'completed') return 'bg-emerald-500';
-    if (status === 'active') return 'bg-blue-500';
+    if (status === 'completed-risk') return 'bg-amber-500';
+    if (status === 'completed-late') return 'bg-red-500';
+    if (status === 'at-risk') return 'bg-amber-500 animate-pulse';
+    if (status === 'delayed') return 'bg-red-500 animate-pulse';
     return 'bg-slate-300';
   }
 

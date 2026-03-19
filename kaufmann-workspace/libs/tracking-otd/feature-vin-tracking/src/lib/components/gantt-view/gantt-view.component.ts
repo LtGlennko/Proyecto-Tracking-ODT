@@ -146,10 +146,21 @@ interface TimeMarker {
                              [style.left.%]="todayPct()"></div>
                       }
 
-                      <!-- Sub stage bar -->
+                      <!-- Sub plan bar (ghost) -->
+                      @if (getBarStyle(sub.plan.start, sub.plan.end); as subPlanBar) {
+                        <div class="absolute h-1.5 bg-slate-100 rounded-full"
+                             [style.left]="subPlanBar.left"
+                             [style.width]="subPlanBar.width"
+                             [style.display]="subPlanBar.display"></div>
+                      }
+
+                      <!-- Sub real bar -->
                       <div class="absolute h-1.5 rounded-full opacity-70 group/subbar"
                            [class]="sub.status === 'completed' ? 'bg-emerald-300' :
-                                    sub.status === 'active'    ? 'bg-blue-300' : 'bg-slate-200'"
+                                    sub.status === 'completed-risk' ? 'bg-amber-300' :
+                                    sub.status === 'completed-late' ? 'bg-red-300' :
+                                    sub.status === 'at-risk' ? 'bg-amber-300' :
+                                    sub.status === 'delayed' ? 'bg-red-300' : 'bg-slate-200'"
                            [style.left]="getBarStyle(sub.real.start, sub.real.end)?.left || '0%'"
                            [style.width]="getBarStyle(sub.real.start, sub.real.end)?.width || '0%'"
                            [style.display]="getBarStyle(sub.real.start, sub.real.end)?.display || 'none'">
@@ -195,7 +206,7 @@ interface TimeMarker {
 export class GanttViewComponent implements OnInit {
   stages = input.required<HitoTracking[]>();
 
-  collapsedSet = signal<Set<string>>(new Set());
+  collapsedSet = signal<Set<number>>(new Set());
 
   // --- User-controlled view range ---
   viewStart = signal('');
@@ -324,7 +335,7 @@ export class GanttViewComponent implements OnInit {
 
   // --- Collapse toggle ---
 
-  toggleCollapse(id: string): void {
+  toggleCollapse(id: number): void {
     this.collapsedSet.update(set => {
       const next = new Set(set);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -332,7 +343,7 @@ export class GanttViewComponent implements OnInit {
     });
   }
 
-  isCollapsed(id: string): boolean {
+  isCollapsed(id: number): boolean {
     return this.collapsedSet().has(id);
   }
 

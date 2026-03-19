@@ -1,6 +1,6 @@
 import { Component, input, output, signal, computed, effect, HostListener } from '@angular/core';
 
-import { VinModel, HitoTracking, HITO_LABELS } from '@kaufmann/shared/models';
+import { VinModel, HitoTracking } from '@kaufmann/shared/models';
 import { StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
 import { formatDate, calculateDiff } from '@kaufmann/shared/utils';
 
@@ -11,11 +11,37 @@ import { formatDate, calculateDiff } from '@kaufmann/shared/utils';
 })
 export class TrackingDrawerComponent {
   vin = input.required<VinModel>();
-  selectedStageId = input<string | null>(null);
+  selectedStageId = input<number | null>(null);
   isOpen = input<boolean>(false);
   closed = output<void>();
 
-  expandedHitoId = signal<string | null>(null);
+  expandedHitoId = signal<number | null>(null);
+  drawerMainTab = signal<'detalle' | 'datos' | 'tramos'>('detalle');
+
+  hitoPairs = computed(() => {
+    const stages = this.vin().stages;
+    if (stages.length < 2) return [];
+    const pairs: { from: string; to: string; days: number | null; status: string }[] = [];
+    for (let i = 0; i < stages.length - 1; i++) {
+      const current = stages[i];
+      const next = stages[i + 1];
+      const currentEnd = current.real?.end || current.plan?.end;
+      const nextStart = next.real?.start || next.plan?.start;
+      let days: number | null = null;
+      let status = 'pending';
+      if (currentEnd && nextStart) {
+        const endMs = new Date(currentEnd + 'T00:00:00').getTime();
+        const startMs = new Date(nextStart + 'T00:00:00').getTime();
+        days = Math.round((startMs - endMs) / 86400000);
+        // Negative = overlap/fast, 0 = seamless, positive = gap
+        if (days <= 0) status = 'on-time';
+        else if (days <= 3) status = 'at-risk';
+        else status = 'delayed';
+      }
+      pairs.push({ from: current.name, to: next.name, days, status });
+    }
+    return pairs;
+  });
 
   /** The selected hito (from the visual map click) */
   selectedHito = computed(() => {
@@ -24,15 +50,14 @@ export class TrackingDrawerComponent {
     return this.vin().stages.find((s: HitoTracking) => s.id === stageId) ?? null;
   });
 
-  readonly HITO_LABELS = HITO_LABELS;
   readonly formatDate = formatDate;
   readonly calculateDiff = calculateDiff;
 
   constructor() {
-    // Auto-expand the selected hito when it changes
     effect(() => {
       const stageId = this.selectedStageId();
       if (stageId) this.expandedHitoId.set(stageId);
+      this.drawerMainTab.set('detalle');
     });
   }
 
@@ -41,7 +66,7 @@ export class TrackingDrawerComponent {
     this.closed.emit();
   }
 
-  toggleHito(hitoId: string) {
+  toggleHito(hitoId: number) {
     this.expandedHitoId.update(v => v === hitoId ? null : hitoId);
   }
 
@@ -57,7 +82,7 @@ export class TrackingDrawerComponent {
   hitoProgressWidth(hito: HitoTracking): number {
     if (hito.status === 'completed') return 100;
     if (hito.status === 'pending') return 0;
-    const completed = hito.subStages.filter(s => s.status === 'completed').length;
+    const completed = hito.subStages.filter(s => s.status.startsWith('completed')).length;
     return hito.subStages.length > 0 ? Math.round((completed / hito.subStages.length) * 100) : 30;
   }
 
@@ -71,12 +96,56 @@ export class TrackingDrawerComponent {
   subStageStatusDot(status: string): string {
     switch (status) {
       case 'completed': return 'bg-emerald-500';
-      case 'active':    return 'bg-blue-500 animate-pulse';
-      default:          return 'bg-slate-300';
+      case 'completed-risk': return 'bg-amber-500';
+      case 'completed-late': return 'bg-red-500';
+      case 'at-risk': return 'bg-amber-500 animate-pulse';
+      case 'delayed': return 'bg-red-500 animate-pulse';
+      default: return 'bg-slate-300';
     }
   }
 
-  onVisualMapNodeClick(hitoId: string) {
+  subStatusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'A tiempo';
+      case 'completed-risk': return 'En tolerancia';
+      case 'completed-late': return 'Crítico';
+      case 'on-time': return 'A tiempo';
+      case 'at-risk': return 'En tolerancia';
+      case 'delayed': return 'Crítico';
+      default: return 'Pendiente';
+    }
+  }
+
+  subStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'completed': return 'bg-emerald-100 text-emerald-700';
+      case 'completed-risk': return 'bg-amber-100 text-amber-700';
+      case 'completed-late': return 'bg-red-100 text-red-700';
+      case 'at-risk': return 'bg-amber-100 text-amber-700';
+      case 'delayed': return 'bg-red-100 text-red-700';
+      default: return 'bg-slate-100 text-slate-500';
+    }
+  }
+
+  pairStatusLabel(status: string): string {
+    switch (status) {
+      case 'on-time': return 'A tiempo';
+      case 'at-risk': return 'En tolerancia';
+      case 'delayed': return 'Demorado';
+      default: return 'Pendiente';
+    }
+  }
+
+  pairStatusClass(status: string): string {
+    switch (status) {
+      case 'on-time': return 'bg-emerald-50 text-emerald-600';
+      case 'at-risk': return 'bg-amber-50 text-amber-600';
+      case 'delayed': return 'bg-red-50 text-red-600';
+      default: return 'bg-slate-50 text-slate-400';
+    }
+  }
+
+  onVisualMapNodeClick(hitoId: number) {
     this.expandedHitoId.set(hitoId);
   }
 }

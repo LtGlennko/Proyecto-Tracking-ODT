@@ -34,7 +34,8 @@
 - **Sombras:** `shadow-sm` para cards
 
 ## Módulo Admin (`feature-admin`)
-Página con 4 tabs: **Tipos de Vehículo**, **Hitos y Subetapas**, **Config por Tipo**, **SLA**.
+Página con 5 tabs: **Tipos de Vehículo**, **Hitos y Subetapas**, **Config por Tipo**, **SLA**, **Mapeo Campos**.
+- "Hitos Maestros" y "Mapeo Campos" son superadmin-only (estilo rojo + icono lock).
 
 ### Config por Tipo — Componentes clave:
 - **`HitoConfigSwimlaneComponent`** — Editor visual de hitos por tipo de vehículo
@@ -62,11 +63,39 @@ Frontend: handleChangeGrupo(hc, grupoId)
   Si grupo anterior quedó vacío → DELETE /v1/hitos/grupos-paralelos/{id}
 ```
 
+### Hitos y Subetapas tab:
+- Icon picker para hitos (iconos Lucide)
+- Dos columnas separadas: "Campo Fecha Plan" / "Campo Fecha Real"
+
+### SLA tab:
+- Detección de duplicados con opción de actualizar
+
+### Mapeo Campos tab (superadmin-only):
+- Drag-drop para reordenar prioridad
+- Filtros por tipo de vehículo y cantidad de fuentes
+- Columnas staging desde API
+
 ## Módulo Vin Tracking (`feature-vin-tracking`)
-- **`VisualMapComponent`** — Mapa visual de hitos para un VIN específico
+- **`VisualMapComponent`** — Mapa visual (label: "Flujo") de hitos para un VIN específico
   - Flujo principal (mainFlow) + flujo paralelo (parallelFlow)
   - Usa `StageNodeComponent` de shared/ui
   - Estados: completed (emerald), delayed (red), active (blue), pending (slate)
+  - Hover cards en vez de listas de subetapas, fecha de última subetapa bajo el nombre del icono
+- **Tracking List** — Lucide icons en círculos de hitos, hover cards en vez de tooltips
+- **Gantt** — Scrollbar horizontal para evitar superposición de etiquetas de fecha
+- **Filtros** — Persisten al navegar a/desde detalle VIN (ngModel binding)
+- **UI Labels:** "Seguimiento ODT" como título, "Tracking Detalle" en vista detalle
+
+## Datos Dinámicos (sin hardcoding)
+- Tipos de vehículo: desde API via `TipoVehiculoService`
+- Columnas staging: desde API
+- Nombres/IDs de hitos: desde BD (`hito.nombre`, `hito.id`)
+- `HitoTracking.id` es `number` (era `string`)
+- `ficha.formasPago: string[]` reemplaza `ficha.formaPago: string`
+
+## Iconos
+- Lucide icons registrados globalmente en `app.config`
+- Usados en: tracking list, visual map, process preview
 
 ## Verificación
 ```bash

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TrackingStore, TipoVehiculoService } from '@kaufmann/tracking-otd/data-access';
-import { VinModel, EstadoVin, TipoVehiculoModel, FichaModel, HitoTracking, HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
+import { VinModel, EstadoVin, TipoVehiculoModel, FichaModel, HitoTracking } from '@kaufmann/shared/models';
 import { StatusBadgeComponent } from '@kaufmann/shared/ui';
 import { VehicleIconComponent } from '@kaufmann/shared/ui';
 import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracking-drawer.component';
@@ -22,8 +22,6 @@ import { LucideAngularModule } from 'lucide-angular';
 export class TrackingListPageComponent implements OnInit {
   readonly store = inject(TrackingStore);
 
-  readonly HITO_LABELS = HITO_LABELS;
-  readonly HITO_IDS = [...HITOS_IDS];
 
   currentPage = signal(1);
   readonly pageSize = 20;
@@ -108,7 +106,7 @@ export class TrackingListPageComponent implements OnInit {
     this.currentPage.set(1);
   }
 
-  openDrawer(vinId: string, stageId?: string) {
+  openDrawer(vinId: string, stageId?: number) {
     this.store.openDrawer(vinId, stageId);
   }
 
@@ -158,7 +156,7 @@ export class TrackingListPageComponent implements OnInit {
     return `${stage.name}\n${subs}`;
   }
 
-  getHitoStatus(vin: VinModel, hitoId: string): string {
+  getHitoStatus(vin: VinModel, hitoId: number): string {
     return vin.stages.find(s => s.id === hitoId)?.status ?? 'pending';
   }
 
@@ -193,6 +191,30 @@ export class TrackingListPageComponent implements OnInit {
       case 'delayed': return 'text-red-600 bg-red-50';
       case 'active': return 'text-blue-600 bg-blue-50';
       default: return 'text-slate-500 bg-slate-100';
+    }
+  }
+
+  getSubStatusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'A tiempo';
+      case 'completed-risk': return 'En tolerancia';
+      case 'completed-late': return 'Crítico';
+      case 'on-time': return 'A tiempo';
+      case 'at-risk': return 'En tolerancia';
+      case 'delayed': return 'Crítico';
+      default: return 'Pendiente';
+    }
+  }
+
+  getSubStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'completed': return 'bg-emerald-50 text-emerald-600';
+      case 'completed-risk': return 'bg-amber-50 text-amber-600';
+      case 'completed-late': return 'bg-red-50 text-red-600';
+      case 'on-time': return 'bg-slate-50 text-slate-400';
+      case 'at-risk': return 'bg-amber-50 text-amber-600';
+      case 'delayed': return 'bg-red-50 text-red-600';
+      default: return 'bg-slate-50 text-slate-400';
     }
   }
 
@@ -235,15 +257,9 @@ export class TrackingListPageComponent implements OnInit {
   prevPage() { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
   nextPage() { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
 
-  tipoBadgeClass(vin: VinModel): string {
-    const slug = vin.tipoVehiculo?.slug ?? '';
-    switch (slug) {
-      case 'camion':          return 'bg-blue-100 text-blue-700 border border-blue-200';
-      case 'vehiculo_ligero': return 'bg-purple-100 text-purple-700 border border-purple-200';
-      case 'maquinaria':      return 'bg-orange-100 text-orange-700 border border-orange-200';
-      case 'bus':             return 'bg-sky-100 text-sky-700 border border-sky-200';
-      default:                return 'bg-slate-100 text-slate-600 border border-slate-200';
-    }
+  tipoBadgeStyle(vin: VinModel): Record<string, string> {
+    const color = vin.tipoVehiculo?.color || '#94a3b8';
+    return { 'background-color': color + '1A', color, 'border': `1px solid ${color}40` };
   }
 
   pagoPill(forma: string): string {
@@ -256,4 +272,60 @@ export class TrackingListPageComponent implements OnInit {
       default:                    return 'bg-slate-100 text-slate-600';
     }
   }
+
+  // ── Indicators ──
+
+  getEtaEntrega(vin: VinModel): { real: string; plan: string } {
+    const stages = vin.stages;
+    if (!stages || stages.length === 0) return { real: '', plan: '' };
+    const lastStage = stages[stages.length - 1];
+    const subs = lastStage.subStages;
+    if (!subs || subs.length === 0) return { real: '', plan: '' };
+    const lastSub = subs[subs.length - 1];
+    const real = lastSub.real?.end || lastSub.real?.start;
+    const plan = lastSub.plan?.end || lastSub.plan?.start;
+    return {
+      real: real ? this.fmtDate(real) : '',
+      plan: plan ? this.fmtDate(plan) : '',
+    };
+  }
+
+  getDesviacionAcumulada(vin: VinModel): number {
+    let totalDays = 0;
+    for (const stage of vin.stages) {
+      for (const sub of stage.subStages) {
+        const realStr = sub.real?.end || sub.real?.start;
+        const planStr = sub.plan?.end || sub.plan?.start;
+        if (realStr && planStr) {
+          const real = new Date(realStr + 'T00:00:00').getTime();
+          const plan = new Date(planStr + 'T00:00:00').getTime();
+          if (!isNaN(real) && !isNaN(plan)) {
+            const diff = Math.round((real - plan) / 86400000);
+          if (diff > 0) totalDays += diff;
+          }
+        }
+      }
+    }
+    return totalDays;
+  }
+
+  getRelativeTime(iso: string): string {
+    if (!iso) return '—';
+    const date = new Date(iso);
+    if (isNaN(date.getTime())) return '—';
+    const now = Date.now();
+    const diffMs = now - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Justo ahora';
+    if (diffMin < 60) return `Hace ${diffMin} min`;
+    const diffHrs = Math.floor(diffMin / 60);
+    if (diffHrs < 24) return `Hace ${diffHrs}h`;
+    const diffDays = Math.floor(diffHrs / 24);
+    if (diffDays === 1) return 'Hace 1 día';
+    if (diffDays < 30) return `Hace ${diffDays} días`;
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths === 1) return 'Hace 1 mes';
+    return `Hace ${diffMonths} meses`;
+  }
+
 }

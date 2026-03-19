@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 type FiltrosTracking = {
   tipoVehiculoId: number | null;
   estado: EstadoVin | null;
-  hitoActual: string | null;
+  hitoActual: number | null;
   busqueda: string;
 };
 
@@ -20,7 +20,7 @@ type TrackingState = {
   filtros: FiltrosTracking;
   selectedVinId: string | null;
   drawerOpen: boolean;
-  selectedStageId: string | null;
+  selectedStageId: number | null;
   viewMode: 'grouped' | 'list';
 };
 
@@ -127,7 +127,7 @@ export const TrackingStore = signalStore(
           patchState(store, { loading: false, error: err?.message || 'Error cargando datos' });
         }
       },
-      openDrawer(vinId: string, stageId?: string) {
+      openDrawer(vinId: string, stageId?: number) {
         patchState(store, {
           selectedVinId: vinId,
           selectedStageId: stageId ?? null,

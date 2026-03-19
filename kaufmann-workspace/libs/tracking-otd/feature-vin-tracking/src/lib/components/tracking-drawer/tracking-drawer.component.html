@@ -25,26 +25,19 @@
     <!-- Vehicle info -->
     <div class="flex gap-3 items-start">
       <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-        <kf-vehicle-icon [slug]="vin().tipoVehiculo?.slug ?? 'camion'" size="lg" />
+        <kf-vehicle-icon [icono]="vin().tipoVehiculo?.icono" size="lg" />
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-bold text-base truncate">{{ vin().modelo }}</span>
+          <span class="font-bold text-base font-mono truncate">{{ vin().id }}</span>
           <kf-status-badge [status]="$any(vin().estadoGeneral)" />
         </div>
-        <p class="text-white/60 text-xs font-mono mt-0.5">{{ vin().id }}</p>
+        <p class="text-white/70 text-xs mt-0.5">{{ vin().modelo }}</p>
         <div class="flex items-center gap-3 mt-1 flex-wrap">
           <span class="text-xs px-2 py-0.5 rounded-full bg-white/15 text-white/80">{{ vin().tipoVehiculo?.nombre ?? '—' }}</span>
           <span class="text-xs text-white/60">{{ vin().clientName }}</span>
         </div>
       </div>
-    </div>
-
-    <!-- Ficha info -->
-    <div class="mt-3 flex gap-3 flex-wrap text-xs text-white/60">
-      <span>Ficha: <span class="text-white/90 font-medium">{{ vin().fichaId }}</span></span>
-      <span>Lote: <span class="text-white/90 font-medium">{{ vin().lote }}</span></span>
-      <span>OC: <span class="text-white/90 font-medium">{{ vin().ordenCompra }}</span></span>
     </div>
 
     <!-- Selected hito title -->
@@ -68,10 +61,103 @@
     }
   </div>
 
+  <!-- ── TABS ──────────────────────────────────── -->
+  <div class="flex border-b border-slate-200 px-4 bg-white shrink-0">
+    @if (selectedHito()) {
+      <!-- Modo hito seleccionado -->
+      <button (click)="drawerMainTab.set('detalle')"
+        class="px-3 py-2.5 text-xs font-medium transition-colors border-b-2"
+        [class]="drawerMainTab() === 'detalle' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+        Detalle de etapa
+      </button>
+      <button (click)="drawerMainTab.set('datos')"
+        class="px-3 py-2.5 text-xs font-medium transition-colors border-b-2"
+        [class]="drawerMainTab() === 'datos' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+        Datos Generales
+      </button>
+    } @else {
+      <!-- Modo bitácora -->
+      <button (click)="drawerMainTab.set('detalle')"
+        class="px-3 py-2.5 text-xs font-medium transition-colors border-b-2"
+        [class]="drawerMainTab() === 'detalle' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+        Línea de Tiempo
+      </button>
+      <button (click)="drawerMainTab.set('datos')"
+        class="px-3 py-2.5 text-xs font-medium transition-colors border-b-2"
+        [class]="drawerMainTab() === 'datos' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+        Datos Generales
+      </button>
+      <button (click)="drawerMainTab.set('tramos')"
+        class="px-3 py-2.5 text-xs font-medium transition-colors border-b-2"
+        [class]="drawerMainTab() === 'tramos' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+        Tramos
+      </button>
+    }
+  </div>
+
   <!-- ── CONTENT ─────────────────────────────────────── -->
   <div class="flex-1 overflow-y-auto">
 
-    @if (selectedHito(); as hito) {
+    @if (drawerMainTab() === 'datos') {
+      <!-- Datos Generales -->
+      <div class="p-5 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Lote</span>
+            <p class="text-sm font-medium text-slate-800 mt-0.5">{{ vin().lote || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Orden de Compra</span>
+            <p class="text-sm font-medium text-slate-800 mt-0.5">{{ vin().ordenCompra || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Ficha de Venta</span>
+            <p class="text-sm font-medium text-slate-800 mt-0.5">{{ vin().fichaId || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Modelo</span>
+            <p class="text-sm font-medium text-slate-800 mt-0.5">{{ vin().modelo || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Forma de Pago</span>
+            <p class="text-sm font-medium text-slate-800 mt-0.5">{{ vin().formaPago || '—' }}</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Ejecutivo</span>
+            <p class="text-sm font-medium text-slate-800 mt-0.5">{{ vin().ejecutivo || '—' }}</p>
+          </div>
+        </div>
+      </div>
+    } @else if (drawerMainTab() === 'tramos') {
+      <!-- Tramos (tiempos entre hitos) -->
+      <div class="p-4 space-y-2">
+        @for (pair of hitoPairs(); track $index) {
+          <div class="bg-white border border-slate-100 rounded-lg p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs font-medium text-slate-700">{{ pair.from }}</span>
+              <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+              </svg>
+              <span class="text-xs font-medium text-slate-700">{{ pair.to }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              @if (pair.days !== null) {
+                <span class="text-sm font-bold" [class]="pair.status === 'on-time' ? 'text-emerald-600' : pair.status === 'at-risk' ? 'text-amber-600' : 'text-red-600'">
+                  {{ pair.days <= 0 ? pair.days : '+' + pair.days }} días
+                </span>
+              } @else {
+                <span class="text-sm text-slate-400">—</span>
+              }
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-medium" [class]="pairStatusClass(pair.status)">
+                {{ pairStatusLabel(pair.status) }}
+              </span>
+            </div>
+          </div>
+        } @empty {
+          <div class="text-center text-slate-400 text-sm py-6">Se necesitan al menos 2 hitos</div>
+        }
+      </div>
+    } @else if (selectedHito(); as hito) {
       <!-- Selected hito detail -->
       <div class="p-4">
 
@@ -129,8 +215,8 @@
                     </span>
                   </td>
                   <td class="px-2 py-2 text-center">
-                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium" [class]="hitoStatusClass(sub.status)">
-                      {{ sub.status === 'completed' ? '✓' : sub.status === 'active' ? '▶' : '○' }}
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-medium whitespace-nowrap" [class]="subStatusBadgeClass(sub.status)">
+                      {{ subStatusLabel(sub.status) }}
                     </span>
                   </td>
                 </tr>
@@ -145,7 +231,7 @@
         </div>
       </div>
     } @else {
-      <!-- No hito selected fallback: show all hitos collapsed -->
+      <!-- Línea de Tiempo: all hitos collapsed -->
       <div class="divide-y divide-slate-100">
         @for (hito of vin().stages; track hito) {
           <div class="bg-white">
@@ -200,8 +286,8 @@
                             </span>
                           </td>
                           <td class="px-2 py-2 text-center">
-                            <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium" [class]="hitoStatusClass(sub.status)">
-                              {{ sub.status === 'completed' ? '✓' : sub.status === 'active' ? '▶' : '○' }}
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-medium whitespace-nowrap" [class]="subStatusBadgeClass(sub.status)">
+                              {{ subStatusLabel(sub.status) }}
                             </span>
                           </td>
                         </tr>

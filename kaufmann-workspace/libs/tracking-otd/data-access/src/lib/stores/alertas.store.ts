@@ -1,7 +1,6 @@
 import { computed } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { AlertaModel, EstadoAlerta, SeveridadAlerta } from '@kaufmann/shared/models';
-import { MOCK_ALERTAS } from '../mock/mock-alertas.data';
 
 type AlertasState = {
   alertas: AlertaModel[];
@@ -13,7 +12,7 @@ type AlertasState = {
 export const AlertasStore = signalStore(
   { providedIn: 'root' },
   withState<AlertasState>({
-    alertas: MOCK_ALERTAS,
+    alertas: [],
     filtroSeveridad: null,
     filtroEstado: null,
     filtroArea: null,

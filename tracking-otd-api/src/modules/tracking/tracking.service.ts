@@ -1,21 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-// GAP manual subetapa names — never sync from staging
-const GAP_MANUALES = ['Solicitud crédito', 'Aprobación', 'Pago Confirmado', 'Unidad Lista', 'Cita Agendada'];
-
-// Hito DB id → frontend string id
-const HITO_SLUG: Record<number, string> = {
-  1: 'importacion', 2: 'asignacion', 3: 'pdi', 4: 'credito',
-  5: 'facturacion', 6: 'pago', 7: 'inmatriculacion', 8: 'programacion', 9: 'entrega',
-};
-
-const HITO_LABELS: Record<string, string> = {
-  importacion: 'Importación', asignacion: 'Asignación', pdi: 'PDI',
-  credito: 'Crédito', facturacion: 'Facturación', pago: 'Pago',
-  inmatriculacion: 'Inmatriculación', programacion: 'Programación', entrega: 'Entrega',
-};
-
 /** Format a Date to ISO date string, or empty string */
 function fmtDate(d: Date | null | undefined): string {
   if (!d) return '';
@@ -46,6 +31,7 @@ interface HierarchyFilters {
 
 interface HitoConfig {
   hitoId: number;
+  nombre: string;
   grupoParaleloId: number | null;
   carril: string | null;
   orden: number;
@@ -88,8 +74,8 @@ export class TrackingService {
       .addSelect('v.marca', 'marca')
       .addSelect('v.tipo_vehiculo_id', 'tipoVehiculoId')
       .addSelect('tv.nombre', 'tipoVehiculoNombre')
-      .addSelect('tv.slug', 'tipoVehiculoSlug')
       .addSelect('tv.color', 'tipoVehiculoColor')
+      .addSelect('tv.icono', 'tipoVehiculoIcono')
       .addSelect('sv.lote_asignado', 'lote')
       .addSelect('sv.pedido_interno', 'ordenCompra')
       .addSelect('v.ultima_actualizacion', 'ultimaActualizacion')
@@ -138,6 +124,7 @@ export class TrackingService {
       .addSelect('htv.carril', 'carril')
       .addSelect('htv.orden', 'orden')
       .addSelect('htv.activo', 'activo')
+      .addSelect('h.nombre', 'nombre')
       .addSelect('h.icono', 'icono')
       .from('hito_tipo_vehiculo', 'htv')
       .leftJoin('hito', 'h', 'h.id = htv.hito_id')
@@ -151,6 +138,7 @@ export class TrackingService {
       if (!hitoConfigByTipo.has(key)) hitoConfigByTipo.set(key, []);
       hitoConfigByTipo.get(key)!.push({
         hitoId: r.hitoId,
+        nombre: r.nombre || `Hito ${r.hitoId}`,
         grupoParaleloId: r.grupoParaleloId,
         carril: r.carril,
         orden: r.orden,
@@ -250,12 +238,14 @@ export class TrackingService {
         tipoVehiculo: {
           id: tvId,
           nombre: row.tipoVehiculoNombre,
-          slug: row.tipoVehiculoSlug,
           color: row.tipoVehiculoColor,
+          icono: row.tipoVehiculoIcono || null,
         },
         modelo: row.modelo,
         lote: row.lote || '',
         ordenCompra: row.ordenCompra || '',
+        formaPago: row.formaPago || '',
+        ejecutivo: row.ejecutivo || '',
         estadoGeneral,
         currentStageId,
         lastUpdate: row.ultimaActualizacion ? new Date(row.ultimaActualizacion).toISOString() : '',
@@ -311,7 +301,7 @@ export class TrackingService {
   private deriveEstadoGeneral(stages: any[]): string {
     if (!stages || stages.length === 0) return 'A TIEMPO';
     if (stages.every(s => s.status === 'completed')) return 'FINALIZADO';
-    // Without SLA, there's no 'delayed' — only A TIEMPO or FINALIZADO
+    if (stages.some(s => s.status === 'delayed')) return 'DEMORADO';
     return 'A TIEMPO';
   }
 
@@ -323,10 +313,10 @@ export class TrackingService {
   }
 
   /** Derive current stage from built stages (first non-completed) */
-  private deriveCurrentStage(stages: any[]): string {
-    if (!stages || stages.length === 0) return 'importacion';
+  private deriveCurrentStage(stages: any[]): number | null {
+    if (!stages || stages.length === 0) return null;
     const current = stages.find(s => s.status !== 'completed');
-    return current ? current.id : (stages[stages.length - 1]?.id || 'entrega');
+    return current ? current.id : (stages[stages.length - 1]?.id ?? null);
   }
 
   private buildStages(
@@ -357,11 +347,10 @@ export class TrackingService {
 
     const orderedHitoIds = hitoConfig
       .filter(c => c.activo !== false)
-      .map(c => ({ hitoId: c.hitoId, carril: c.carril, grupoParaleloId: c.grupoParaleloId, icono: c.icono }));
+      .map(c => ({ hitoId: c.hitoId, nombre: c.nombre, carril: c.carril, grupoParaleloId: c.grupoParaleloId, icono: c.icono }));
 
     // 1. Build stages with subStages (real dates only)
-    const stages = orderedHitoIds.map(({ hitoId, carril, grupoParaleloId, icono }) => {
-      const slug = HITO_SLUG[hitoId] || `hito_${hitoId}`;
+    const stages = orderedHitoIds.map(({ hitoId, nombre, carril, grupoParaleloId, icono }) => {
 
       const hitoSubDefs = subDefsByHito.get(hitoId) || [];
 
@@ -389,22 +378,21 @@ export class TrackingService {
           if (val) fechaPlanStaging = fmtDate(val);
         }
 
-        const subStatus = fechaReal ? 'completed' : 'pending';
-
         return {
           id: `sub-${sd.id}`,
           _dbSubId: sd.id, // temporary — used for SLA resolution, removed before return
+          _slaTolerancia: 0, // temporary — filled in step 2
           name: sd.nombre || '',
           baseline: { start: '', end: '' },
           plan: { start: fechaPlanStaging, end: fechaPlanStaging },
           real: { start: fechaReal, end: fechaReal },
-          status: subStatus,
+          status: 'pending', // recalculated in step 3
         };
       });
 
       return {
-        id: slug,
-        name: HITO_LABELS[slug] || slug,
+        id: hitoId,
+        name: nombre,
         icono: icono || null,
         carril: carril || 'operativo',
         grupoParaleloId: grupoParaleloId || null,
@@ -456,15 +444,18 @@ export class TrackingService {
         || '';
 
       for (const sub of stage.subStages) {
+        // Resolve SLA for this sub (needed for plan fallback and tolerancia)
+        const sla = this.resolveSlaInline(slaConfigs, (sub as any)._dbSubId, tipoVehiculoId, empresaId);
+        if (sla) {
+          (sub as any)._slaTolerancia = sla.diasTolerancia || 0;
+        }
+
         if (prevEnd) {
           sub.baseline = { start: prevEnd, end: prevEnd };
 
           // Plan from staging_vin takes priority; SLA as fallback
-          if (!sub.plan.start) {
-            const sla = this.resolveSlaInline(slaConfigs, (sub as any)._dbSubId, tipoVehiculoId, empresaId);
-            if (sla) {
-              sub.plan = { start: prevEnd, end: addDaysStr(prevEnd, sla.diasObjetivo) };
-            }
+          if (!sub.plan.start && sla) {
+            sub.plan = { start: prevEnd, end: addDaysStr(prevEnd, sla.diasObjetivo) };
           }
         }
 
@@ -485,16 +476,53 @@ export class TrackingService {
       }
     }
 
-    // 3. Derive hito-level status and dates from subStages, then clean up _dbSubId
+    // 3. Derive sub status (6 states) + hito status + dates, then clean up temp fields
+    const todayMs = Date.now();
     for (const stage of stages) {
       const subs = stage.subStages;
 
-      // Hito status
+      // Sub status: compare real/plan dates vs SLA tolerancia
+      for (const sub of subs) {
+        const planEnd = sub.plan.end;
+        const realEnd = sub.real.end;
+        const tolerancia = (sub as any)._slaTolerancia || 0;
+
+        if (realEnd) {
+          // Completed — check if on-time, in-tolerance, or late
+          if (!planEnd) {
+            sub.status = 'completed';
+          } else {
+            const planMs = new Date(planEnd).getTime();
+            const realMs = new Date(realEnd).getTime();
+            const diffDays = Math.round((realMs - planMs) / 86400000);
+            if (diffDays <= 0) sub.status = 'completed';
+            else if (diffDays <= tolerancia) sub.status = 'completed-risk';
+            else sub.status = 'completed-late';
+          }
+        } else {
+          // Pending — check if on-time, at-risk, or delayed
+          if (!planEnd) {
+            sub.status = 'on-time';
+          } else {
+            const planMs = new Date(planEnd).getTime();
+            const diffDays = Math.round((todayMs - planMs) / 86400000);
+            if (diffDays <= 0) sub.status = 'on-time';
+            else if (diffDays <= tolerancia) sub.status = 'at-risk';
+            else sub.status = 'delayed';
+          }
+        }
+      }
+
+      // Hito status: worst sub status wins
       if (subs.length === 0) {
         stage.status = 'pending';
-      } else if (subs.every(s => s.status === 'completed')) {
+      } else if (subs.some(s => s.status === 'delayed' || s.status === 'completed-late')) {
+        stage.status = 'delayed';
+      } else if (subs.some(s => s.status === 'at-risk' || s.status === 'completed-risk')) {
+        stage.status = subs.every(s => s.status.startsWith('completed')) ? 'completed' : 'active';
+      } else if (subs.every(s => s.status.startsWith('completed'))) {
         stage.status = 'completed';
-      } else if (subs.some(s => s.status === 'completed')) {
+      } else if (subs.some(s => s.status.startsWith('completed'))) {
         stage.status = 'active';
       } else {
         stage.status = 'pending';
@@ -514,9 +542,10 @@ export class TrackingService {
         stage.real.end = lastSub.real.end;
       }
 
-      // Clean up temporary field
+      // Clean up temporary fields
       for (const sub of subs) {
         delete (sub as any)._dbSubId;
+        delete (sub as any)._slaTolerancia;
       }
     }
 

@@ -71,6 +71,33 @@ Cada hito pertenece a un carril dentro de su grupo:
 - **Operativo:** PDI, inmatriculación, programación, entrega (flujo operativo)
 - Los carriles permiten ejecución paralela real dentro del mismo grupo
 
+## Cambios de Esquema Recientes (2026-03-19)
+
+### Tablas eliminadas
+- `vin_hito_tracking`, `vin_subetapa_tracking`, `subetapa_config`
+
+### Columnas eliminadas
+- `hito`: `grupo_paralelo_id`, `usuario_responsable_id`, `tipo_vehiculo`, `slug`
+- `ficha`: `forma_pago` (reemplazado por `staging_vin.descripcion_cond_pago`)
+
+### Columnas agregadas/modificadas
+- `hito`: `icono` (varchar 50) — icono Lucide para representación visual
+- `subetapa`: `campo_staging_real` (antes `campo_staging_vin`), `campo_staging_plan` (nuevo)
+- `staging_vin`: `cond_pago`, `descripcion_cond_pago`, `archivo_fuente`, 22 columnas de inmatriculación
+
+### Tablas nuevas
+- `fuentes_vin` — catálogo de fuentes de datos con CRUD
+- `mapeo_campos_vin` — mapeo de campos staging con prioridad, tipo, fuente. CRUD + reorder + grouped + staging-columns
+
+### Lógica de Tracking
+- **Identificación:** `stage.id` es `hito.id` (number), no más slugs
+- **Nombres:** `stage.name` viene de `hito.nombre` en BD (no más HITO_LABELS hardcodeados)
+- **Iconos:** `stage.icono` propagado desde `hito.icono`
+- **Fechas real:** desde `subetapa.campo_staging_real`
+- **Fechas plan:** staging plan tiene prioridad, SLA como fallback
+- **Baseline:** cálculo group-aware con encadenamiento secuencial same-carril
+- **Forma de pago:** `ficha.formasPago: string[]` derivado de `staging_vin.descripcion_cond_pago`
+
 ## Convenciones Generales
 - Idioma del código: inglés para nombres técnicos, español para dominio de negocio
 - Commits en español

@@ -8,11 +8,11 @@ export class TipoVehiculo {
   @Column({ unique: true })
   nombre: string;
 
-  @Column({ unique: true })
-  slug: string;
-
   @Column({ nullable: true })
   color: string;
+
+  @Column({ nullable: true, length: 50 })
+  icono: string;
 
   @Column({ default: true })
   activo: boolean;

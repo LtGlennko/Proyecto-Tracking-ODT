@@ -3,7 +3,6 @@ import { Component, inject, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TrackingStore, AlertasStore } from '@kaufmann/tracking-otd/data-access';
 import { KpiCardComponent, StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
-import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
 
 @Component({
     selector: 'kf-dashboard-page',
@@ -67,7 +66,7 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
                   <td class="px-4 py-2.5 text-xs font-medium text-slate-700">{{ vin.clientName }}</td>
                   <td class="px-4 py-2.5">
                     <div class="flex items-center gap-2">
-                      <kf-vehicle-icon [slug]="vin.tipoVehiculo?.slug ?? 'camion'" size="sm" />
+                      <kf-vehicle-icon [icono]="vin.tipoVehiculo?.icono" size="sm" />
                       <span class="text-xs text-slate-600 truncate max-w-40">{{ vin.modelo }}</span>
                     </div>
                   </td>
@@ -95,14 +94,14 @@ import { HITO_LABELS, HITOS_IDS } from '@kaufmann/shared/models';
       <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
         <h2 class="text-sm font-semibold text-slate-800 mb-4">Rendimiento por Hito</h2>
         <div class="space-y-3">
-          @for (hId of HITO_IDS; track hId) {
+          @for (h of hitoList(); track h.id) {
             <div class="flex items-center gap-3">
-              <div class="w-24 text-xs text-slate-600 text-right">{{ HITO_LABELS[hId] }}</div>
+              <div class="w-24 text-xs text-slate-600 text-right">{{ h.name }}</div>
               <div class="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden flex">
-                <div class="h-full bg-emerald-400 transition-all" [style.width]="hitoOntime(hId) + '%'" [attr.title]="'A tiempo: ' + hitoOntime(hId) + '%'"></div>
-                <div class="h-full bg-red-400 transition-all" [style.width]="hitoDemorado(hId) + '%'" [attr.title]="'Demorado: ' + hitoDemorado(hId) + '%'"></div>
+                <div class="h-full bg-emerald-400 transition-all" [style.width]="hitoOntime(h.id) + '%'" [attr.title]="'A tiempo: ' + hitoOntime(h.id) + '%'"></div>
+                <div class="h-full bg-red-400 transition-all" [style.width]="hitoDemorado(h.id) + '%'" [attr.title]="'Demorado: ' + hitoDemorado(h.id) + '%'"></div>
               </div>
-              <div class="w-20 text-xs text-slate-500">{{ hitoOntime(hId) }}% ok</div>
+              <div class="w-20 text-xs text-slate-500">{{ hitoOntime(h.id) }}% ok</div>
             </div>
           }
         </div>
@@ -139,8 +138,16 @@ export class DashboardPageComponent {
   readonly store = inject(TrackingStore);
   readonly alertasStore = inject(AlertasStore);
 
-  readonly HITO_LABELS = HITO_LABELS;
-  readonly HITO_IDS = [...HITOS_IDS];
+  /** Derive unique hitos from loaded VIN data */
+  hitoList = computed(() => {
+    const seen = new Map<number, string>();
+    for (const v of this.store.vins()) {
+      for (const s of v.stages) {
+        if (!seen.has(s.id)) seen.set(s.id, s.name);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  });
 
   enProceso = computed(() =>
     this.store.vins().filter(v => v.estadoGeneral === 'A TIEMPO').length
@@ -158,7 +165,7 @@ export class DashboardPageComponent {
       .slice(0, 5)
   );
 
-  hitoOntime(hitoId: string): number {
+  hitoOntime(hitoId: number): number {
     const vins = this.store.vins();
     if (vins.length === 0) return 0;
     const ontime = vins.filter(v => {
@@ -168,7 +175,7 @@ export class DashboardPageComponent {
     return Math.round((ontime / vins.length) * 100);
   }
 
-  hitoDemorado(hitoId: string): number {
+  hitoDemorado(hitoId: number): number {
     const vins = this.store.vins();
     if (vins.length === 0) return 0;
     const delayed = vins.filter(v => {

@@ -88,7 +88,7 @@ import { HitoTracking } from '@kaufmann/shared/models';
 })
 export class StageNodeComponent {
   hito = input.required<HitoTracking>();
-  nodeClick = output<string>();
+  nodeClick = output<number>();
 
   formatD(d: string | null): string {
     if (!d) return '-';

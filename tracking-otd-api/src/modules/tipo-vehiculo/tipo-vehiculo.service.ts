@@ -24,10 +24,6 @@ export class TipoVehiculoService {
     return tv;
   }
 
-  async findBySlug(slug: string): Promise<TipoVehiculo | null> {
-    return this.repo.findOne({ where: { slug } });
-  }
-
   async create(dto: Partial<TipoVehiculo>): Promise<TipoVehiculo> {
     return this.repo.save(this.repo.create(dto));
   }

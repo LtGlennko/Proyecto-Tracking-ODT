@@ -5,8 +5,8 @@ export type EstadoVin = 'A TIEMPO' | 'DEMORADO' | 'FINALIZADO';
 export interface TipoVehiculoModel {
   id: number;
   nombre: string;
-  slug: string;
   color: string;
+  icono?: string | null;
 }
 
 export interface VinModel {
@@ -18,8 +18,10 @@ export interface VinModel {
   modelo: string;
   lote: string;
   ordenCompra: string;
+  formaPago: string;
+  ejecutivo: string;
   estadoGeneral: EstadoVin;
-  currentStageId: string;
+  currentStageId: number | null;
   lastUpdate: string;
   daysDelayed: number;
   stages: HitoTracking[];

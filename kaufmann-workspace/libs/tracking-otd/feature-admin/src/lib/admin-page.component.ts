@@ -10,31 +10,78 @@ import { HitoConfigSwimlaneComponent } from './hito-config-swimlane/hito-config-
 import { ProcessPreviewComponent } from './process-preview/process-preview.component';
 import { LucideAngularModule } from 'lucide-angular';
 const ICON_OPTIONS: { name: string; label: string }[] = [
-  { name: 'anchor', label: 'Ancla' },
-  { name: 'user-check', label: 'Usuario' },
-  { name: 'wrench', label: 'Tuerca' },
-  { name: 'credit-card', label: 'Tarjeta' },
-  { name: 'file-text', label: 'Documento' },
-  { name: 'banknote', label: 'Billete' },
-  { name: 'file-badge', label: 'Certificado' },
-  { name: 'calendar-check', label: 'Calendario' },
+  // Transporte
   { name: 'truck', label: 'Camión' },
-  { name: 'circle', label: 'Círculo' },
-  { name: 'package', label: 'Paquete' },
-  { name: 'shield', label: 'Escudo' },
-  { name: 'clock', label: 'Reloj' },
+  { name: 'bus-front', label: 'Bus' },
+  { name: 'car', label: 'Auto' },
+  { name: 'hard-hat', label: 'Casco' },
+  { name: 'container', label: 'Contenedor' },
+  { name: 'ship', label: 'Barco' },
+  { name: 'plane', label: 'Avión' },
+  { name: 'forklift', label: 'Montacargas' },
+  { name: 'anchor', label: 'Ancla' },
+  { name: 'navigation', label: 'Navegación' },
   { name: 'map-pin', label: 'Ubicación' },
-  { name: 'star', label: 'Estrella' },
-  { name: 'cog', label: 'Engranaje' },
+  { name: 'route', label: 'Ruta' },
+  { name: 'warehouse', label: 'Almacén' },
+  { name: 'factory', label: 'Fábrica' },
+  // Finanzas / Documentos
+  { name: 'credit-card', label: 'Tarjeta' },
+  { name: 'banknote', label: 'Billete' },
+  { name: 'wallet', label: 'Billetera' },
+  { name: 'receipt', label: 'Recibo' },
+  { name: 'file-text', label: 'Documento' },
+  { name: 'file-badge', label: 'Certificado' },
+  { name: 'file-check', label: 'Doc. verificado' },
+  { name: 'folder', label: 'Carpeta' },
   { name: 'clipboard', label: 'Portapapeles' },
+  { name: 'clipboard-check', label: 'Check list' },
+  { name: 'stamp', label: 'Sello' },
+  // Personas
+  { name: 'user-check', label: 'Usuario check' },
+  { name: 'user', label: 'Usuario' },
+  { name: 'users', label: 'Usuarios' },
+  { name: 'handshake', label: 'Acuerdo' },
+  { name: 'contact', label: 'Contacto' },
+  // Tiempo / Calendario
+  { name: 'calendar-check', label: 'Calendario' },
+  { name: 'calendar', label: 'Calendario simple' },
+  { name: 'clock', label: 'Reloj' },
+  { name: 'timer', label: 'Cronómetro' },
+  { name: 'alarm-clock', label: 'Alarma' },
+  // Herramientas / Operaciones
+  { name: 'wrench', label: 'Llave' },
+  { name: 'cog', label: 'Engranaje' },
+  { name: 'settings', label: 'Ajustes' },
+  { name: 'hammer', label: 'Martillo' },
+  { name: 'gauge', label: 'Medidor' },
+  { name: 'scan', label: 'Escanear' },
+  // Estado / Indicadores
+  { name: 'shield', label: 'Escudo' },
+  { name: 'shield-check', label: 'Escudo check' },
+  { name: 'circle-check', label: 'Check' },
+  { name: 'triangle-alert', label: 'Alerta' },
+  { name: 'flag', label: 'Bandera' },
+  { name: 'star', label: 'Estrella' },
+  { name: 'award', label: 'Premio' },
+  { name: 'trophy', label: 'Trofeo' },
+  { name: 'crown', label: 'Corona' },
+  // Objetos
+  { name: 'package', label: 'Paquete' },
   { name: 'box', label: 'Caja' },
-  { name: 'eye', label: 'Ojo' },
-  { name: 'hash', label: 'Hash' },
   { name: 'tag', label: 'Etiqueta' },
+  { name: 'key', label: 'Llave' },
+  { name: 'lock', label: 'Candado' },
+  { name: 'eye', label: 'Ojo' },
+  { name: 'search', label: 'Buscar' },
   { name: 'layers', label: 'Capas' },
+  { name: 'hash', label: 'Hash' },
+  { name: 'circle', label: 'Círculo' },
+  { name: 'zap', label: 'Rayo' },
+  { name: 'target', label: 'Objetivo' },
 ];
 
-type AdminTab = 'hitos' | 'config' | 'sla' | 'usuarios' | 'mapeo';
+type AdminTab = 'hitos' | 'config' | 'sla' | 'usuarios' | 'mapeo' | 'tipos';
 
 // GET /v1/hitos → master hitos with subetapas
 interface HitoMaster {
@@ -97,6 +144,14 @@ interface EmpresaApi {
   codigo: string;
 }
 
+interface TipoVehiculoApi {
+  id: number;
+  nombre: string;
+  color: string;
+  icono: string | null;
+  activo: boolean;
+}
+
 interface FuenteVinApi {
   id: number;
   tipoFuente: string;
@@ -133,35 +188,6 @@ interface SlaConfigApi {
   diasCritico: number;
 }
 
-const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
-  { value: 'fecha_colocacion', label: 'fecha_colocacion' },
-  { value: 'fecha_liberacion_fabrica', label: 'fecha_liberacion_fabrica' },
-  { value: 'fecha_recojo_carr_zcar', label: 'fecha_recojo_carr_zcar' },
-  { value: 'fecha_ingreso_prod_carr_planif', label: 'fecha_ingreso_prod_carr_planif' },
-  { value: 'fecha_ingreso_prod_carr_real', label: 'fecha_ingreso_prod_carr_real' },
-  { value: 'fecha_lib_prod_carr_planif', label: 'fecha_lib_prod_carr_planif' },
-  { value: 'fecha_fin_prod_carr_real', label: 'fecha_fin_prod_carr_real' },
-  { value: 'etd', label: 'etd' },
-  { value: 'fecha_embarque_sap', label: 'fecha_embarque_sap' },
-  { value: 'fecha_llegada_aduana', label: 'fecha_llegada_aduana' },
-  { value: 'fecha_llegada_sap', label: 'fecha_llegada_sap' },
-  { value: 'eta', label: 'eta' },
-  { value: 'fecha_aduana_sap', label: 'fecha_aduana_sap' },
-  { value: 'fecha_nacion', label: 'fecha_nacion' },
-  { value: 'fecha_ingreso_patio', label: 'fecha_ingreso_patio' },
-  { value: 'fecha_liberado_sap', label: 'fecha_liberado_sap' },
-  { value: 'fecha_preasignacion', label: 'fecha_preasignacion' },
-  { value: 'fecha_asignacion', label: 'fecha_asignacion' },
-  { value: 'fecha_facturacion_sap', label: 'fecha_facturacion_sap' },
-  { value: 'fecha_factura_comex', label: 'fecha_factura_comex' },
-  { value: 'fcc', label: 'fcc' },
-  { value: 'fcr', label: 'fcr' },
-  { value: 'fcl', label: 'fcl' },
-  { value: 'fclr', label: 'fclr' },
-  { value: 'fecha_entrega_planificada', label: 'fecha_entrega_planificada' },
-  { value: 'fecha_entrega_real', label: 'fecha_entrega_real' },
-  { value: 'fecha_entrega_cliente', label: 'fecha_entrega_cliente' },
-];
 
 
 @Component({
@@ -260,7 +286,7 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
                       }
                     </button>
                     @if (iconPickerHitoId() === hito.id) {
-                      <div class="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-2 grid grid-cols-6 gap-1 w-56">
+                      <div class="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-2 grid grid-cols-8 gap-1 w-72">
                         @for (ic of iconOptions; track ic.name) {
                           <button (click)="setHitoIcon(hito, ic.name)"
                             class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
@@ -354,7 +380,7 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
                               <select [ngModel]="editSubCampoPlan()" (ngModelChange)="editSubCampoPlan.set($event)"
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">— No asignado —</option>
-                                @for (col of stagingVinColumns; track col.value) {
+                                @for (col of stagingVinColumns(); track col.value) {
                                   <option [value]="col.value">{{ col.label }}</option>
                                 }
                               </select>
@@ -371,7 +397,7 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
                               <select [ngModel]="editSubCampoReal()" (ngModelChange)="editSubCampoReal.set($event)"
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                 <option value="">— No asignado —</option>
-                                @for (col of stagingVinColumns; track col.value) {
+                                @for (col of stagingVinColumns(); track col.value) {
                                   <option [value]="col.value">{{ col.label }}</option>
                                 }
                               </select>
@@ -442,7 +468,7 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
                               <select [ngModel]="newSubCampoPlan()" (ngModelChange)="newSubCampoPlan.set($event)"
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">— No asignado —</option>
-                                @for (col of stagingVinColumns; track col.value) {
+                                @for (col of stagingVinColumns(); track col.value) {
                                   <option [value]="col.value">{{ col.label }}</option>
                                 }
                               </select>
@@ -451,7 +477,7 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
                               <select [ngModel]="newSubCampoReal()" (ngModelChange)="newSubCampoReal.set($event)"
                                 class="text-xs border border-slate-200 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                 <option value="">— No asignado —</option>
-                                @for (col of stagingVinColumns; track col.value) {
+                                @for (col of stagingVinColumns(); track col.value) {
                                   <option [value]="col.value">{{ col.label }}</option>
                                 }
                               </select>
@@ -1003,6 +1029,169 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
         </div>
       }
 
+      <!-- ═══ Tab: Tipos de Vehículo ═══ -->
+      @if (activeTab() === 'tipos') {
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-400">Catálogo maestro de tipos de vehículo. Nombre, color, icono y estado.</p>
+            <button (click)="showNewTipoForm.set(true)"
+              class="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 ml-4"
+              [class.hidden]="showNewTipoForm()">
+              + Nuevo tipo
+            </button>
+          </div>
+
+          <!-- Formulario nuevo tipo -->
+          @if (showNewTipoForm()) {
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <h4 class="text-xs font-semibold text-slate-700">Nuevo Tipo de Vehículo</h4>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Nombre</label>
+                  <input type="text" [ngModel]="newTipoNombre()" (ngModelChange)="newTipoNombre.set($event)"
+                    class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: Camión" />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Color</label>
+                  <div class="flex items-center gap-2">
+                    <input type="color" [ngModel]="newTipoColor()" (ngModelChange)="newTipoColor.set($event)"
+                      class="w-8 h-8 rounded border border-slate-200 cursor-pointer" />
+                    <input type="text" [ngModel]="newTipoColor()" (ngModelChange)="newTipoColor.set($event)"
+                      class="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg font-mono" />
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-slate-600 block mb-1">Icono</label>
+                  <div class="relative">
+                    <button (click)="tipoIconPickerOpen.set(!tipoIconPickerOpen())"
+                      class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg flex items-center gap-2 hover:bg-slate-50">
+                      @if (newTipoIcono()) {
+                        <lucide-icon [name]="newTipoIcono()!" [size]="14"></lucide-icon>
+                        <span class="font-mono">{{ newTipoIcono() }}</span>
+                      } @else {
+                        <span class="text-slate-400">Seleccionar...</span>
+                      }
+                    </button>
+                    @if (tipoIconPickerOpen()) {
+                      <div class="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-2 grid grid-cols-8 gap-1 w-72">
+                        @for (ic of iconOptions; track ic.name) {
+                          <button (click)="newTipoIcono.set(ic.name); tipoIconPickerOpen.set(false)"
+                            class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+                            [class]="newTipoIcono() === ic.name ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-500'"
+                            [title]="ic.label">
+                            <lucide-icon [name]="ic.name" [size]="16" [strokeWidth]="2"></lucide-icon>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="flex items-end">
+                  <div class="flex gap-2">
+                    <button (click)="createTipoVehiculo()" [disabled]="!newTipoNombre().trim()"
+                      class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">Guardar</button>
+                    <button (click)="showNewTipoForm.set(false)"
+                      class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (loadingTipos()) {
+            <div class="flex justify-center py-8"><span class="text-slate-400 text-sm">Cargando tipos...</span></div>
+          } @else {
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase w-12">Icono</th>
+                    <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase">Nombre</th>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase w-20">Color</th>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase w-16">Activo</th>
+                    <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase w-28">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (tv of tiposVehiculo(); track tv.id) {
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                      @if (editingTipoId() === tv.id) {
+                        <!-- Edit mode -->
+                        <td class="px-3 py-2.5 text-center">
+                          <div class="relative inline-block">
+                            <button (click)="editTipoIconPickerOpen.set(!editTipoIconPickerOpen())"
+                              class="w-8 h-8 rounded-full flex items-center justify-center border-2 border-slate-200 hover:border-blue-400 transition-colors"
+                              [style.color]="editTipoColor()">
+                              @if (editTipoIcono()) {
+                                <lucide-icon [name]="editTipoIcono()!" [size]="16"></lucide-icon>
+                              } @else {
+                                <lucide-icon name="circle" [size]="16"></lucide-icon>
+                              }
+                            </button>
+                            @if (editTipoIconPickerOpen()) {
+                              <div class="absolute top-9 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-2 grid grid-cols-8 gap-1 w-72">
+                                @for (ic of iconOptions; track ic.name) {
+                                  <button (click)="editTipoIcono.set(ic.name); editTipoIconPickerOpen.set(false)"
+                                    class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+                                    [class]="editTipoIcono() === ic.name ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-500'"
+                                    [title]="ic.label">
+                                    <lucide-icon [name]="ic.name" [size]="16" [strokeWidth]="2"></lucide-icon>
+                                  </button>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </td>
+                        <td class="px-3 py-2.5">
+                          <input type="text" [ngModel]="editTipoNombre()" (ngModelChange)="editTipoNombre.set($event)"
+                            class="w-full px-2 py-1 text-xs border border-slate-200 rounded" />
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <input type="color" [ngModel]="editTipoColor()" (ngModelChange)="editTipoColor.set($event)"
+                            class="w-8 h-8 rounded border border-slate-200 cursor-pointer" />
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <input type="checkbox" [ngModel]="editTipoActivo()" (ngModelChange)="editTipoActivo.set($event)" />
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <div class="flex items-center justify-center gap-1">
+                            <button (click)="saveTipoEdit(tv.id)" class="text-xs text-emerald-700 hover:underline">Guardar</button>
+                            <button (click)="editingTipoId.set(null); editTipoIconPickerOpen.set(false)" class="text-xs text-slate-400 hover:underline">Cancelar</button>
+                          </div>
+                        </td>
+                      } @else {
+                        <!-- View mode -->
+                        <td class="px-3 py-2.5 text-center">
+                          <div class="w-8 h-8 rounded-full flex items-center justify-center mx-auto border-2" [style.border-color]="tv.color" [style.color]="tv.color">
+                            @if (tv.icono) {
+                              <lucide-icon [name]="tv.icono" [size]="16"></lucide-icon>
+                            } @else {
+                              <lucide-icon name="circle" [size]="16"></lucide-icon>
+                            }
+                          </div>
+                        </td>
+                        <td class="px-3 py-2.5 font-medium text-slate-800">{{ tv.nombre }}</td>
+                        <td class="px-3 py-2.5 text-center">
+                          <span class="inline-block w-5 h-5 rounded-full border border-slate-200" [style.background-color]="tv.color"></span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <span class="text-xs" [class]="tv.activo ? 'text-emerald-500' : 'text-slate-300'">●</span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                          <button (click)="startEditTipo(tv)" class="text-xs text-blue-600 hover:underline">Editar</button>
+                        </td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400 text-sm">No hay tipos de vehículo</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+
       <!-- ═══ Tab 4: Usuarios ═══ -->
       @if (activeTab() === 'usuarios') {
         <div class="space-y-4">
@@ -1129,11 +1318,12 @@ export class AdminPageComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(API_BASE_URL);
 
-  activeTab = signal<AdminTab>('config');
+  activeTab = signal<AdminTab>('sla');
   tabs = [
+    { id: 'sla' as AdminTab, label: 'Config por SLA', superOnly: false },
     { id: 'config' as AdminTab, label: 'Config por Tipo', superOnly: false },
-    { id: 'sla' as AdminTab, label: 'SLA Config', superOnly: false },
     { id: 'usuarios' as AdminTab, label: 'Usuarios', superOnly: false },
+    { id: 'tipos' as AdminTab, label: 'Tipos Vehículo', superOnly: true },
     { id: 'hitos' as AdminTab, label: 'Hitos Maestros', superOnly: true },
     { id: 'mapeo' as AdminTab, label: 'Mapeo Campos', superOnly: true },
   ];
@@ -1148,7 +1338,9 @@ export class AdminPageComponent implements OnInit {
   expandedMasterHitoId = signal<number | null>(null);
   iconPickerHitoId = signal<number | null>(null);
   iconOptions = ICON_OPTIONS;
-  stagingVinColumns = STAGING_VIN_DATE_COLUMNS;
+  stagingVinColumns = computed(() =>
+    this.stagingColumns().map(c => ({ value: c.name, label: c.name }))
+  );
   editingMasterSubId = signal<number | null>(null);
   editSubNombre = signal('');
   editSubCampoReal = signal('');
@@ -1267,6 +1459,21 @@ export class AdminPageComponent implements OnInit {
     });
   });
 
+  // ── Tab: Tipos de Vehículo ──
+  tiposVehiculo = signal<TipoVehiculoApi[]>([]);
+  loadingTipos = signal(false);
+  showNewTipoForm = signal(false);
+  tipoIconPickerOpen = signal(false);
+  newTipoNombre = signal('');
+  newTipoColor = signal('#2E75B6');
+  newTipoIcono = signal<string | null>(null);
+  editingTipoId = signal<number | null>(null);
+  editTipoNombre = signal('');
+  editTipoColor = signal('');
+  editTipoIcono = signal<string | null>(null);
+  editTipoActivo = signal(true);
+  editTipoIconPickerOpen = signal(false);
+
   // ── Tab 4: Usuarios ──
   users = signal<UsuarioApi[]>([]);
   allEmpresas = signal<EmpresaApi[]>([]);
@@ -1320,10 +1527,14 @@ export class AdminPageComponent implements OnInit {
     return cols;
   });
 
-  /** Distinct counts of how many campos have 0, 1, 2, 3... fuentes */
+  /** Distinct counts of how many campos have 0, 1, 2, 3... fuentes (filtered by tipo + search) */
   numFuentesOptions = computed(() => {
     const grouped = this.mapeosByCampo();
-    const cols = this.stagingColumns();
+    const q = this.mapeoSearch().toLowerCase();
+    const tipo = this.mapeoFilterTipo();
+    let cols = this.stagingColumns();
+    if (q) cols = cols.filter(c => c.name.toLowerCase().includes(q));
+    if (tipo !== 'todos') cols = cols.filter(c => c.type === tipo);
     const countMap = new Map<number, number>();
     for (const col of cols) {
       const n = (grouped[col.name] || []).length;
@@ -1333,6 +1544,14 @@ export class AdminPageComponent implements OnInit {
   });
 
   constructor() {
+    // Close all icon pickers when switching tabs
+    effect(() => {
+      this.activeTab(); // track
+      this.iconPickerHitoId.set(null);
+      this.tipoIconPickerOpen.set(false);
+      this.editTipoIconPickerOpen.set(false);
+    });
+
     // Load master hitos when tab opens
     effect(() => {
       if (this.activeTab() === 'hitos' && this.hitosMaster().length === 0) {
@@ -1364,12 +1583,29 @@ export class AdminPageComponent implements OnInit {
         this.loadMapeoData();
       }
     });
+    // Load tipos when tab opens
+    effect(() => {
+      if (this.activeTab() === 'tipos' && this.tiposVehiculo().length === 0) {
+        this.loadTiposVehiculo();
+      }
+    });
   }
 
   ngOnInit() {
     this.tvService.load();
     this.loadEmpresas();
     this.loadGruposParalelos();
+    this.loadStagingColumns();
+  }
+
+  private async loadStagingColumns() {
+    if (this.stagingColumns().length > 0) return;
+    try {
+      const cols = await firstValueFrom(
+        this.http.get<StagingColumnInfo[]>(`${this.apiUrl}/v1/mapeo-campos-vin/staging-columns`)
+      );
+      this.stagingColumns.set(cols);
+    } catch (err) { console.error('Error loading staging columns:', err); }
   }
 
   // ══════════════════════════════════════════
@@ -2235,5 +2471,70 @@ export class AdminPageComponent implements OnInit {
       await firstValueFrom(this.http.post(`${this.apiUrl}/v1/mapeo-campos-vin/reorder`, { nombreCampo: campo, orderedIds }));
       await this.loadMapeoData(true);
     } catch (err) { console.error('Error reordering:', err); }
+  }
+
+  // ── Tab: Tipos de Vehículo ──
+
+  async loadTiposVehiculo() {
+    this.loadingTipos.set(true);
+    try {
+      const data = await firstValueFrom(
+        this.http.get<TipoVehiculoApi[]>(`${this.apiUrl}/v1/tipo-vehiculo/all`)
+      );
+      this.tiposVehiculo.set(data);
+    } catch (err) { console.error('Error loading tipos:', err); }
+    finally { this.loadingTipos.set(false); }
+  }
+
+  startEditTipo(tv: TipoVehiculoApi) {
+    this.editingTipoId.set(tv.id);
+    this.editTipoNombre.set(tv.nombre);
+    this.editTipoColor.set(tv.color);
+    this.editTipoIcono.set(tv.icono);
+    this.editTipoActivo.set(tv.activo);
+    this.editTipoIconPickerOpen.set(false);
+  }
+
+  async saveTipoEdit(id: number) {
+    // Optimistic
+    this.tiposVehiculo.update(list => list.map(tv => tv.id === id ? {
+      ...tv,
+      nombre: this.editTipoNombre(),
+      color: this.editTipoColor(),
+      icono: this.editTipoIcono(),
+      activo: this.editTipoActivo(),
+    } : tv));
+    this.editingTipoId.set(null);
+    this.editTipoIconPickerOpen.set(false);
+
+    try {
+      await firstValueFrom(this.http.patch(`${this.apiUrl}/v1/tipo-vehiculo/${id}`, {
+        nombre: this.editTipoNombre(),
+        color: this.editTipoColor(),
+        icono: this.editTipoIcono(),
+        activo: this.editTipoActivo(),
+      }));
+      this.tvService.load(true); // refresh shared cache
+    } catch (err) {
+      console.error('Error updating tipo:', err);
+      await this.loadTiposVehiculo();
+    }
+  }
+
+  async createTipoVehiculo() {
+    try {
+      await firstValueFrom(this.http.post(`${this.apiUrl}/v1/tipo-vehiculo`, {
+        nombre: this.newTipoNombre(),
+        color: this.newTipoColor(),
+        icono: this.newTipoIcono(),
+      }));
+      this.showNewTipoForm.set(false);
+      this.newTipoNombre.set('');
+      this.newTipoColor.set('#2E75B6');
+      this.newTipoIcono.set(null);
+      this.tipoIconPickerOpen.set(false);
+      await this.loadTiposVehiculo();
+      this.tvService.load(true); // refresh shared cache
+    } catch (err) { console.error('Error creating tipo:', err); }
   }
 }

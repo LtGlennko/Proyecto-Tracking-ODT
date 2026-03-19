@@ -12,8 +12,8 @@ export class TipoVehiculoService {
   readonly items = signal<TipoVehiculoModel[]>([]);
   private loaded = false;
 
-  async load(): Promise<TipoVehiculoModel[]> {
-    if (this.loaded && this.items().length > 0) return this.items();
+  async load(force = false): Promise<TipoVehiculoModel[]> {
+    if (!force && this.loaded && this.items().length > 0) return this.items();
     try {
       const data = await firstValueFrom(
         this.http.get<TipoVehiculoModel[]>(`${this.apiUrl}/v1/tipo-vehiculo`)
