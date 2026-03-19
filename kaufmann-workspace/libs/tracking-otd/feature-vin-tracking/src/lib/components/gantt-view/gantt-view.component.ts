@@ -40,12 +40,13 @@ interface TimeMarker {
       </button>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto flex flex-col"
          [style.height.px]="containerHeight()">
 
+      <div [style.min-width.px]="ganttMinWidth()">
       <!-- Header / Timeline Scale -->
-      <div class="flex border-b border-slate-100 bg-white shrink-0 h-12">
-        <div class="w-1/4 min-w-[200px] px-4 font-bold text-slate-700 text-xs uppercase tracking-wider border-r border-slate-100 flex items-center">
+      <div class="flex border-b border-slate-100 bg-white shrink-0 h-12 sticky top-0 z-20">
+        <div class="w-1/4 min-w-[200px] px-4 font-bold text-slate-700 text-xs uppercase tracking-wider border-r border-slate-100 flex items-center bg-white">
           Etapas
         </div>
         <div class="flex-1 relative overflow-hidden">
@@ -166,6 +167,8 @@ interface TimeMarker {
           </div>
         }
       </div>
+
+      </div><!-- end min-width wrapper -->
 
       <!-- Legend -->
       <div class="px-4 py-2 bg-white border-t border-slate-100 flex items-center gap-4 text-[10px] text-slate-400 uppercase tracking-wider shrink-0">
@@ -296,6 +299,13 @@ export class GanttViewComponent implements OnInit {
     const now = Date.now();
     if (now < min || now > max) return null;
     return ((now - min) / span) * 100;
+  });
+
+  // --- Minimum width to prevent date label overlap (80px per marker + 200px label col) ---
+
+  ganttMinWidth = computed(() => {
+    const markers = this.timeMarkers().length;
+    return Math.max(700, 200 + markers * 80);
   });
 
   // --- Container height (dynamic based on visible rows) ---

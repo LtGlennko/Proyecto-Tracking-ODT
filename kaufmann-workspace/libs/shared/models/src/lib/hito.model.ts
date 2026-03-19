@@ -19,6 +19,7 @@ export interface SubetapaTracking {
 export interface HitoTracking {
   id: string;
   name: string;
+  icono?: string | null;
   carril?: CarrilHito;
   status: EstadoHito;
   isParallel?: boolean;

@@ -1,9 +1,11 @@
 import { Component, computed, input } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 
 interface HitoConfigView {
   hitoConfigId: number;
   hitoId: number;
   nombre: string;
+  icono: string | null;
   carril: string;
   grupoParalelo: { id: number; nombre: string } | null;
   orden: number;
@@ -23,6 +25,7 @@ interface SubetapaConfigView {
 
 interface HitoNode {
   nombre: string;
+  icono: string | null;
   subetapas: string[];
 }
 
@@ -35,7 +38,7 @@ interface Bloque {
 @Component({
   selector: 'kf-process-preview',
   standalone: true,
-  imports: [],
+  imports: [LucideAngularModule],
   template: `
   <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-x-auto">
     <h3 class="text-sm font-semibold text-slate-700 mb-5">Vista previa del proceso</h3>
@@ -81,9 +84,11 @@ interface Bloque {
                 <div class="flex flex-col items-center h-16">
                   <div class="w-9 h-9 rounded-full flex items-center justify-center border-2
                               border-blue-400 bg-blue-50 text-blue-500 shrink-0">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="5"/>
-                    </svg>
+                    @if (hito.icono) {
+                      <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
+                    } @else {
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
+                    }
                   </div>
                   <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
                     {{ hito.nombre }}
@@ -123,9 +128,11 @@ interface Bloque {
                 <div class="flex flex-col items-center h-16">
                   <div class="w-9 h-9 rounded-full flex items-center justify-center border-2
                               border-amber-400 bg-amber-50 text-amber-500 shrink-0">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="5"/>
-                    </svg>
+                    @if (hito.icono) {
+                      <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
+                    } @else {
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
+                    }
                   </div>
                   <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
                     {{ hito.nombre }}
@@ -194,6 +201,7 @@ export class ProcessPreviewComponent {
 
     const toNode = (h: HitoConfigView): HitoNode => ({
       nombre: h.nombre,
+      icono: h.icono || null,
       subetapas: h.subetapas
         .filter(s => s.activo)
         .sort((a, b) => a.orden - b.orden)

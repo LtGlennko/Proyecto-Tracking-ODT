@@ -1,11 +1,13 @@
 import { Component, computed, input, output } from '@angular/core';
 import { HitoTracking } from '@kaufmann/shared/models';
+import { LucideAngularModule } from 'lucide-angular';
 
 interface HitoNode {
   id: string;
   nombre: string;
+  icono: string | null;
   status: string;
-  subetapas: { name: string; fechaReal: string; status: string }[];
+  subetapas: { name: string; fecha: string; esPlan: boolean; status: string }[];
 }
 
 interface Bloque {
@@ -16,7 +18,7 @@ interface Bloque {
 
 @Component({
     selector: 'kf-visual-map',
-    imports: [],
+    imports: [LucideAngularModule],
     template: `
     <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-x-auto">
 
@@ -63,7 +65,11 @@ interface Bloque {
                       <div class="w-9 h-9 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
                            [class]="circleClass(hito.status, 'financiero')"
                            (click)="nodeClick.emit(hito.id)">
-                        <span class="text-xs">{{ statusIcon(hito.status) }}</span>
+                        @if (hito.icono) {
+                          <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
+                        } @else {
+                          <span class="text-xs">{{ statusIcon(hito.status) }}</span>
+                        }
                       </div>
                       <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
                         {{ hito.nombre }}
@@ -75,8 +81,8 @@ interface Bloque {
                           <div class="flex items-center gap-1 py-px">
                             <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
                             <span class="text-[10px] text-slate-600 leading-tight truncate flex-1" [title]="sub.name">{{ sub.name }}</span>
-                            @if (sub.fechaReal) {
-                              <span class="text-[9px] text-emerald-600 font-mono whitespace-nowrap">{{ sub.fechaReal }}</span>
+                            @if (sub.fecha) {
+                              <span class="text-[9px] font-mono whitespace-nowrap" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
                             }
                           </div>
                         }
@@ -105,7 +111,11 @@ interface Bloque {
                       <div class="w-9 h-9 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 transition-all"
                            [class]="circleClass(hito.status, 'operativo')"
                            (click)="nodeClick.emit(hito.id)">
-                        <span class="text-xs">{{ statusIcon(hito.status) }}</span>
+                        @if (hito.icono) {
+                          <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
+                        } @else {
+                          <span class="text-xs">{{ statusIcon(hito.status) }}</span>
+                        }
                       </div>
                       <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
                         {{ hito.nombre }}
@@ -117,8 +127,8 @@ interface Bloque {
                           <div class="flex items-center gap-1 py-px">
                             <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
                             <span class="text-[10px] text-slate-600 leading-tight truncate flex-1" [title]="sub.name">{{ sub.name }}</span>
-                            @if (sub.fechaReal) {
-                              <span class="text-[9px] text-emerald-600 font-mono whitespace-nowrap">{{ sub.fechaReal }}</span>
+                            @if (sub.fecha) {
+                              <span class="text-[9px] font-mono whitespace-nowrap" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
                             }
                           </div>
                         }
@@ -176,12 +186,18 @@ export class VisualMapComponent {
     const toNode = (h: HitoTracking): HitoNode => ({
       id: h.id,
       nombre: h.name,
+      icono: h.icono || null,
       status: h.status,
-      subetapas: h.subStages.map(s => ({
-        name: s.name,
-        fechaReal: s.real?.start ? this.fmtShort(s.real.start) : '',
-        status: s.status,
-      })),
+      subetapas: h.subStages.map(s => {
+        const real = s.real?.start ? this.fmtShort(s.real.start) : '';
+        const plan = s.plan?.start ? this.fmtShort(s.plan.start) : '';
+        return {
+          name: s.name,
+          fecha: real || plan,
+          esPlan: !real && !!plan,
+          status: s.status,
+        };
+      }),
     });
 
     const bloques: (Bloque & { minIdx: number })[] = [];

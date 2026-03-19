@@ -12,6 +12,9 @@ export class Hito {
   @Column({ nullable: true })
   carril: string;
 
+  @Column({ nullable: true, length: 50 })
+  icono: string;
+
   @Column({ default: 0 })
   orden: number;
 

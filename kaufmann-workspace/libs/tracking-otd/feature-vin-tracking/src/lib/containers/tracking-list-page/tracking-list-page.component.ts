@@ -11,11 +11,12 @@ import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracki
 import { VisualMapComponent } from '../../components/visual-map/visual-map.component';
 import { GanttViewComponent } from '../../components/gantt-view/gantt-view.component';
 import { formatDate } from '@kaufmann/shared/utils';
+import { LucideAngularModule } from 'lucide-angular';
 
 
 @Component({
     selector: 'kf-tracking-list-page',
-    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent],
+    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule],
     templateUrl: './tracking-list-page.component.html'
 })
 export class TrackingListPageComponent implements OnInit {
@@ -46,6 +47,7 @@ export class TrackingListPageComponent implements OnInit {
   private readonly tvService = inject(TipoVehiculoService);
   estadoOptions: EstadoVin[] = ['A TIEMPO', 'DEMORADO', 'FINALIZADO'];
   tipoVehiculoOptions = this.tvService.items;
+  hoveredStageKey = signal<string | null>(null);
 
   pagedVins = computed(() => {
     const all = this.store.vinsFiltrados();
@@ -160,12 +162,46 @@ export class TrackingListPageComponent implements OnInit {
     return vin.stages.find(s => s.id === hitoId)?.status ?? 'pending';
   }
 
+  getSubFecha(sub: { real: { start: string | null }; plan: { start: string | null } }): { text: string; esPlan: boolean } {
+    const real = sub.real?.start;
+    const plan = sub.plan?.start;
+    if (real) return { text: this.fmtDate(real), esPlan: false };
+    if (plan) return { text: this.fmtDate(plan), esPlan: true };
+    return { text: '', esPlan: false };
+  }
+
+  getLastPlanDate(stage: HitoTracking): string {
+    for (let i = stage.subStages.length - 1; i >= 0; i--) {
+      const p = stage.subStages[i].plan?.end || stage.subStages[i].plan?.start;
+      if (p) return this.fmtDate(p);
+    }
+    return '—';
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'Completado';
+      case 'delayed': return 'Demorado';
+      case 'active': return 'En curso';
+      default: return 'Pendiente';
+    }
+  }
+
+  getStatusLabelClass(status: string): string {
+    switch (status) {
+      case 'completed': return 'text-emerald-600 bg-emerald-50';
+      case 'delayed': return 'text-red-600 bg-red-50';
+      case 'active': return 'text-blue-600 bg-blue-50';
+      default: return 'text-slate-500 bg-slate-100';
+    }
+  }
+
   getHitoDotClass(status: string): string {
     switch (status) {
-      case 'completed': return 'bg-emerald-500';
-      case 'delayed':   return 'bg-red-500 animate-pulse';
-      case 'active':    return 'bg-blue-500 animate-pulse';
-      default:          return 'bg-slate-200';
+      case 'completed': return 'border-2 border-emerald-500 bg-emerald-50 text-emerald-600';
+      case 'delayed':   return 'border-2 border-red-500 bg-red-50 text-red-600 animate-pulse';
+      case 'active':    return 'border-2 border-blue-400 bg-blue-50 text-blue-500 animate-pulse';
+      default:          return 'border-2 border-slate-300 bg-slate-50 text-slate-400';
     }
   }
 

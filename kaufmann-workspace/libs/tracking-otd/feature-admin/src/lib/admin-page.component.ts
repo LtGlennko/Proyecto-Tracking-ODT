@@ -8,6 +8,31 @@ import { API_BASE_URL, AuthService } from '@kaufmann/shared/auth';
 import { TipoVehiculoService } from '@kaufmann/tracking-otd/data-access';
 import { HitoConfigSwimlaneComponent } from './hito-config-swimlane/hito-config-swimlane.component';
 import { ProcessPreviewComponent } from './process-preview/process-preview.component';
+import { LucideAngularModule } from 'lucide-angular';
+const ICON_OPTIONS: { name: string; label: string }[] = [
+  { name: 'anchor', label: 'Ancla' },
+  { name: 'user-check', label: 'Usuario' },
+  { name: 'wrench', label: 'Tuerca' },
+  { name: 'credit-card', label: 'Tarjeta' },
+  { name: 'file-text', label: 'Documento' },
+  { name: 'banknote', label: 'Billete' },
+  { name: 'file-badge', label: 'Certificado' },
+  { name: 'calendar-check', label: 'Calendario' },
+  { name: 'truck', label: 'Camión' },
+  { name: 'circle', label: 'Círculo' },
+  { name: 'package', label: 'Paquete' },
+  { name: 'shield', label: 'Escudo' },
+  { name: 'clock', label: 'Reloj' },
+  { name: 'map-pin', label: 'Ubicación' },
+  { name: 'star', label: 'Estrella' },
+  { name: 'cog', label: 'Engranaje' },
+  { name: 'clipboard', label: 'Portapapeles' },
+  { name: 'box', label: 'Caja' },
+  { name: 'eye', label: 'Ojo' },
+  { name: 'hash', label: 'Hash' },
+  { name: 'tag', label: 'Etiqueta' },
+  { name: 'layers', label: 'Capas' },
+];
 
 type AdminTab = 'hitos' | 'config' | 'sla' | 'usuarios' | 'mapeo';
 
@@ -16,6 +41,7 @@ interface HitoMaster {
   id: number;
   nombre: string;
   carril: string;
+  icono: string | null;
   subetapas: SubetapaMaster[];
 }
 
@@ -140,7 +166,7 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
 
 @Component({
     selector: 'kf-admin-page',
-    imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPreview, HitoConfigSwimlaneComponent, ProcessPreviewComponent],
+    imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPreview, HitoConfigSwimlaneComponent, ProcessPreviewComponent, LucideAngularModule],
     template: `
     <div class="p-6 space-y-5">
       <div>
@@ -215,13 +241,37 @@ const STAGING_VIN_DATE_COLUMNS: { value: string; label: string }[] = [
           } @else {
             <div cdkDropList [cdkDropListData]="hitosMaster()" (cdkDropListDropped)="onDropHito($event)" class="space-y-3">
             @for (hito of hitosMaster(); track hito.id) {
-              <div cdkDrag [cdkDragData]="hito" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              <div cdkDrag [cdkDragData]="hito" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible relative">
                 <!-- Hito header -->
                 <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors">
                   <!-- Drag handle -->
                   <span cdkDragHandle class="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" title="Arrastrar para reordenar">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8-16a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
                   </span>
+                  <!-- Icon selector -->
+                  <div class="relative" (click)="$event.stopPropagation()">
+                    <button (click)="iconPickerHitoId.set(iconPickerHitoId() === hito.id ? null : hito.id)"
+                      class="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+                      [class]="hito.icono ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'">
+                      @if (hito.icono) {
+                        <lucide-icon [name]="hito.icono" [size]="14" [strokeWidth]="2"></lucide-icon>
+                      } @else {
+                        <lucide-icon name="circle" [size]="14"></lucide-icon>
+                      }
+                    </button>
+                    @if (iconPickerHitoId() === hito.id) {
+                      <div class="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-2 grid grid-cols-6 gap-1 w-56">
+                        @for (ic of iconOptions; track ic.name) {
+                          <button (click)="setHitoIcon(hito, ic.name)"
+                            class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+                            [class]="hito.icono === ic.name ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-500'"
+                            [title]="ic.label">
+                            <lucide-icon [name]="ic.name" [size]="16" [strokeWidth]="2"></lucide-icon>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
                   <span class="text-sm font-semibold text-slate-800 flex-1 select-none" (click)="toggleMasterExpanded(hito.id)">{{ hito.nombre }}</span>
 
                   <!-- Carril selector -->
@@ -1096,6 +1146,8 @@ export class AdminPageComponent implements OnInit {
   hitosMaster = signal<HitoMaster[]>([]);
   loadingMaster = signal(false);
   expandedMasterHitoId = signal<number | null>(null);
+  iconPickerHitoId = signal<number | null>(null);
+  iconOptions = ICON_OPTIONS;
   stagingVinColumns = STAGING_VIN_DATE_COLUMNS;
   editingMasterSubId = signal<number | null>(null);
   editSubNombre = signal('');
@@ -1339,6 +1391,7 @@ export class AdminPageComponent implements OnInit {
   }
 
   toggleMasterExpanded(hitoId: number): void {
+    this.iconPickerHitoId.set(null);
     this.editingMasterSubId.set(null);
     this.expandedMasterHitoId.set(this.expandedMasterHitoId() === hitoId ? null : hitoId);
   }
@@ -1418,6 +1471,18 @@ export class AdminPageComponent implements OnInit {
   }
 
   /** Change default carril for a master hito */
+  async setHitoIcon(hito: HitoMaster, iconName: string): Promise<void> {
+    this.iconPickerHitoId.set(null);
+    // Optimistic update
+    this.hitosMaster.set(this.hitosMaster().map(h => h.id === hito.id ? { ...h, icono: iconName } : h));
+    try {
+      await firstValueFrom(this.http.patch(`${this.apiUrl}/v1/hitos/${hito.id}`, { icono: iconName }));
+    } catch (err) {
+      console.error('Error updating icon:', err);
+      await this.loadMasterHitos();
+    }
+  }
+
   async changeMasterCarril(hito: HitoMaster, carril: string): Promise<void> {
     if (hito.carril === carril) return;
 

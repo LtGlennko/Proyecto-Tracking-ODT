@@ -221,6 +221,7 @@ export class HitosService {
       hitoConfigId: hc.id,
       hitoId: hc.hitoId,
       nombre: hc.hito.nombre,
+      icono: hc.hito.icono || null,
       carril: hc.carril ?? hc.hito.carril,
       grupoParalelo: hc.grupoParalelo ? { id: hc.grupoParalelo.id, nombre: hc.grupoParalelo.nombre } : null,
       orden: hc.orden,

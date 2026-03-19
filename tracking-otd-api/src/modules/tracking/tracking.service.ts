@@ -50,6 +50,7 @@ interface HitoConfig {
   carril: string | null;
   orden: number;
   activo: boolean;
+  icono: string | null;
 }
 
 interface SubConfig {
@@ -137,7 +138,9 @@ export class TrackingService {
       .addSelect('htv.carril', 'carril')
       .addSelect('htv.orden', 'orden')
       .addSelect('htv.activo', 'activo')
+      .addSelect('h.icono', 'icono')
       .from('hito_tipo_vehiculo', 'htv')
+      .leftJoin('hito', 'h', 'h.id = htv.hito_id')
       .orderBy('htv.orden', 'ASC')
       .getRawMany();
 
@@ -152,6 +155,7 @@ export class TrackingService {
         carril: r.carril,
         orden: r.orden,
         activo: r.activo,
+        icono: r.icono || null,
       });
     }
 
@@ -353,10 +357,10 @@ export class TrackingService {
 
     const orderedHitoIds = hitoConfig
       .filter(c => c.activo !== false)
-      .map(c => ({ hitoId: c.hitoId, carril: c.carril, grupoParaleloId: c.grupoParaleloId }));
+      .map(c => ({ hitoId: c.hitoId, carril: c.carril, grupoParaleloId: c.grupoParaleloId, icono: c.icono }));
 
     // 1. Build stages with subStages (real dates only)
-    const stages = orderedHitoIds.map(({ hitoId, carril, grupoParaleloId }) => {
+    const stages = orderedHitoIds.map(({ hitoId, carril, grupoParaleloId, icono }) => {
       const slug = HITO_SLUG[hitoId] || `hito_${hitoId}`;
 
       const hitoSubDefs = subDefsByHito.get(hitoId) || [];
@@ -401,6 +405,7 @@ export class TrackingService {
       return {
         id: slug,
         name: HITO_LABELS[slug] || slug,
+        icono: icono || null,
         carril: carril || 'operativo',
         grupoParaleloId: grupoParaleloId || null,
         status: 'pending', // will be derived after baseline/plan pass

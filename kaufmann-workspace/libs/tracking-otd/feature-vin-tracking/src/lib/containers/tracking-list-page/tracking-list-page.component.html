@@ -248,14 +248,45 @@
                       <span class="text-xs text-red-600 font-bold">+{{ vin.daysDelayed }}d</span>
                     }
                   </div>
-                  <!-- Hito dots (visual-only, configured for this tipo_vehiculo) -->
-                  <div class="col-span-4 flex items-center gap-1.5 flex-wrap">
+                  <!-- Hito icons (configured for this tipo_vehiculo) -->
+                  <div class="col-span-4 flex items-center gap-1 flex-wrap">
                     @for (stage of vin.stages; track stage.id) {
-                      <span
-                        class="inline-block w-3 h-3 rounded-full hover:scale-125 transition-transform"
-                        [class]="getHitoDotClass(stage.status)"
-                        [attr.title]="getSubetapaTooltip(stage)"
-                      ></span>
+                      <div class="relative"
+                        (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
+                        (mouseleave)="hoveredStageKey.set(null)">
+                        <span
+                          class="inline-flex items-center justify-center w-6 h-6 rounded-full hover:scale-110 transition-transform cursor-default"
+                          [class]="getHitoDotClass(stage.status)">
+                          @if (stage.icono) {
+                            <lucide-icon [name]="stage.icono" [size]="13" [strokeWidth]="2.5"></lucide-icon>
+                          }
+                        </span>
+                        @if (hoveredStageKey() === vin.id + ':' + stage.id) {
+                          <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                              <span class="text-xs font-bold text-slate-800">{{ stage.name }}</span>
+                              <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="getStatusLabelClass(stage.status)">{{ getStatusLabel(stage.status) }}</span>
+                            </div>
+                            <div class="space-y-1">
+                              @for (sub of stage.subStages; track sub.id) {
+                                @let sf = getSubFecha(sub);
+                                <div class="flex items-center justify-between gap-2">
+                                  <div class="flex items-center gap-1.5 min-w-0">
+                                    <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="sub.status === 'completed' ? 'bg-emerald-500' : sub.status === 'active' ? 'bg-blue-500' : 'bg-slate-300'"></span>
+                                    <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
+                                  </div>
+                                  @if (sf.text) {
+                                    <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sf.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sf.text }}</span>
+                                  }
+                                </div>
+                              }
+                            </div>
+                            <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
+                              Plan: <span class="font-medium text-blue-500">{{ getLastPlanDate(stage) }}</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
                     }
                   </div>
                   <!-- Fecha Inicial -->
@@ -343,15 +374,46 @@
                 <td class="px-4 py-3">
                   <kf-status-badge [status]="$any(vin.estadoGeneral)" />
                 </td>
-                <!-- Hito dots (configured for tipo_vehiculo) -->
+                <!-- Hito icons (configured for tipo_vehiculo) -->
                 <td class="px-2 py-3 text-center">
                   <div class="flex items-center gap-1 justify-center flex-wrap">
                     @for (stage of vin.stages; track stage.id) {
-                      <span
-                        class="inline-block w-3 h-3 rounded-full hover:scale-125 transition-transform"
-                        [class]="getHitoDotClass(stage.status)"
-                        [attr.title]="getSubetapaTooltip(stage)"
-                      ></span>
+                      <div class="relative"
+                        (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
+                        (mouseleave)="hoveredStageKey.set(null)">
+                        <span
+                          class="inline-flex items-center justify-center w-6 h-6 rounded-full hover:scale-110 transition-transform cursor-default"
+                          [class]="getHitoDotClass(stage.status)">
+                          @if (stage.icono) {
+                            <lucide-icon [name]="stage.icono" [size]="13" [strokeWidth]="2.5"></lucide-icon>
+                          }
+                        </span>
+                        @if (hoveredStageKey() === vin.id + ':' + stage.id) {
+                          <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                              <span class="text-xs font-bold text-slate-800">{{ stage.name }}</span>
+                              <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="getStatusLabelClass(stage.status)">{{ getStatusLabel(stage.status) }}</span>
+                            </div>
+                            <div class="space-y-1">
+                              @for (sub of stage.subStages; track sub.id) {
+                                @let sf = getSubFecha(sub);
+                                <div class="flex items-center justify-between gap-2">
+                                  <div class="flex items-center gap-1.5 min-w-0">
+                                    <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="sub.status === 'completed' ? 'bg-emerald-500' : sub.status === 'active' ? 'bg-blue-500' : 'bg-slate-300'"></span>
+                                    <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
+                                  </div>
+                                  @if (sf.text) {
+                                    <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sf.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sf.text }}</span>
+                                  }
+                                </div>
+                              }
+                            </div>
+                            <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
+                              Plan: <span class="font-medium text-blue-500">{{ getLastPlanDate(stage) }}</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
                     }
                   </div>
                 </td>
