@@ -1,18 +1,10 @@
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Ficha } from '../ficha/ficha.entity';
 import { TipoVehiculo } from '../tipo-vehiculo/tipo-vehiculo.entity';
 
 @Entity('vin')
 export class Vin {
   @PrimaryColumn()
   id: string;
-
-  @Column({ name: 'ficha_id', nullable: true })
-  fichaId: number;
-
-  @ManyToOne(() => Ficha)
-  @JoinColumn({ name: 'ficha_id' })
-  ficha: Ficha;
 
   @Column({ nullable: true })
   marca: string;

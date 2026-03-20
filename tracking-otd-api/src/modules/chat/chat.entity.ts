@@ -1,6 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
-import { Ficha } from '../ficha/ficha.entity';
-import { Vin } from '../vin/vin.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('chat')
 export class Chat {
@@ -10,19 +8,11 @@ export class Chat {
   @Column({ nullable: true })
   tipo: string;
 
-  @Column({ name: 'ficha_id', nullable: true })
-  fichaId: number;
-
-  @ManyToOne(() => Ficha)
-  @JoinColumn({ name: 'ficha_id' })
-  ficha: Ficha;
+  @Column({ name: 'ficha_codigo', nullable: true })
+  fichaCodigo: string;
 
   @Column({ name: 'vin_id', nullable: true })
   vinId: string;
-
-  @ManyToOne(() => Vin)
-  @JoinColumn({ name: 'vin_id' })
-  vin: Vin;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

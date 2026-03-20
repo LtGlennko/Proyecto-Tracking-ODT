@@ -67,49 +67,42 @@ export class TrackingService {
   // ── Hierarchical endpoint: Cliente → Ficha → VIN ──
 
   async getClientesHierarchy(filters: HierarchyFilters) {
-    // 1. Load all VINs with their ficha, cliente, empresa, tipo_vehiculo
+    // 1. Load all VINs from vista_tracking_vin (pre-joined view)
     const qb = this.dataSource.createQueryBuilder()
-      .select('v.id', 'vinId')
-      .addSelect('sv.modelo_comercial', 'modelo')
-      .addSelect('v.marca', 'marca')
-      .addSelect('v.tipo_vehiculo_id', 'tipoVehiculoId')
-      .addSelect('tv.nombre', 'tipoVehiculoNombre')
-      .addSelect('tv.color', 'tipoVehiculoColor')
-      .addSelect('tv.icono', 'tipoVehiculoIcono')
-      .addSelect('sv.lote_asignado', 'lote')
-      .addSelect('sv.pedido_interno', 'ordenCompra')
-      .addSelect('v.ultima_actualizacion', 'ultimaActualizacion')
-      .addSelect('f.id', 'fichaDbId')
-      .addSelect('f.codigo', 'fichaCodigo')
-      .addSelect('sv.descripcion_cond_pago', 'formaPago')
-      .addSelect('f.fecha_creacion', 'fechaCreacion')
-      .addSelect('COALESCE(sv.nombre_vendedor, f.ejecutivo)', 'ejecutivo')
-      .addSelect('c.id', 'clienteDbId')
-      .addSelect('c.nombre', 'clienteNombre')
-      .addSelect('c.is_vic', 'isVic')
-      .addSelect('e.id', 'empresaDbId')
-      .addSelect('e.nombre', 'empresaNombre')
-      .from('vin', 'v')
-      .leftJoin('tipo_vehiculo', 'tv', 'tv.id = v.tipo_vehiculo_id')
-      .leftJoin('staging_vin', 'sv', 'sv.vin = v.id')
-      .leftJoin('ficha', 'f', 'v.ficha_id = f.id')
-      .leftJoin('cliente', 'c', 'f.cliente_id = c.id')
-      .leftJoin('empresa', 'e', 'c.empresa_id = e.id');
+      .select('vt.vin', 'vinId')
+      .addSelect('vt.modelo', 'modelo')
+      .addSelect('vt.tipo_vehiculo_id', 'tipoVehiculoId')
+      .addSelect('vt.tipo_vehiculo_nombre', 'tipoVehiculoNombre')
+      .addSelect('vt.tipo_vehiculo_color', 'tipoVehiculoColor')
+      .addSelect('vt.tipo_vehiculo_icono', 'tipoVehiculoIcono')
+      .addSelect('vt.lote', 'lote')
+      .addSelect('vt.orden_compra', 'ordenCompra')
+      .addSelect('vt.ultima_actualizacion', 'ultimaActualizacion')
+      .addSelect('vt.ficha_codigo', 'fichaCodigo')
+      .addSelect('vt.forma_pago', 'formaPago')
+      .addSelect('vt.ficha_fecha_creacion', 'fechaCreacion')
+      .addSelect('vt.ejecutivo', 'ejecutivo')
+      .addSelect('vt.cliente_id', 'clienteDbId')
+      .addSelect('vt.cliente_nombre', 'clienteNombre')
+      .addSelect('vt.cliente_is_vic', 'isVic')
+      .addSelect('vt.empresa_id', 'empresaDbId')
+      .addSelect('vt.empresa_nombre', 'empresaNombre')
+      .from('vista_tracking_vin', 'vt');
 
     if (filters.empresaId) {
-      qb.andWhere('e.id = :empresaId', { empresaId: filters.empresaId });
+      qb.andWhere('vt.empresa_id = :empresaId', { empresaId: filters.empresaId });
     }
     if (filters.tipoVehiculoId) {
-      qb.andWhere('v.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId: filters.tipoVehiculoId });
+      qb.andWhere('vt.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId: filters.tipoVehiculoId });
     }
     if (filters.busqueda) {
       qb.andWhere(
-        '(v.id ILIKE :q OR c.nombre ILIKE :q OR sv.modelo_comercial ILIKE :q OR f.codigo ILIKE :q)',
+        '(vt.vin ILIKE :q OR vt.cliente_nombre ILIKE :q OR vt.modelo ILIKE :q OR vt.ficha_codigo ILIKE :q)',
         { q: `%${filters.busqueda}%` },
       );
     }
 
-    qb.orderBy('c.nombre', 'ASC').addOrderBy('f.codigo', 'ASC').addOrderBy('v.id', 'ASC');
+    qb.orderBy('vt.cliente_nombre', 'ASC').addOrderBy('vt.ficha_codigo', 'ASC').addOrderBy('vt.vin', 'ASC');
 
     const rows: any[] = await qb.getRawMany();
 
@@ -200,11 +193,11 @@ export class TrackingService {
       .from('sla_config', 's')
       .getRawMany();
 
-    // 7. Load full staging_vin rows for date resolution via campo_staging_vin
+    // 7. Load full vista_tracking_vin rows for date resolution via campo_staging_real/plan
     const stagingRows: any[] = await this.dataSource.createQueryBuilder()
-      .select('sv.*')
-      .from('staging_vin', 'sv')
-      .where('sv.vin IN (:...vinIds)', { vinIds })
+      .select('vt.*')
+      .from('vista_tracking_vin', 'vt')
+      .where('vt.vin IN (:...vinIds)', { vinIds })
       .getRawMany();
 
     const stagingByVin = new Map<string, any>();
@@ -255,29 +248,31 @@ export class TrackingService {
         stages,
       };
 
-      if (!clienteMap.has(row.clienteDbId)) {
-        clienteMap.set(row.clienteDbId, {
-          id: String(row.clienteDbId),
-          name: row.clienteNombre,
-          empresa: row.empresaNombre,
+      const clientKey = row.clienteDbId || row.clienteNombre || 'Sin cliente';
+      if (!clienteMap.has(clientKey)) {
+        clienteMap.set(clientKey, {
+          id: clientKey,
+          name: row.clienteNombre || 'Sin cliente',
+          empresa: row.empresaNombre || 'Divemotor',
           isVic: row.isVic || false,
-          _fichaMap: new Map<number, any>(),
+          _fichaMap: new Map<string, any>(),
         });
       }
-      const client = clienteMap.get(row.clienteDbId);
+      const client = clienteMap.get(clientKey);
 
-      if (!client._fichaMap.has(row.fichaDbId)) {
-        client._fichaMap.set(row.fichaDbId, {
-          id: row.fichaCodigo,
-          clientId: String(row.clienteDbId),
-          clientName: row.clienteNombre,
+      const fichaKey = row.fichaCodigo || row.vinId;
+      if (!client._fichaMap.has(fichaKey)) {
+        client._fichaMap.set(fichaKey, {
+          id: fichaKey,
+          clientId: clientKey,
+          clientName: row.clienteNombre || 'Sin cliente',
           dateCreated: row.fechaCreacion ? new Date(row.fechaCreacion).toISOString().slice(0, 10) : '',
           executive: row.ejecutivo || '',
           formasPago: new Set<string>(),
           vins: [],
         });
       }
-      const ficha = client._fichaMap.get(row.fichaDbId);
+      const ficha = client._fichaMap.get(fichaKey);
       if (row.formaPago) ficha.formasPago.add(row.formaPago);
       ficha.vins.push(vinObj);
     }

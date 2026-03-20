@@ -31,6 +31,22 @@ export class MapeoCamposVinService {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  /** Returns vista_tracking_vin columns with name and type (for subetapa config) */
+  async getVistaColumns(): Promise<StagingColumnInfo[]> {
+    const rows: { column_name: string; data_type: string }[] = await this.dataSource.query(`
+      SELECT column_name, data_type
+      FROM information_schema.columns
+      WHERE table_name = 'vista_tracking_vin'
+      ORDER BY column_name
+    `);
+    return rows.map(r => {
+      let type: 'fecha' | 'texto' | 'numero' = 'texto';
+      if (['date', 'timestamp without time zone', 'timestamp with time zone'].includes(r.data_type)) type = 'fecha';
+      else if (['integer', 'numeric', 'double precision', 'real', 'bigint', 'smallint'].includes(r.data_type)) type = 'numero';
+      return { name: r.column_name, type };
+    });
+  }
+
   async findAll(nombreCampo?: string): Promise<MapeoCampoVin[]> {
     const qb = this.repo.createQueryBuilder('m')
       .leftJoinAndSelect('m.fuente', 'f')

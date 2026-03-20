@@ -6,9 +6,6 @@ import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { AppController } from './app.controller';
 import { EmpresaModule } from './modules/empresa/empresa.module';
-import { ClienteModule } from './modules/cliente/cliente.module';
-import { FichaModule } from './modules/ficha/ficha.module';
-import { VinModule } from './modules/vin/vin.module';
 import { HitosModule } from './modules/hitos/hitos.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { SlaModule } from './modules/sla/sla.module';
@@ -56,9 +53,6 @@ import { MapeoCamposVinModule } from './modules/mapeo-campos-vin/mapeo-campos-vi
     }),
     ScheduleModule.forRoot(),
     EmpresaModule,
-    ClienteModule,
-    FichaModule,
-    VinModule,
     HitosModule,
     TrackingModule,
     SlaModule,

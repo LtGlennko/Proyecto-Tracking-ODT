@@ -43,131 +43,118 @@ interface Bloque {
   <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-x-auto">
     <h3 class="text-sm font-semibold text-slate-700 mb-5">Vista previa del proceso</h3>
 
-    <!-- Single flex row: label col + (separator col + group col)* -->
-    <div class="relative flex items-stretch min-w-max">
+    <!-- Grid: 2 rows (financiero + operativo), N columns (label + groups with separators) -->
+    <div class="grid min-w-max" [style.grid-template-columns]="gridCols()" style="grid-template-rows: auto auto;">
 
-      <!-- ═══ Lane labels column ═══ -->
-      <div class="flex flex-col shrink-0 w-24 pr-3">
-        <!-- Financiero label (top half) -->
-        <div class="flex-1 flex items-center">
-          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 border border-blue-200">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            <span class="text-[10px] font-semibold text-blue-700 uppercase tracking-wide whitespace-nowrap">Financiero</span>
-          </div>
-        </div>
-        <!-- Operativo label (bottom half) -->
-        <div class="flex-1 flex items-center">
-          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wide whitespace-nowrap">Operativo</span>
-          </div>
+      <!-- ═══ Row 1: Financiero label ═══ -->
+      <div class="flex items-center pr-3 border-b border-slate-200 pb-3">
+        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 border border-blue-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+          <span class="text-[10px] font-semibold text-blue-700 uppercase tracking-wide whitespace-nowrap">Financiero</span>
         </div>
       </div>
 
       @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
-
-        <!-- ═══ Dashed vertical separator column (full height, continuous) ═══ -->
+        <!-- Separator (financiero row) -->
         @if (!first) {
-          <div class="flex items-stretch justify-center shrink-0 px-5">
+          <div class="flex items-stretch justify-center px-3 border-b border-slate-200">
             <div class="border-l-2 border-dashed border-slate-300"></div>
           </div>
         }
-
-        <!-- ═══ Group column ═══ -->
-        <div class="flex flex-col shrink-0 min-w-28">
-
-          <!-- Financiero section (top half) -->
-          <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
-            @for (hito of bloque.financiero; track hito.nombre; let hlast = $last) {
-              <div class="flex flex-col items-center shrink-0">
-                <!-- Fixed-height header: circle + name -->
-                <div class="flex flex-col items-center h-16">
-                  <div class="w-9 h-9 rounded-full flex items-center justify-center border-2
-                              border-blue-400 bg-blue-50 text-blue-500 shrink-0">
-                    @if (hito.icono) {
-                      <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
-                    } @else {
-                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
-                    }
-                  </div>
-                  <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
-                    {{ hito.nombre }}
-                  </span>
+        <!-- Financiero content -->
+        <div class="flex items-start justify-center gap-1 px-3 pt-3 pb-4 border-b border-slate-200">
+          @for (hito of bloque.financiero; track hito.nombre; let hlast = $last) {
+            <div class="flex flex-col items-center shrink-0">
+              <div class="flex flex-col items-center h-20">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 border-blue-400 bg-blue-50 text-blue-500 shrink-0">
+                  @if (hito.icono) {
+                    <lucide-icon [name]="hito.icono" [size]="22" [strokeWidth]="2.5"></lucide-icon>
+                  } @else {
+                    <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
+                  }
                 </div>
-                <!-- Subetapas below (variable height) -->
-                @if (hito.subetapas.length > 0) {
-                  <div class="w-full bg-blue-50/50 rounded border border-blue-100 px-1.5 py-1 max-w-28">
-                    @for (sub of hito.subetapas; track sub) {
-                      <div class="flex items-center gap-1 py-px">
-                        <span class="w-1 h-1 rounded-full bg-blue-300 shrink-0"></span>
-                        <span class="text-[10px] text-blue-600/80 leading-tight truncate" [title]="sub">{{ sub }}</span>
-                      </div>
-                    }
-                  </div>
-                }
+                <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">{{ hito.nombre }}</span>
               </div>
-              @if (!hlast) {
-                <div class="flex items-center shrink-0 mx-0.5 mt-3">
-                  <div class="w-3 h-0.5 bg-blue-300"></div>
-                  <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-blue-300"></div>
+              @if (hito.subetapas.length > 0) {
+                <div class="w-full bg-blue-50/50 rounded border border-blue-100 px-1.5 py-1 max-w-28">
+                  @for (sub of hito.subetapas; track sub) {
+                    <div class="flex items-center gap-1 py-px">
+                      <span class="w-1 h-1 rounded-full bg-blue-300 shrink-0"></span>
+                      <span class="text-[10px] text-blue-600/80 leading-tight truncate" [title]="sub">{{ sub }}</span>
+                    </div>
+                  }
                 </div>
               }
-            }
-            @if (bloque.financiero.length === 0) {
-              <div class="flex items-center justify-center h-16 w-full">
-                <span class="text-slate-200 text-xs">—</span>
+            </div>
+            @if (!hlast) {
+              <div class="flex items-center shrink-0 mx-0.5 mt-4">
+                <div class="w-3 h-0.5 bg-blue-300"></div>
+                <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-blue-300"></div>
               </div>
             }
-          </div>
-
-          <!-- Operativo section (bottom half) -->
-          <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
-            @for (hito of bloque.operativo; track hito.nombre; let hlast = $last) {
-              <div class="flex flex-col items-center shrink-0">
-                <!-- Fixed-height header: circle + name -->
-                <div class="flex flex-col items-center h-16">
-                  <div class="w-9 h-9 rounded-full flex items-center justify-center border-2
-                              border-amber-400 bg-amber-50 text-amber-500 shrink-0">
-                    @if (hito.icono) {
-                      <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
-                    } @else {
-                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
-                    }
-                  </div>
-                  <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
-                    {{ hito.nombre }}
-                  </span>
-                </div>
-                <!-- Subetapas below (variable height) -->
-                @if (hito.subetapas.length > 0) {
-                  <div class="w-full bg-amber-50/50 rounded border border-amber-100 px-1.5 py-1 max-w-28">
-                    @for (sub of hito.subetapas; track sub) {
-                      <div class="flex items-center gap-1 py-px">
-                        <span class="w-1 h-1 rounded-full bg-amber-300 shrink-0"></span>
-                        <span class="text-[10px] text-amber-600/80 leading-tight truncate" [title]="sub">{{ sub }}</span>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-              @if (!hlast) {
-                <div class="flex items-center shrink-0 mx-0.5 mt-3">
-                  <div class="w-3 h-0.5 bg-amber-300"></div>
-                  <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-amber-300"></div>
-                </div>
-              }
-            }
-            @if (bloque.operativo.length === 0) {
-              <div class="flex items-center justify-center h-16 w-full">
-                <span class="text-slate-200 text-xs">—</span>
-              </div>
-            }
-          </div>
+          }
+          @if (bloque.financiero.length === 0) {
+            <div class="flex items-center justify-center min-h-[3rem] w-full">
+              <span class="text-slate-200 text-xs">—</span>
+            </div>
+          }
         </div>
       }
 
-      <!-- ═══ Carril separator line (absolute, spans full width at center) ═══ -->
-      <div class="absolute left-24 right-0 top-1/2 -translate-y-1/2 h-px bg-slate-200 pointer-events-none"></div>
+      <!-- ═══ Row 2: Operativo label ═══ -->
+      <div class="flex items-center pr-3 pt-3">
+        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wide whitespace-nowrap">Operativo</span>
+        </div>
+      </div>
+
+      @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
+        <!-- Separator (operativo row) -->
+        @if (!first) {
+          <div class="flex items-stretch justify-center px-3">
+            <div class="border-l-2 border-dashed border-slate-300"></div>
+          </div>
+        }
+        <!-- Operativo content -->
+        <div class="flex items-start justify-center gap-1 px-3 pt-3 pb-4">
+          @for (hito of bloque.operativo; track hito.nombre; let hlast = $last) {
+            <div class="flex flex-col items-center shrink-0">
+              <div class="flex flex-col items-center h-20">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 border-amber-400 bg-amber-50 text-amber-500 shrink-0">
+                  @if (hito.icono) {
+                    <lucide-icon [name]="hito.icono" [size]="22" [strokeWidth]="2.5"></lucide-icon>
+                  } @else {
+                    <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
+                  }
+                </div>
+                <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">{{ hito.nombre }}</span>
+              </div>
+              @if (hito.subetapas.length > 0) {
+                <div class="w-full bg-amber-50/50 rounded border border-amber-100 px-1.5 py-1 max-w-28">
+                  @for (sub of hito.subetapas; track sub) {
+                    <div class="flex items-center gap-1 py-px">
+                      <span class="w-1 h-1 rounded-full bg-amber-300 shrink-0"></span>
+                      <span class="text-[10px] text-amber-600/80 leading-tight truncate" [title]="sub">{{ sub }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+            @if (!hlast) {
+              <div class="flex items-center shrink-0 mx-0.5 mt-4">
+                <div class="w-3 h-0.5 bg-amber-300"></div>
+                <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-amber-300"></div>
+              </div>
+            }
+          }
+          @if (bloque.operativo.length === 0) {
+            <div class="flex items-center justify-center min-h-[3rem] w-full">
+              <span class="text-slate-200 text-xs">—</span>
+            </div>
+          }
+        </div>
+      }
     </div>
 
     <!-- Legend -->
@@ -188,6 +175,18 @@ interface Bloque {
 })
 export class ProcessPreviewComponent {
   hitos = input.required<HitoConfigView[]>();
+
+  gridCols = computed(() => {
+    const n = this.bloques().length;
+    if (n === 0) return '6rem';
+    // label col + (separator + group)* for each bloque
+    const cols = ['6rem'];
+    for (let i = 0; i < n; i++) {
+      if (i > 0) cols.push('auto'); // separator
+      cols.push('auto'); // group
+    }
+    return cols.join(' ');
+  });
 
   bloques = computed(() => {
     const active = this.hitos().filter(h => h.activo).sort((a, b) => a.orden - b.orden);

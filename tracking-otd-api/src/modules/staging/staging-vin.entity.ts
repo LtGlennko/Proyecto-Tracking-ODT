@@ -100,6 +100,19 @@ export class StagingVin {
   @Column({ name: 'cod_tapiz', type: 'varchar', length: 20, nullable: true }) codTapiz: string;
   @Column({ name: 'd_canal', type: 'varchar', length: 50, nullable: true }) dCanal: string;
 
+  // Campos adicionales según Fuente Hitos
+  @Column({ name: 'fecha_confirmacion_fabrica', type: 'date', nullable: true }) fechaConfirmacionFabrica: Date;
+  @Column({ name: 'fecha_salida_fabrica', type: 'date', nullable: true }) fechaSalidaFabrica: Date;
+  @Column({ name: 'fecha_salida_carrocero', type: 'date', nullable: true }) fechaSalidaCarrocero: Date;
+  @Column({ name: 'fecha_soli_credito', type: 'date', nullable: true }) fechaSoliCredito: Date;
+  @Column({ name: 'fecha_aprobacion_credito', type: 'date', nullable: true }) fechaAprobacionCredito: Date;
+  @Column({ name: 'fecha_entrega_exp', type: 'date', nullable: true }) fechaEntregaExp: Date;
+  @Column({ name: 'fecha_obs_sunarp', type: 'date', nullable: true }) fechaObsSunarp: Date;
+  @Column({ name: 'fecha_reingresado', type: 'date', nullable: true }) fechaReingresado: Date;
+  @Column({ name: 'zpca', type: 'date', nullable: true }) zpca: Date;
+  @Column({ name: 'per_contingente', type: 'date', nullable: true }) perContingente: Date;
+  @Column({ name: 'fecha_recojo_transportista', type: 'date', nullable: true }) fechaRecojoTransportista: Date;
+
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
 }

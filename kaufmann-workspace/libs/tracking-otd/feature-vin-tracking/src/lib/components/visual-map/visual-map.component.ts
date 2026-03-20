@@ -74,16 +74,16 @@ interface Bloque {
                        (mouseenter)="hoveredHitoId.set(hito.id)"
                        (mouseleave)="hoveredHitoId.set(null)">
                     <div class="flex flex-col items-center">
-                      <div class="w-9 h-9 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
+                      <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
                            [class]="circleClass(hito.status, 'financiero')"
                            (click)="nodeClick.emit(hito.id)">
                         @if (hito.icono) {
-                          <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
+                          <lucide-icon [name]="hito.icono" [size]="22" [strokeWidth]="2.5"></lucide-icon>
                         } @else {
-                          <span class="text-xs">{{ statusIcon(hito.status) }}</span>
+                          <span class="text-sm">{{ statusIcon(hito.status) }}</span>
                         }
                       </div>
-                      <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
+                      <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">
                         {{ hito.nombre }}
                       </span>
                       @if (hito.lastDate) {
@@ -120,7 +120,7 @@ interface Bloque {
                     }
                   </div>
                   @if (!hlast) {
-                    <div class="flex items-center shrink-0 mx-0.5 mt-3">
+                    <div class="flex items-center shrink-0 mx-0.5 mt-4">
                       <div class="w-3 h-0.5 bg-blue-300"></div>
                       <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-blue-300"></div>
                     </div>
@@ -140,16 +140,16 @@ interface Bloque {
                        (mouseenter)="hoveredHitoId.set(hito.id)"
                        (mouseleave)="hoveredHitoId.set(null)">
                     <div class="flex flex-col items-center">
-                      <div class="w-9 h-9 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 transition-all"
+                      <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 transition-all"
                            [class]="circleClass(hito.status, 'operativo')"
                            (click)="nodeClick.emit(hito.id)">
                         @if (hito.icono) {
-                          <lucide-icon [name]="hito.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
+                          <lucide-icon [name]="hito.icono" [size]="22" [strokeWidth]="2.5"></lucide-icon>
                         } @else {
-                          <span class="text-xs">{{ statusIcon(hito.status) }}</span>
+                          <span class="text-sm">{{ statusIcon(hito.status) }}</span>
                         }
                       </div>
-                      <span class="mt-1 text-xs font-semibold text-slate-700 text-center leading-tight max-w-24">
+                      <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">
                         {{ hito.nombre }}
                       </span>
                       @if (hito.lastDate) {
@@ -186,7 +186,7 @@ interface Bloque {
                     }
                   </div>
                   @if (!hlast) {
-                    <div class="flex items-center shrink-0 mx-0.5 mt-3">
+                    <div class="flex items-center shrink-0 mx-0.5 mt-4">
                       <div class="w-3 h-0.5 bg-amber-300"></div>
                       <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-amber-300"></div>
                     </div>

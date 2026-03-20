@@ -13,8 +13,12 @@ export class MapeoCamposVinController {
   constructor(private service: MapeoCamposVinService) {}
 
   @Get('staging-columns')
-  @ApiOperation({ summary: 'Listar columnas de staging_vin con tipo de dato' })
+  @ApiOperation({ summary: 'Listar columnas de staging_vin con tipo de dato (para mapeo de campos)' })
   getStagingColumns() { return this.service.getStagingColumns(); }
+
+  @Get('vista-columns')
+  @ApiOperation({ summary: 'Listar columnas de vista_tracking_vin con tipo de dato (para config subetapas)' })
+  getVistaColumns() { return this.service.getVistaColumns(); }
 
   @Get('grouped')
   @ApiOperation({ summary: 'Mapeos agrupados por campo destino' })

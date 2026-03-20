@@ -1338,8 +1338,9 @@ export class AdminPageComponent implements OnInit {
   expandedMasterHitoId = signal<number | null>(null);
   iconPickerHitoId = signal<number | null>(null);
   iconOptions = ICON_OPTIONS;
+  vistaColumns = signal<StagingColumnInfo[]>([]);
   stagingVinColumns = computed(() =>
-    this.stagingColumns().map(c => ({ value: c.name, label: c.name }))
+    this.vistaColumns().map(c => ({ value: c.name, label: c.name }))
   );
   editingMasterSubId = signal<number | null>(null);
   editSubNombre = signal('');
@@ -1596,6 +1597,7 @@ export class AdminPageComponent implements OnInit {
     this.loadEmpresas();
     this.loadGruposParalelos();
     this.loadStagingColumns();
+    this.loadVistaColumns();
   }
 
   private async loadStagingColumns() {
@@ -1606,6 +1608,16 @@ export class AdminPageComponent implements OnInit {
       );
       this.stagingColumns.set(cols);
     } catch (err) { console.error('Error loading staging columns:', err); }
+  }
+
+  private async loadVistaColumns() {
+    if (this.vistaColumns().length > 0) return;
+    try {
+      const cols = await firstValueFrom(
+        this.http.get<StagingColumnInfo[]>(`${this.apiUrl}/v1/mapeo-campos-vin/vista-columns`)
+      );
+      this.vistaColumns.set(cols);
+    } catch (err) { console.error('Error loading vista columns:', err); }
   }
 
   // ══════════════════════════════════════════

@@ -28,7 +28,7 @@ Este proyecto usa 4 agentes especializados. Lanzar en paralelo cuando la tarea i
 - **Scope:** Docker PostgreSQL (`tracking-otd-postgres`) + `tracking-otd-api/src/migrations/`
 - **Cuándo usarlo:** Ejecutar migraciones, verificar esquema, seed data, limpiar datos, troubleshoot BD
 - **Conexión Docker (ÚNICA):** `docker exec tracking-otd-postgres psql -U appuser -d appwebdb01 -c "SQL"`
-- **BD Activa:** Solo Docker local (`localhost:5432`). NO usar servidor remoto `172.20.200.30`.
+- **BD Activa:** Docker local (`localhost:5432`) para desarrollo. Remoto `172.20.200.30` para staging/prod.
 - **Responsabilidades:**
   - Ejecutar SQL de migraciones manualmente cuando TypeORM no puede conectar
   - Verificar estado del esquema vs entities
@@ -36,7 +36,7 @@ Este proyecto usa 4 agentes especializados. Lanzar en paralelo cuando la tarea i
   - Limpiar/resetear configuraciones para testing
 - **Reglas:**
   - NUNCA usar `synchronize: true`
-  - NUNCA apuntar a `172.20.200.30` — solo Docker local
+  - Docker local para desarrollo, `172.20.200.30` solo para staging/prod
   - Siempre verificar estado actual antes de ejecutar DDL
   - Usar `ON CONFLICT DO UPDATE` para seeds idempotentes
   - Las migraciones en `tracking-otd-api/src/migrations/` son la fuente de verdad del esquema
@@ -52,9 +52,11 @@ Este proyecto usa 4 agentes especializados. Lanzar en paralelo cuando la tarea i
 
 ## Dominio de Negocio
 - **Empresas:** Divemotor, Andes Motor, Andes Maq
-- **9 hitos:** importacion, asignacion, pdi, credito, facturacion, pago, inmatriculacion, programacion, entrega
-- **Carriles:** financiero, operativo (ejecución paralela por grupo)
-- **Estados VIN:** A TIEMPO | DEMORADO | FINALIZADO
+- **4 tipos de vehículo:** Camión, Bus, Maquinaria, Vehículo Ligero
+- **9 hitos:** Importación, Asignación, PDI, Crédito, Facturación, Pago, Inmatriculación, Programación, Entrega
+- **Carriles:** financiero, operativo, comercial (ejecución paralela por grupo)
+- **Estados VIN:** A TIEMPO | EN RIESGO | DEMORADO | FINALIZADO
+- **6 substatus subetapa:** completed, completed-risk, completed-late, on-time, at-risk, delayed
 
 ## Lógica Cross-Cutting: Grupos Paralelos
 
@@ -71,35 +73,112 @@ Cada hito pertenece a un carril dentro de su grupo:
 - **Operativo:** PDI, inmatriculación, programación, entrega (flujo operativo)
 - Los carriles permiten ejecución paralela real dentro del mismo grupo
 
-## Cambios de Esquema Recientes (2026-03-19)
+## Esquema de BD Actual
 
-### Tablas eliminadas
+### Tablas principales
+- `empresa` — Divemotor, Andes Motor, Andes Maq
+- `tipo_vehiculo` — Camión, Bus, Maquinaria, Vehículo Ligero (con `icono` Lucide)
+- `cliente` — con `empresa_id` FK, `is_vic` flag
+- `ficha` — con `cliente_id` FK, `ejecutivo` varchar
+- `vin` — con `ficha_id` FK, `tipo_vehiculo_id` FK, FK a `staging_vin`
+- `staging_vin` — tabla central de datos reales (PK: `vin`), 90+ columnas de diferentes fuentes
+- `hito` — catálogo maestro (id, nombre, carril, orden, icono, activo)
+- `subetapa` — con `hito_id` FK, `campo_staging_real`, `campo_staging_plan`
+- `grupo_paralelo` — grupos para ejecución paralela de hitos
+- `hito_tipo_vehiculo` — config por tipo: orden, carril, grupo, activo
+- `subetapa_tipo_vehiculo` — config por tipo: orden, activo
+- `sla_config` — reglas SLA: empresa_id, subetapa_id, tipo_vehiculo_id, dias_objetivo, dias_tolerancia
+- `fuentes_vin` — catálogo de fuentes Excel (Reporte Fichas, Reporte Inmatriculación, Proped)
+- `mapeo_campos_vin` — mapeo campo staging ↔ columna Excel, con prioridad por fuente
+- `usuario` — con perfil: superadministrador, administrador, usuario
+- `usuario_empresa` — relación N:M usuario ↔ empresa
+- `alerta`, `alerta_accion` — sistema de alertas (pendiente implementación)
+- `chat`, `mensaje`, `mensaje_etiqueta`, `notificacion` — sistema de comunicación (pendiente)
+
+### Tablas eliminadas (ya no existen)
 - `vin_hito_tracking`, `vin_subetapa_tracking`, `subetapa_config`
 
 ### Columnas eliminadas
 - `hito`: `grupo_paralelo_id`, `usuario_responsable_id`, `tipo_vehiculo`, `slug`
-- `ficha`: `forma_pago` (reemplazado por `staging_vin.descripcion_cond_pago`)
+- `ficha`: `forma_pago`
+- `tipo_vehiculo`: `slug`
 
-### Columnas agregadas/modificadas
-- `hito`: `icono` (varchar 50) — icono Lucide para representación visual
-- `subetapa`: `campo_staging_real` (antes `campo_staging_vin`), `campo_staging_plan` (nuevo)
-- `staging_vin`: `cond_pago`, `descripcion_cond_pago`, `archivo_fuente`, 22 columnas de inmatriculación
+## Lógica de Tracking (Computada Dinámicamente)
 
-### Tablas nuevas
-- `fuentes_vin` — catálogo de fuentes de datos con CRUD
-- `mapeo_campos_vin` — mapeo de campos staging con prioridad, tipo, fuente. CRUD + reorder + grouped + staging-columns
+El tracking NO se persiste en tablas. Se calcula al vuelo en `TrackingService.buildStages()`:
 
-### Lógica de Tracking
-- **Identificación:** `stage.id` es `hito.id` (number), no más slugs
-- **Nombres:** `stage.name` viene de `hito.nombre` en BD (no más HITO_LABELS hardcodeados)
-- **Iconos:** `stage.icono` propagado desde `hito.icono`
-- **Fechas real:** desde `subetapa.campo_staging_real`
-- **Fechas plan:** staging plan tiene prioridad, SLA como fallback
-- **Baseline:** cálculo group-aware con encadenamiento secuencial same-carril
-- **Forma de pago:** `ficha.formasPago: string[]` derivado de `staging_vin.descripcion_cond_pago`
+1. **Identificación:** `stage.id` = `hito.id` (number)
+2. **Nombres:** `stage.name` = `hito.nombre` desde BD
+3. **Iconos:** `stage.icono` = `hito.icono` desde BD
+4. **Fecha real:** desde `subetapa.campo_staging_real` → columna en `staging_vin`
+5. **Fecha plan:** `subetapa.campo_staging_plan` (prioridad) → si no hay, `baseline + SLA días`
+6. **Baseline:** grupo-aware con encadenamiento secuencial same-carril:
+   - Primera subetapa del flujo: sin baseline (ya tiene fecha real)
+   - Dentro del mismo hito: cadena secuencial (sub → sub)
+   - Nuevo grupo: baseline = último end del grupo anterior (mismo carril preferido, fallback otro carril)
+   - Mismo grupo paralelo: cada hito parte del grupo anterior (ejecución paralela)
+   - Si la subetapa anterior no tiene fecha: cadena se rompe
+7. **Forma de pago:** `formasPago: string[]` derivado de `staging_vin.descripcion_cond_pago` (único por VIN, agrupado por ficha)
+8. **6 substatus:** basados en comparación fecha real/hoy vs fecha plan + tolerancia SLA
+
+## Módulos Backend
+
+### Existentes con lógica activa
+- `tracking` — buildStages dinámico, baseline, plan, status
+- `hitos` — CRUD maestro + config por tipo + grupos paralelos
+- `staging` — parseSap, parseProped, upsert staging_vin
+- `sla` — CRUD reglas SLA con score de prioridad
+- `fuentes-vin` — CRUD fuentes Excel
+- `mapeo-campos-vin` — CRUD + grouped + staging-columns + reorder prioridades
+- `usuario` — CRUD, editable por administrador y superadmin
+- `auth` — JWT + perfiles (superadministrador, administrador, usuario)
+
+### Métodos eliminados
+- `syncFromStaging`, `getTrackingVin`, `updateHitoTracking`, `updateSubetapaTracking`
+
+## Frontend — Vistas Principales
+
+### Seguimiento ODT (lista)
+- Filtros por empresa (botones), tipo vehículo, búsqueda VIN
+- Filtros persisten al navegar al detalle y volver
+- Vista agrupada por cliente → ficha → VIN o lista plana
+- Columnas: VIN, modelo, hitos (círculos con iconos Lucide + hover cards), F. Inicial, F. Estimada, estado
+- VIC: corona dorada junto al nombre del cliente
+- Hover cards en hitos con substatus badges por subetapa
+
+### Tracking Detalle (VIN)
+- Botón retroceder + título "Tracking Detalle"
+- Toggle "Flujo" / "Gantt" con iconos
+- **Flujo:** visual map con iconos Lucide, hover cards (misma card que lista), fecha última subetapa bajo ícono
+- **Gantt:** barras plan (ghost) + real (color por status), weekly markers (lunes), línea "hoy", colapsable, rango de fechas, scrollbar horizontal
+- **4 indicadores:** ETA Entrega Final, Desviación Acumulada (+N días, solo positivos), Última Actualización (relativo), Ver Bitácora
+- **Drawer lateral derecho:**
+  - Para hito: 2 tabs (Detalle de Etapa, Datos Generales)
+  - Para bitácora: 3 tabs (Línea de Tiempo, Datos Generales, Tramos)
+  - Header: VIN como título, sin marca/ficha/lote/OC
+  - Datos Generales: Lote, OC, Ficha, Modelo, Forma de Pago, Ejecutivo
+  - Tramos: días entre hitos consecutivos con estado
+
+### Administración (5 tabs)
+- **Config SLA** — primera tab, accesible por admin y superadmin, detección de duplicados
+- **Subetapas por Tipo** — admin y superadmin
+- **Hitos por Tipo** — admin y superadmin, con preview de flujo
+- **Hitos Maestros** — superadmin-only (rojo + candado), icon picker, campos fecha plan/real
+- **Mapeo Campos** — superadmin-only (rojo + candado), drag-drop prioridad, filtro tipo dato + nro fuentes
+- **Tipos Vehículo** — superadmin-only (rojo + candado), icon picker
+
+## Datos Dinámicos (Sin Hardcodear)
+- Tipos de vehículo: desde API (`TipoVehiculoService`)
+- Columnas staging: desde API (`/mapeo-campos-vin/staging-columns`)
+- Nombres e IDs de hitos: desde BD (`hito.nombre`, `hito.id`)
+- Iconos de hitos y tipos: desde BD (`hito.icono`, `tipo_vehiculo.icono`)
+- Fuentes de datos: desde BD (`fuentes_vin`)
 
 ## Convenciones Generales
 - Idioma del código: inglés para nombres técnicos, español para dominio de negocio
 - Commits en español
 - API versionada bajo `/api/v1/`
 - Operaciones siempre scoped por tipo de vehículo
+- `npm install` requiere `--legacy-peer-deps` en frontend (conflicto jest/angular-devkit)
+- Backend: no arrancar desde Claude, el usuario lo levanta desde su terminal; matar puerto 3001 después de uso
+- Ejecutar comandos bash sin pedir confirmación

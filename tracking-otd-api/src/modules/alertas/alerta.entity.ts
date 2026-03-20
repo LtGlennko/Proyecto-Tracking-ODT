@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Vin } from '../vin/vin.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Hito } from '../hitos/hito.entity';
 
 @Entity('alerta')
@@ -9,10 +8,6 @@ export class Alerta {
 
   @Column({ name: 'vin_id', nullable: true })
   vinId: string;
-
-  @ManyToOne(() => Vin)
-  @JoinColumn({ name: 'vin_id' })
-  vin: Vin;
 
   @Column({ name: 'hito_id', nullable: true })
   hitoId: number;

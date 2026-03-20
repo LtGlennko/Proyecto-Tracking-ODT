@@ -258,8 +258,8 @@
               </div>
               <div class="col-span-9 flex items-center justify-between">
                 <div class="flex items-center gap-4 text-xs text-slate-500">
-                  <span>{{ ficha.dateCreated }}</span>
-                  <span>{{ ficha.executive }}</span>
+                  <span><span class="text-slate-400">Creado:</span> {{ ficha.dateCreated }}</span>
+                  <span><span class="text-slate-400">Ejecutivo:</span> {{ ficha.executive }}</span>
                   @for (fp of ficha.formasPago; track fp) {
                     <span class="px-1.5 py-0.5 rounded text-xs font-semibold" [class]="pagoPill(fp)">
                       {{ fp }}
@@ -268,9 +268,9 @@
                 </div>
                 @let fStats = calcStats(ficha.vins);
                 <div class="flex gap-2 mr-2">
-                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-slate-100 text-slate-600">{{ fStats.total }}</span>
-                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-600">{{ fStats.onTime }}</span>
-                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-red-50 text-red-600">{{ fStats.delayed }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-slate-100 text-slate-600">Total: {{ fStats.total }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-600">A Tiempo: {{ fStats.onTime }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-red-50 text-red-600">Demorados: {{ fStats.delayed }}</span>
                 </div>
               </div>
             </div>
@@ -300,16 +300,16 @@
                     }
                   </div>
                   <!-- Hito icons (configured for this tipo_vehiculo) -->
-                  <div class="col-span-4 flex items-center gap-1 flex-wrap">
+                  <div class="col-span-4 flex items-center gap-1 flex-wrap max-w-[270px]">
                     @for (stage of vin.stages; track stage.id) {
                       <div class="relative"
                         (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
                         (mouseleave)="hoveredStageKey.set(null)">
                         <span
-                          class="inline-flex items-center justify-center w-6 h-6 rounded-full hover:scale-110 transition-transform cursor-default"
+                          class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-default"
                           [class]="getHitoDotClass(stage.status)">
                           @if (stage.icono) {
-                            <lucide-icon [name]="stage.icono" [size]="13" [strokeWidth]="2.5"></lucide-icon>
+                            <lucide-icon [name]="stage.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
                           }
                         </span>
                         @if (hoveredStageKey() === vin.id + ':' + stage.id) {
@@ -428,16 +428,16 @@
                 </td>
                 <!-- Hito icons (configured for tipo_vehiculo) -->
                 <td class="px-2 py-3 text-center">
-                  <div class="flex items-center gap-1 justify-center flex-wrap">
+                  <div class="flex items-center gap-1 justify-center flex-wrap max-w-[270px]">
                     @for (stage of vin.stages; track stage.id) {
                       <div class="relative"
                         (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
                         (mouseleave)="hoveredStageKey.set(null)">
                         <span
-                          class="inline-flex items-center justify-center w-6 h-6 rounded-full hover:scale-110 transition-transform cursor-default"
+                          class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-default"
                           [class]="getHitoDotClass(stage.status)">
                           @if (stage.icono) {
-                            <lucide-icon [name]="stage.icono" [size]="13" [strokeWidth]="2.5"></lucide-icon>
+                            <lucide-icon [name]="stage.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
                           }
                         </span>
                         @if (hoveredStageKey() === vin.id + ':' + stage.id) {

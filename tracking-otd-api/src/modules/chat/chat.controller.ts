@@ -20,7 +20,7 @@ export class ChatController {
 
   @Get('ficha/:fichaId')
   @ApiOperation({ summary: 'Obtener chat de una ficha' })
-  findByFicha(@Param('fichaId', ParseIntPipe) fichaId: number) { return this.service.findByFicha(fichaId); }
+  findByFicha(@Param('fichaId') fichaId: string) { return this.service.findByFicha(fichaId); }
 
   @Get('vin/:vinId')
   @ApiOperation({ summary: 'Obtener chat de un VIN' })

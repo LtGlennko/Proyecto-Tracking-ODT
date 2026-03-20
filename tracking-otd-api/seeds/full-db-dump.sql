@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict lrJeMf8wTLcb6rhGlt83XD4FIRnLPr5l0Kd5ad6JuKTN3GOSAsmJ1KVaVFpFf7s
+\restrict bmdQLcWzRqcRrF4nNqsdICu4fz6Bx3qhPrSXA0wCRUnBMxs2Y99fIL6G3Oba21h
 
 -- Dumped from database version 15.17
 -- Dumped by pg_dump version 15.17
@@ -18,6 +18,137 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public.vin DROP CONSTRAINT IF EXISTS vin_ficha_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.usuario_empresa DROP CONSTRAINT IF EXISTS usuario_empresa_usuario_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.usuario_empresa DROP CONSTRAINT IF EXISTS usuario_empresa_empresa_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.subetapa DROP CONSTRAINT IF EXISTS subetapa_hito_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.sla_config DROP CONSTRAINT IF EXISTS sla_config_subetapa_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.sla_config DROP CONSTRAINT IF EXISTS sla_config_empresa_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.notificacion DROP CONSTRAINT IF EXISTS notificacion_usuario_destino_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.notificacion DROP CONSTRAINT IF EXISTS notificacion_mensaje_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.mensaje DROP CONSTRAINT IF EXISTS mensaje_usuario_autor_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.mensaje_etiqueta DROP CONSTRAINT IF EXISTS mensaje_etiqueta_usuario_etiquetado_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.mensaje_etiqueta DROP CONSTRAINT IF EXISTS mensaje_etiqueta_mensaje_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.mensaje DROP CONSTRAINT IF EXISTS mensaje_chat_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.mapeo_campos_vin DROP CONSTRAINT IF EXISTS mapeo_campos_vin_id_fuente_fkey;
+ALTER TABLE IF EXISTS ONLY public.vin DROP CONSTRAINT IF EXISTS fk_vin_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.vin DROP CONSTRAINT IF EXISTS fk_vin_staging;
+ALTER TABLE IF EXISTS ONLY public.subetapa_tipo_vehiculo DROP CONSTRAINT IF EXISTS fk_stv_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.subetapa_tipo_vehiculo DROP CONSTRAINT IF EXISTS fk_stv_subetapa;
+ALTER TABLE IF EXISTS ONLY public.sla_config DROP CONSTRAINT IF EXISTS fk_sla_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.hito_tipo_vehiculo DROP CONSTRAINT IF EXISTS fk_htv_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.hito_tipo_vehiculo DROP CONSTRAINT IF EXISTS fk_htv_hito;
+ALTER TABLE IF EXISTS ONLY public.hito_tipo_vehiculo DROP CONSTRAINT IF EXISTS fk_htv_grupo;
+ALTER TABLE IF EXISTS ONLY public.ficha DROP CONSTRAINT IF EXISTS ficha_cliente_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.cliente DROP CONSTRAINT IF EXISTS cliente_empresa_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.chat DROP CONSTRAINT IF EXISTS chat_vin_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.chat DROP CONSTRAINT IF EXISTS chat_ficha_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.alerta DROP CONSTRAINT IF EXISTS alerta_vin_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.alerta DROP CONSTRAINT IF EXISTS alerta_usuario_responsable_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.alerta DROP CONSTRAINT IF EXISTS alerta_hito_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.alerta_accion DROP CONSTRAINT IF EXISTS alerta_accion_usuario_accion_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.alerta_accion DROP CONSTRAINT IF EXISTS alerta_accion_alerta_id_fkey;
+DROP INDEX IF EXISTS public.idx_vin_tipo_vehiculo_id;
+DROP INDEX IF EXISTS public.idx_vin_ficha_id;
+DROP INDEX IF EXISTS public.idx_staging_pedido_externo;
+DROP INDEX IF EXISTS public.idx_staging_fuente_sync;
+DROP INDEX IF EXISTS public.idx_sla_empresa_subetapa;
+DROP INDEX IF EXISTS public.idx_mensaje_chat_id;
+DROP INDEX IF EXISTS public.idx_ficha_cliente_id;
+DROP INDEX IF EXISTS public.idx_cliente_empresa_id;
+DROP INDEX IF EXISTS public.idx_alerta_vin_id;
+DROP INDEX IF EXISTS public.idx_alerta_nivel_estado;
+ALTER TABLE IF EXISTS ONLY public.vin DROP CONSTRAINT IF EXISTS vin_pkey;
+ALTER TABLE IF EXISTS ONLY public.usuario DROP CONSTRAINT IF EXISTS usuario_pkey;
+ALTER TABLE IF EXISTS ONLY public.usuario_empresa DROP CONSTRAINT IF EXISTS usuario_empresa_pkey;
+ALTER TABLE IF EXISTS ONLY public.usuario DROP CONSTRAINT IF EXISTS uq_usuario_oid;
+ALTER TABLE IF EXISTS ONLY public.usuario_empresa DROP CONSTRAINT IF EXISTS uq_usuario_empresa;
+ALTER TABLE IF EXISTS ONLY public.usuario DROP CONSTRAINT IF EXISTS uq_usuario_email;
+ALTER TABLE IF EXISTS ONLY public.subetapa_tipo_vehiculo DROP CONSTRAINT IF EXISTS uq_subetapa_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.hito_tipo_vehiculo DROP CONSTRAINT IF EXISTS uq_hito_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.empresa DROP CONSTRAINT IF EXISTS uq_empresa_codigo;
+ALTER TABLE IF EXISTS ONLY public.tipo_vehiculo DROP CONSTRAINT IF EXISTS tipo_vehiculo_pkey;
+ALTER TABLE IF EXISTS ONLY public.tipo_vehiculo DROP CONSTRAINT IF EXISTS tipo_vehiculo_nombre_key;
+ALTER TABLE IF EXISTS ONLY public.subetapa DROP CONSTRAINT IF EXISTS subetapa_pkey;
+ALTER TABLE IF EXISTS ONLY public.staging_vin DROP CONSTRAINT IF EXISTS staging_vin_pkey;
+ALTER TABLE IF EXISTS ONLY public.sla_config DROP CONSTRAINT IF EXISTS sla_config_pkey;
+ALTER TABLE IF EXISTS ONLY public.subetapa_tipo_vehiculo DROP CONSTRAINT IF EXISTS pk_subetapa_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.hito_tipo_vehiculo DROP CONSTRAINT IF EXISTS pk_hito_tipo_vehiculo;
+ALTER TABLE IF EXISTS ONLY public.notificacion DROP CONSTRAINT IF EXISTS notificacion_pkey;
+ALTER TABLE IF EXISTS ONLY public.mensaje DROP CONSTRAINT IF EXISTS mensaje_pkey;
+ALTER TABLE IF EXISTS ONLY public.mensaje_etiqueta DROP CONSTRAINT IF EXISTS mensaje_etiqueta_pkey;
+ALTER TABLE IF EXISTS ONLY public.mapeo_campos_vin DROP CONSTRAINT IF EXISTS mapeo_campos_vin_pkey;
+ALTER TABLE IF EXISTS ONLY public.hito DROP CONSTRAINT IF EXISTS hito_pkey;
+ALTER TABLE IF EXISTS ONLY public.grupo_paralelo DROP CONSTRAINT IF EXISTS grupo_paralelo_pkey;
+ALTER TABLE IF EXISTS ONLY public.fuentes_vin DROP CONSTRAINT IF EXISTS fuentes_vin_pkey;
+ALTER TABLE IF EXISTS ONLY public.ficha DROP CONSTRAINT IF EXISTS ficha_pkey;
+ALTER TABLE IF EXISTS ONLY public.empresa DROP CONSTRAINT IF EXISTS empresa_pkey;
+ALTER TABLE IF EXISTS ONLY public.cliente DROP CONSTRAINT IF EXISTS cliente_pkey;
+ALTER TABLE IF EXISTS ONLY public.chat DROP CONSTRAINT IF EXISTS chat_pkey;
+ALTER TABLE IF EXISTS ONLY public.alerta DROP CONSTRAINT IF EXISTS alerta_pkey;
+ALTER TABLE IF EXISTS ONLY public.alerta_accion DROP CONSTRAINT IF EXISTS alerta_accion_pkey;
+ALTER TABLE IF EXISTS public.usuario_empresa ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.usuario ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.tipo_vehiculo ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.subetapa_tipo_vehiculo ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.subetapa ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.sla_config ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.notificacion ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.mensaje_etiqueta ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.mensaje ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.mapeo_campos_vin ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.hito_tipo_vehiculo ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.hito ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.grupo_paralelo ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.fuentes_vin ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.ficha ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.empresa ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.cliente ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.chat ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.alerta_accion ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.alerta ALTER COLUMN id DROP DEFAULT;
+DROP TABLE IF EXISTS public.vin;
+DROP SEQUENCE IF EXISTS public.usuario_id_seq;
+DROP SEQUENCE IF EXISTS public.usuario_empresa_id_seq;
+DROP TABLE IF EXISTS public.usuario_empresa;
+DROP TABLE IF EXISTS public.usuario;
+DROP SEQUENCE IF EXISTS public.tipo_vehiculo_id_seq;
+DROP TABLE IF EXISTS public.tipo_vehiculo;
+DROP SEQUENCE IF EXISTS public.subetapa_tipo_vehiculo_id_seq;
+DROP TABLE IF EXISTS public.subetapa_tipo_vehiculo;
+DROP SEQUENCE IF EXISTS public.subetapa_id_seq;
+DROP TABLE IF EXISTS public.subetapa;
+DROP TABLE IF EXISTS public.staging_vin;
+DROP SEQUENCE IF EXISTS public.sla_config_id_seq;
+DROP TABLE IF EXISTS public.sla_config;
+DROP SEQUENCE IF EXISTS public.notificacion_id_seq;
+DROP TABLE IF EXISTS public.notificacion;
+DROP SEQUENCE IF EXISTS public.mensaje_id_seq;
+DROP SEQUENCE IF EXISTS public.mensaje_etiqueta_id_seq;
+DROP TABLE IF EXISTS public.mensaje_etiqueta;
+DROP TABLE IF EXISTS public.mensaje;
+DROP SEQUENCE IF EXISTS public.mapeo_campos_vin_id_seq;
+DROP TABLE IF EXISTS public.mapeo_campos_vin;
+DROP SEQUENCE IF EXISTS public.hito_tipo_vehiculo_id_seq;
+DROP TABLE IF EXISTS public.hito_tipo_vehiculo;
+DROP SEQUENCE IF EXISTS public.hito_id_seq;
+DROP TABLE IF EXISTS public.hito;
+DROP SEQUENCE IF EXISTS public.grupo_paralelo_id_seq;
+DROP TABLE IF EXISTS public.grupo_paralelo;
+DROP SEQUENCE IF EXISTS public.fuentes_vin_id_seq;
+DROP TABLE IF EXISTS public.fuentes_vin;
+DROP SEQUENCE IF EXISTS public.ficha_id_seq;
+DROP TABLE IF EXISTS public.ficha;
+DROP SEQUENCE IF EXISTS public.empresa_id_seq;
+DROP TABLE IF EXISTS public.empresa;
+DROP SEQUENCE IF EXISTS public.cliente_id_seq;
+DROP TABLE IF EXISTS public.cliente;
+DROP SEQUENCE IF EXISTS public.chat_id_seq;
+DROP TABLE IF EXISTS public.chat;
+DROP SEQUENCE IF EXISTS public.alerta_id_seq;
+DROP SEQUENCE IF EXISTS public.alerta_accion_id_seq;
+DROP TABLE IF EXISTS public.alerta_accion;
+DROP TABLE IF EXISTS public.alerta;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -719,11 +850,11 @@ ALTER SEQUENCE public.subetapa_tipo_vehiculo_id_seq OWNED BY public.subetapa_tip
 CREATE TABLE public.tipo_vehiculo (
     id integer NOT NULL,
     nombre character varying(100) NOT NULL,
-    slug character varying(50) NOT NULL,
     color character varying(20),
     activo boolean DEFAULT true NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    icono character varying(50)
 );
 
 
@@ -1040,21 +1171,22 @@ INSERT INTO public.grupo_paralelo VALUES (7, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.grupo_paralelo VALUES (8, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.grupo_paralelo VALUES (9, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO public.grupo_paralelo VALUES (10, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO public.grupo_paralelo VALUES (12, NULL, NULL, NULL, NULL, NULL);
 
 
 --
 -- Data for Name: hito; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.hito VALUES (1, 'Importación', 'operativo', 1, true, '2026-03-11 14:55:30.83424', '2026-03-18 15:17:38.85304', 'anchor');
-INSERT INTO public.hito VALUES (2, 'Asignación', 'comercial', 2, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'user-check');
+INSERT INTO public.hito VALUES (2, 'Asignación', 'financiero', 2, true, '2026-03-11 14:55:30.83424', '2026-03-19 11:41:23.280288', 'user-check');
+INSERT INTO public.hito VALUES (9, 'Entrega', 'financiero', 9, true, '2026-03-11 14:55:30.83424', '2026-03-19 11:41:24.181913', 'truck');
+INSERT INTO public.hito VALUES (1, 'Importación', 'financiero', 1, true, '2026-03-11 14:55:30.83424', '2026-03-19 12:06:29.830418', 'anchor');
+INSERT INTO public.hito VALUES (7, 'Inmatriculación', 'financiero', 7, true, '2026-03-11 14:55:30.83424', '2026-03-19 12:06:31.098409', 'file-badge');
+INSERT INTO public.hito VALUES (8, 'Programación', 'financiero', 8, true, '2026-03-11 14:55:30.83424', '2026-03-19 12:06:31.500724', 'calendar-check');
+INSERT INTO public.hito VALUES (3, 'PDI', 'operativo', 3, true, '2026-03-11 14:55:30.83424', '2026-03-19 08:55:35.89191', 'wrench');
 INSERT INTO public.hito VALUES (4, 'Crédito', 'financiero', 4, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'credit-card');
 INSERT INTO public.hito VALUES (5, 'Facturación', 'financiero', 5, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'file-text');
 INSERT INTO public.hito VALUES (6, 'Pago', 'financiero', 6, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'banknote');
-INSERT INTO public.hito VALUES (7, 'Inmatriculación', 'operativo', 7, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'file-badge');
-INSERT INTO public.hito VALUES (8, 'Programación', 'operativo', 8, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'calendar-check');
-INSERT INTO public.hito VALUES (9, 'Entrega', 'comercial', 9, true, '2026-03-11 14:55:30.83424', '2026-03-11 14:55:30.83424', 'truck');
-INSERT INTO public.hito VALUES (3, 'PDI', 'operativo', 3, true, '2026-03-11 14:55:30.83424', '2026-03-19 08:55:35.89191', 'wrench');
 
 
 --
@@ -1109,7 +1241,6 @@ INSERT INTO public.mapeo_campos_vin VALUES (3, 'num_factura_comex', 3, 'NUMERO F
 INSERT INTO public.mapeo_campos_vin VALUES (4, 'precio_confirmado', 3, 'PRECIO CONFIRMADO', 1, true);
 INSERT INTO public.mapeo_campos_vin VALUES (5, 'pedido_interno', 3, 'PEDIDO INTERNO', 1, true);
 INSERT INTO public.mapeo_campos_vin VALUES (7, 'linea_negocio', 3, 'LINEA DE NEGOCIO', 1, true);
-INSERT INTO public.mapeo_campos_vin VALUES (8, 'carrocero', 3, 'CARROCERO', 1, true);
 INSERT INTO public.mapeo_campos_vin VALUES (9, 'cliente_comex', 3, 'CLIENTE ', 1, true);
 INSERT INTO public.mapeo_campos_vin VALUES (10, 'estado_comex', 3, 'ESTADO', 1, true);
 INSERT INTO public.mapeo_campos_vin VALUES (11, 'modalidad_embarque', 3, 'MODALIDAD', 1, true);
@@ -1187,6 +1318,7 @@ INSERT INTO public.mapeo_campos_vin VALUES (84, 'fecha_preasignacion', 2, 'Fecha
 INSERT INTO public.mapeo_campos_vin VALUES (19, 'pedido_externo', 1, 'Pedido Externo', 2, true);
 INSERT INTO public.mapeo_campos_vin VALUES (6, 'pedido_externo', 3, 'PEDIDO EXTERNO', 3, true);
 INSERT INTO public.mapeo_campos_vin VALUES (67, 'pedido_externo', 2, 'Pedido Externo', 1, true);
+INSERT INTO public.mapeo_campos_vin VALUES (8, 'carrocero', 3, 'CARROCERO', 1, true);
 
 
 --
@@ -1212,6 +1344,7 @@ INSERT INTO public.mapeo_campos_vin VALUES (67, 'pedido_externo', 2, 'Pedido Ext
 --
 
 INSERT INTO public.sla_config VALUES (8, NULL, NULL, 5, 2, NULL, NULL, NULL);
+INSERT INTO public.sla_config VALUES (9, NULL, 4, 7, 2, NULL, NULL, 2);
 
 
 --
@@ -1350,10 +1483,10 @@ INSERT INTO public.subetapa_tipo_vehiculo VALUES (144, 17, 1, false, '2026-03-13
 -- Data for Name: tipo_vehiculo; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.tipo_vehiculo VALUES (1, 'Camión', 'camion', '#2E75B6', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417');
-INSERT INTO public.tipo_vehiculo VALUES (2, 'Bus', 'bus', '#7C3AED', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417');
-INSERT INTO public.tipo_vehiculo VALUES (3, 'Maquinaria', 'maquinaria', '#EA580C', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417');
-INSERT INTO public.tipo_vehiculo VALUES (4, 'Vehículo Ligero', 'vehiculo_ligero', '#0EA5E9', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417');
+INSERT INTO public.tipo_vehiculo VALUES (1, 'Camión', '#2E75B6', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417', 'truck');
+INSERT INTO public.tipo_vehiculo VALUES (2, 'Bus', '#7C3AED', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417', 'bus-front');
+INSERT INTO public.tipo_vehiculo VALUES (3, 'Maquinaria', '#EA580C', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417', 'hard-hat');
+INSERT INTO public.tipo_vehiculo VALUES (4, 'Vehículo Ligero', '#0EA5E9', true, '2026-03-13 14:34:39.371417', '2026-03-13 14:34:39.371417', 'car');
 
 
 --
@@ -1440,7 +1573,7 @@ SELECT pg_catalog.setval('public.fuentes_vin_id_seq', 3, true);
 -- Name: grupo_paralelo_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.grupo_paralelo_id_seq', 10, true);
+SELECT pg_catalog.setval('public.grupo_paralelo_id_seq', 12, true);
 
 
 --
@@ -1454,7 +1587,7 @@ SELECT pg_catalog.setval('public.hito_id_seq', 9, true);
 -- Name: hito_tipo_vehiculo_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.hito_tipo_vehiculo_id_seq', 82, true);
+SELECT pg_catalog.setval('public.hito_tipo_vehiculo_id_seq', 100, true);
 
 
 --
@@ -1489,7 +1622,7 @@ SELECT pg_catalog.setval('public.notificacion_id_seq', 1, false);
 -- Name: sla_config_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.sla_config_id_seq', 8, true);
+SELECT pg_catalog.setval('public.sla_config_id_seq', 9, true);
 
 
 --
@@ -1503,14 +1636,14 @@ SELECT pg_catalog.setval('public.subetapa_id_seq', 21, true);
 -- Name: subetapa_tipo_vehiculo_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.subetapa_tipo_vehiculo_id_seq', 190, true);
+SELECT pg_catalog.setval('public.subetapa_tipo_vehiculo_id_seq', 232, true);
 
 
 --
 -- Name: tipo_vehiculo_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.tipo_vehiculo_id_seq', 4, true);
+SELECT pg_catalog.setval('public.tipo_vehiculo_id_seq', 5, true);
 
 
 --
@@ -1685,14 +1818,6 @@ ALTER TABLE ONLY public.tipo_vehiculo
 
 ALTER TABLE ONLY public.tipo_vehiculo
     ADD CONSTRAINT tipo_vehiculo_pkey PRIMARY KEY (id);
-
-
---
--- Name: tipo_vehiculo tipo_vehiculo_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tipo_vehiculo
-    ADD CONSTRAINT tipo_vehiculo_slug_key UNIQUE (slug);
 
 
 --
@@ -2081,5 +2206,5 @@ ALTER TABLE ONLY public.vin
 -- PostgreSQL database dump complete
 --
 
-\unrestrict lrJeMf8wTLcb6rhGlt83XD4FIRnLPr5l0Kd5ad6JuKTN3GOSAsmJ1KVaVFpFf7s
+\unrestrict bmdQLcWzRqcRrF4nNqsdICu4fz6Bx3qhPrSXA0wCRUnBMxs2Y99fIL6G3Oba21h
 

@@ -54,9 +54,9 @@ export class ChatService {
     return mensaje;
   }
 
-  async findByFicha(fichaId: number): Promise<Chat> {
-    const chat = await this.chatRepo.findOne({ where: { fichaId } });
-    if (!chat) throw new NotFoundException(`Chat para ficha ${fichaId} no encontrado`);
+  async findByFicha(fichaCodigo: string): Promise<Chat> {
+    const chat = await this.chatRepo.findOne({ where: { fichaCodigo } });
+    if (!chat) throw new NotFoundException(`Chat para ficha ${fichaCodigo} no encontrado`);
     return chat;
   }
 
