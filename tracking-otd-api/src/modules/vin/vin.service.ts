@@ -69,7 +69,7 @@ export class VinService {
 
   calcularEstadoGeneral(hitos: { estado: string }[]): string {
     if (!hitos || hitos.length === 0) return 'A TIEMPO';
-    if (hitos.every(h => h.estado === 'FINALIZADO')) return 'FINALIZADO';
+    if (hitos.every(h => h.estado === 'ENTREGADO')) return 'ENTREGADO';
     if (hitos.some(h => h.estado === 'DEMORADO')) return 'DEMORADO';
     return 'A TIEMPO';
   }

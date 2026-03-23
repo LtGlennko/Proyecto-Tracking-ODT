@@ -16,7 +16,7 @@ export class FilterVinDto extends PaginationDto {
   @IsInt()
   empresaId?: number;
 
-  @ApiPropertyOptional({ enum: ['A TIEMPO', 'DEMORADO', 'FINALIZADO'] })
+  @ApiPropertyOptional({ enum: ['A TIEMPO', 'DEMORADO', 'ENTREGADO'] })
   @IsOptional()
   @IsString()
   estado?: string;

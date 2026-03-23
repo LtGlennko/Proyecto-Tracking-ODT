@@ -155,7 +155,7 @@ export class DashboardPageComponent {
 
   topVins = computed(() =>
     this.store.vins()
-      .filter(v => v.estadoGeneral !== 'FINALIZADO')
+      .filter(v => v.estadoGeneral !== 'ENTREGADO')
       .slice(0, 10)
   );
 

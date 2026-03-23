@@ -244,8 +244,8 @@ interface SlaConfigApi {
                 <label class="text-xs font-medium text-slate-600 block mb-1">Carril</label>
                 <select [ngModel]="newHitoCarril()" (ngModelChange)="newHitoCarril.set($event)"
                   class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="financiero">Financiero</option>
-                  <option value="operativo">Operativo</option>
+                  <option value="financiero">Carril A</option>
+                  <option value="operativo">Carril B</option>
                 </select>
               </div>
               <button (click)="createMasterHito()"
@@ -305,12 +305,12 @@ interface SlaConfigApi {
                     <button (click)="changeMasterCarril(hito, 'financiero'); $event.stopPropagation()"
                       class="px-2 py-1 text-xs font-medium transition-colors"
                       [class]="hito.carril === 'financiero' ? 'bg-violet-600 text-white' : 'bg-white text-slate-400 hover:bg-slate-50'">
-                      Financiero
+                      Carril A
                     </button>
                     <button (click)="changeMasterCarril(hito, 'operativo'); $event.stopPropagation()"
                       class="px-2 py-1 text-xs font-medium border-l border-slate-200 transition-colors"
                       [class]="hito.carril === 'operativo' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 hover:bg-slate-50'">
-                      Operativo
+                      Carril B
                     </button>
                   </div>
 

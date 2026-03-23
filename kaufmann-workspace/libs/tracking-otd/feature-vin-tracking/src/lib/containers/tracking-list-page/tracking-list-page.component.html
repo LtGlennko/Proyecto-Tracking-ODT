@@ -138,18 +138,6 @@
       }
     </div>
 
-    <!-- Tipo de vehículo filter -->
-    <select
-      [ngModel]="selectedTipoVehiculoId()"
-      (ngModelChange)="setTipoVehiculoValue($event)"
-      class="text-sm rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-      <option value="">Todos los tipos</option>
-      @for (tv of tipoVehiculoOptions(); track tv.id) {
-        <option [value]="tv.id">{{ tv.nombre }}</option>
-      }
-    </select>
-
     <!-- View mode toggle -->
     <div class="flex rounded-lg border border-slate-200 overflow-hidden">
       <button
@@ -172,6 +160,18 @@
       </button>
     </div>
 
+    <!-- Tipo de vehículo filter -->
+    <select
+      [ngModel]="selectedTipoVehiculoId()"
+      (ngModelChange)="setTipoVehiculoValue($event)"
+      class="text-sm rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+      <option value="">Todos los tipos</option>
+      @for (tv of tipoVehiculoOptions(); track tv.id) {
+        <option [value]="tv.id">{{ tv.nombre }}</option>
+      }
+    </select>
+
     <!-- Estado filter -->
     <select
       [ngModel]="selectedEstado()"
@@ -180,7 +180,7 @@
       >
       <option value="">Todos los estados</option>
       @for (s of estadoOptions; track s) {
-        <option [value]="s">{{ s }}</option>
+        <option [value]="s.value">{{ s.label }}</option>
       }
     </select>
 
@@ -231,10 +231,10 @@
               Total: {{ cStats.total }}
             </span>
             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              A Tiempo: {{ cStats.onTime }}
-            </span>
-            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-500 border border-slate-200">
               Entregados: {{ cStats.delivered }}
+            </span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              A Tiempo: {{ cStats.onTime }}
             </span>
             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
               Demorados: {{ cStats.delayed }}
@@ -269,6 +269,7 @@
                 @let fStats = calcStats(ficha.vins);
                 <div class="flex gap-2 mr-2">
                   <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-slate-100 text-slate-600">Total: {{ fStats.total }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-600">Entregados: {{ fStats.delivered }}</span>
                   <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-600">A Tiempo: {{ fStats.onTime }}</span>
                   <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-red-50 text-red-600">Demorados: {{ fStats.delayed }}</span>
                 </div>
@@ -306,7 +307,7 @@
                         (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
                         (mouseleave)="hoveredStageKey.set(null)">
                         <span
-                          class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-default"
+                          class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-pointer"
                           [class]="getHitoDotClass(stage.status)">
                           @if (stage.icono) {
                             <lucide-icon [name]="stage.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>
@@ -434,7 +435,7 @@
                         (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
                         (mouseleave)="hoveredStageKey.set(null)">
                         <span
-                          class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-default"
+                          class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-pointer"
                           [class]="getHitoDotClass(stage.status)">
                           @if (stage.icono) {
                             <lucide-icon [name]="stage.icono" [size]="16" [strokeWidth]="2.5"></lucide-icon>

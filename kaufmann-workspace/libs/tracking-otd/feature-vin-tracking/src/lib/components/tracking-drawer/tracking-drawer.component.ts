@@ -32,10 +32,9 @@ export class TrackingDrawerComponent {
       if (currentEnd && nextStart) {
         const endMs = new Date(currentEnd + 'T00:00:00').getTime();
         const startMs = new Date(nextStart + 'T00:00:00').getTime();
-        days = Math.round((startMs - endMs) / 86400000);
-        // Negative = overlap/fast, 0 = seamless, positive = gap
-        if (days <= 0) status = 'on-time';
-        else if (days <= 3) status = 'at-risk';
+        days = Math.abs(Math.round((startMs - endMs) / 86400000));
+        if (days <= 1) status = 'on-time';
+        else if (days <= 5) status = 'at-risk';
         else status = 'delayed';
       }
       pairs.push({ from: current.name, to: next.name, days, status });

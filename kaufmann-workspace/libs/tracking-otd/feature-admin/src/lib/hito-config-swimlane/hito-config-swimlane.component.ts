@@ -114,13 +114,13 @@ interface Bloque {
       <div class="flex items-center gap-2 px-5 py-2.5 border-b-2 border-blue-500">
         <span class="w-2 h-2 rounded-full bg-blue-500"></span>
         <span class="text-xs font-semibold uppercase tracking-wide text-blue-600">
-          Carril financiero
+          Carril A
         </span>
       </div>
       <div class="flex items-center gap-2 px-5 py-2.5 border-b-2 border-amber-500 border-l border-slate-200">
         <span class="w-2 h-2 rounded-full bg-amber-500"></span>
         <span class="text-xs font-semibold uppercase tracking-wide text-amber-600">
-          Carril operativo
+          Carril B
         </span>
       </div>
     </div>
@@ -186,7 +186,7 @@ interface Bloque {
                         $implicit: hito,
                         carrilList: bloque.financiero,
                         otroCarril: 'operativo',
-                        otroCarrilLabel: 'Operativo'
+                        otroCarrilLabel: 'Carril B'
                       }"/>
                     <!-- Custom drag preview for hito -->
                     <div *cdkDragPreview class="cdk-drag-preview px-3 py-2 border border-slate-200 min-w-48">
@@ -214,7 +214,7 @@ interface Bloque {
                         $implicit: hito,
                         carrilList: bloque.operativo,
                         otroCarril: 'financiero',
-                        otroCarrilLabel: 'Financiero'
+                        otroCarrilLabel: 'Carril A'
                       }"/>
                     <div *cdkDragPreview class="cdk-drag-preview px-3 py-2 border border-slate-200 min-w-48">
                       <span class="text-sm font-semibold text-slate-800">{{ hito.nombre }}</span>

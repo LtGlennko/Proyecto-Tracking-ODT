@@ -39,21 +39,6 @@ interface Bloque {
         <!-- Swimlane layout -->
         <div class="relative flex items-stretch min-w-max">
 
-          <!-- Lane labels -->
-          <div class="flex flex-col shrink-0 w-24 pr-3">
-            <div class="flex-1 flex items-center">
-              <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 border border-blue-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                <span class="text-[10px] font-semibold text-blue-700 uppercase tracking-wide whitespace-nowrap">Financiero</span>
-              </div>
-            </div>
-            <div class="flex-1 flex items-center">
-              <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wide whitespace-nowrap">Operativo</span>
-              </div>
-            </div>
-          </div>
 
           @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
 
@@ -202,7 +187,7 @@ interface Bloque {
           }
 
           <!-- Center lane separator -->
-          <div class="absolute left-24 right-0 top-1/2 -translate-y-1/2 h-px bg-slate-200 pointer-events-none"></div>
+          <div class="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-slate-200 pointer-events-none"></div>
         </div>
 
         <!-- Legend -->

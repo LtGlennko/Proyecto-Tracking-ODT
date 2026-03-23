@@ -43,7 +43,11 @@ export class TrackingListPageComponent implements OnInit {
   vinViewMode = signal<'map' | 'gantt'>('map');
 
   private readonly tvService = inject(TipoVehiculoService);
-  estadoOptions: EstadoVin[] = ['A TIEMPO', 'DEMORADO', 'FINALIZADO'];
+  estadoOptions = [
+    { value: 'ENTREGADO', label: 'Entregado' },
+    { value: 'A TIEMPO', label: 'A Tiempo' },
+    { value: 'DEMORADO', label: 'Demorado' },
+  ];
   tipoVehiculoOptions = this.tvService.items;
   hoveredStageKey = signal<string | null>(null);
 
@@ -131,7 +135,7 @@ export class TrackingListPageComponent implements OnInit {
   calcStats(vins: VinModel[]): { total: number; delivered: number; onTime: number; delayed: number } {
     return {
       total: vins.length,
-      delivered: vins.filter(v => v.estadoGeneral === 'FINALIZADO').length,
+      delivered: vins.filter(v => v.estadoGeneral === 'ENTREGADO').length,
       onTime: vins.filter(v => v.estadoGeneral === 'A TIEMPO').length,
       delayed: vins.filter(v => v.estadoGeneral === 'DEMORADO').length,
     };

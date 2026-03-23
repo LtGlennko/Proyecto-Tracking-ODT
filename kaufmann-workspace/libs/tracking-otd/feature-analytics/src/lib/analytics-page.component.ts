@@ -110,7 +110,7 @@ export class AnalyticsPageComponent {
   otdPct = computed(() => {
     const vins = this.store.vins();
     if (vins.length === 0) return 0;
-    const ontime = vins.filter(v => v.estadoGeneral === 'A TIEMPO' || v.estadoGeneral === 'FINALIZADO').length;
+    const ontime = vins.filter(v => v.estadoGeneral === 'A TIEMPO' || v.estadoGeneral === 'ENTREGADO').length;
     return Math.round((ontime / vins.length) * 100);
   });
 

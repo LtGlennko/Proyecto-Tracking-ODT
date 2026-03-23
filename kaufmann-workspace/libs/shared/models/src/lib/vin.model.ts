@@ -1,6 +1,6 @@
 import { HitoTracking } from './hito.model';
 
-export type EstadoVin = 'A TIEMPO' | 'DEMORADO' | 'FINALIZADO';
+export type EstadoVin = 'A TIEMPO' | 'DEMORADO' | 'ENTREGADO';
 
 export interface TipoVehiculoModel {
   id: number;

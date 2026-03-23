@@ -295,7 +295,7 @@ export class TrackingService {
   /** Derive estadoGeneral from built stages (not from stored tracking values) */
   private deriveEstadoGeneral(stages: any[]): string {
     if (!stages || stages.length === 0) return 'A TIEMPO';
-    if (stages.every(s => s.status === 'completed')) return 'FINALIZADO';
+    if (stages.every(s => s.status === 'completed')) return 'ENTREGADO';
     if (stages.some(s => s.status === 'delayed')) return 'DEMORADO';
     return 'A TIEMPO';
   }
@@ -428,15 +428,13 @@ export class TrackingService {
       }
 
       const carril = stage.carril || 'operativo';
-      const otherCarril = carril === 'financiero' ? 'operativo' : 'financiero';
 
       // Starting point for this hito:
       // - If same carril already has a running end within this group → chain from it (sequential within carril)
-      // - Otherwise → previous group's end for same carril, fallback to other carril
+      // - Otherwise → MAX of all carriles from previous group (group can't start until ALL prior carriles finish)
+      const maxPrevGroupEnd = Object.values(prevGroupEndByCarril).filter(Boolean).sort().pop() || '';
       let prevEnd = inGroupRunningByCarril[carril]
-        || prevGroupEndByCarril[carril]
-        || prevGroupEndByCarril[otherCarril]
-        || '';
+        || maxPrevGroupEnd;
 
       for (const sub of stage.subStages) {
         // Resolve SLA for this sub (needed for plan fallback and tolerancia)

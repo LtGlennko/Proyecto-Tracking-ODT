@@ -70,8 +70,8 @@ export const TrackingStore = signalStore(
       }),
 
       totalDemorados: computed(() => vins().filter(v => v.estadoGeneral === 'DEMORADO').length),
-      totalActivos: computed(() => vins().filter(v => v.estadoGeneral !== 'FINALIZADO').length),
-      totalFinalizados: computed(() => vins().filter(v => v.estadoGeneral === 'FINALIZADO').length),
+      totalActivos: computed(() => vins().filter(v => v.estadoGeneral !== 'ENTREGADO').length),
+      totalFinalizados: computed(() => vins().filter(v => v.estadoGeneral === 'ENTREGADO').length),
 
       selectedVin: computed(() => {
         const id = selectedVinId();

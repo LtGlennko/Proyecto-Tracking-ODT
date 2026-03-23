@@ -46,13 +46,6 @@ interface Bloque {
     <!-- Grid: 2 rows (financiero + operativo), N columns (label + groups with separators) -->
     <div class="grid min-w-max" [style.grid-template-columns]="gridCols()" style="grid-template-rows: auto auto;">
 
-      <!-- ═══ Row 1: Financiero label ═══ -->
-      <div class="flex items-center pr-3 border-b border-slate-200 pb-3">
-        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 border border-blue-200">
-          <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-          <span class="text-[10px] font-semibold text-blue-700 uppercase tracking-wide whitespace-nowrap">Financiero</span>
-        </div>
-      </div>
 
       @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
         <!-- Separator (financiero row) -->
@@ -101,13 +94,6 @@ interface Bloque {
         </div>
       }
 
-      <!-- ═══ Row 2: Operativo label ═══ -->
-      <div class="flex items-center pr-3 pt-3">
-        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-200">
-          <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-          <span class="text-[10px] font-semibold text-amber-700 uppercase tracking-wide whitespace-nowrap">Operativo</span>
-        </div>
-      </div>
 
       @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
         <!-- Separator (operativo row) -->
@@ -160,12 +146,6 @@ interface Bloque {
     <!-- Legend -->
     <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-5 text-xs text-slate-500">
       <span class="flex items-center gap-1.5">
-        <span class="w-3 h-3 rounded-full border-2 border-blue-400 bg-blue-50"></span> Carril financiero
-      </span>
-      <span class="flex items-center gap-1.5">
-        <span class="w-3 h-3 rounded-full border-2 border-amber-400 bg-amber-50"></span> Carril operativo
-      </span>
-      <span class="flex items-center gap-1.5">
         <span class="w-5 border-l-2 border-dashed border-slate-400 h-3"></span>
         Grupo paralelo (ejecución simultánea)
       </span>
@@ -178,9 +158,9 @@ export class ProcessPreviewComponent {
 
   gridCols = computed(() => {
     const n = this.bloques().length;
-    if (n === 0) return '6rem';
-    // label col + (separator + group)* for each bloque
-    const cols = ['6rem'];
+    if (n === 0) return 'auto';
+    // (separator + group)* for each bloque
+    const cols: string[] = [];
     for (let i = 0; i < n; i++) {
       if (i > 0) cols.push('auto'); // separator
       cols.push('auto'); // group
