@@ -39,6 +39,7 @@
             { "type": "anyComponentStyle", "maximumWarning": "2kb", "maximumError": "4kb" }
           ],
           "outputHashing": "all",
+          "baseHref": "/otd/",
           "fileReplacements": [
             {
               "replace": "apps/tracking-otd/src/environments/environment.ts",
