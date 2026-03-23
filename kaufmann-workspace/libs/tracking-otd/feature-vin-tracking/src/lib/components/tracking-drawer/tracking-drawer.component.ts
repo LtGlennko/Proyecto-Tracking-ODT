@@ -1,4 +1,6 @@
 import { Component, input, output, signal, computed, effect, HostListener } from '@angular/core';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { VinModel, HitoTracking } from '@kaufmann/shared/models';
 import { StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
@@ -146,5 +148,130 @@ export class TrackingDrawerComponent {
 
   onVisualMapNodeClick(hitoId: number) {
     this.expandedHitoId.set(hitoId);
+  }
+
+  downloadPdf(): void {
+    const vin = this.vin();
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 15;
+
+    // Header
+    const hito = this.selectedHito();
+    const title = hito
+      ? `Reporte de Tracking - ${vin.id} - ${hito.name}`
+      : `Reporte de Tracking - ${vin.id}`;
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 14, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}`, 14, y);
+    y += 10;
+
+    // ── Datos Generales ──
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Datos Generales', 14, y);
+    y += 2;
+    autoTable(doc, {
+      startY: y,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 58, 95] },
+      body: [
+        ['VIN', vin.id],
+        ['Modelo', vin.modelo || '—'],
+        ['Lote', vin.lote || '—'],
+        ['Orden de Compra', vin.ordenCompra || '—'],
+        ['Ficha', vin.fichaId || '—'],
+        ['Forma de Pago', vin.formaPago || '—'],
+        ['Ejecutivo', vin.ejecutivo || '—'],
+        ['Estado', vin.estadoGeneral || '—'],
+      ],
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // ── Línea de Tiempo (hitos + subetapas) ──
+    if (hito) {
+      // Single hito detail
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Detalle de Etapa - ${hito.name}`, 14, y);
+      y += 2;
+      const subRows = hito.subStages.map(s => [
+        s.name,
+        s.real?.end || s.real?.start || '—',
+        s.plan?.end || s.plan?.start || '—',
+        this.subStatusLabel(s.status),
+      ]);
+      autoTable(doc, {
+        startY: y,
+        head: [['Subetapa', 'Fecha Real', 'Fecha Plan', 'Estado']],
+        body: subRows,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 58, 95] },
+        styles: { fontSize: 9 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 10;
+
+      // Hito report: no tramos, filename includes hito name
+      doc.save(`tracking-${vin.id}-${hito.name}.pdf`);
+      return;
+    } else {
+      // Full bitácora - all hitos
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Línea de Tiempo', 14, y);
+      y += 2;
+      const timelineRows: any[] = [];
+      for (const stage of vin.stages) {
+        timelineRows.push([
+          { content: stage.name, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [240, 245, 250] } },
+        ]);
+        for (const sub of stage.subStages) {
+          timelineRows.push([
+            '  ' + sub.name,
+            sub.real?.end || sub.real?.start || '—',
+            sub.plan?.end || sub.plan?.start || '—',
+            this.subStatusLabel(sub.status),
+          ]);
+        }
+      }
+      autoTable(doc, {
+        startY: y,
+        head: [['Subetapa', 'Fecha Real', 'Fecha Plan', 'Estado']],
+        body: timelineRows,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 58, 95] },
+        styles: { fontSize: 8 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // ── Tramos (only for bitácora) ──
+    if (y > 250) { doc.addPage(); y = 15; }
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tramos entre Hitos', 14, y);
+    y += 2;
+    const pairs = this.hitoPairs();
+    if (pairs.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        head: [['Tramo', 'Días', 'Estado']],
+        body: pairs.map(p => [
+          `${p.from}  >  ${p.to}`,
+          p.days !== null ? String(p.days) : '—',
+          this.pairStatusLabel(p.status),
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [30, 58, 95] },
+        styles: { fontSize: 9 },
+      });
+    }
+
+    doc.save(`tracking-${vin.id}.pdf`);
   }
 }
