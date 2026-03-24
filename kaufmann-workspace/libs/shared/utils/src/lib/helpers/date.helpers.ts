@@ -46,3 +46,30 @@ export function addDays(baseDate: string, days: number): string {
   d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
 }
+
+export interface DateSet {
+  start: string | null;
+  end: string | null;
+}
+
+export interface SubFechaResult {
+  text: string;
+  esPlan: boolean;
+  raw: string;
+}
+
+/**
+ * Resolves the display date for a subetapa.
+ * Priority: real.end > real.start > plan.end > plan.start
+ * Returns formatted text, whether it's plan, and the raw ISO date.
+ */
+export function resolveSubFecha(
+  real: DateSet | null | undefined,
+  plan: DateSet | null | undefined,
+): SubFechaResult {
+  const realDate = real?.end || real?.start || '';
+  const planDate = plan?.end || plan?.start || '';
+  if (realDate) return { text: formatDate(realDate), esPlan: false, raw: realDate };
+  if (planDate) return { text: formatDate(planDate), esPlan: true, raw: planDate };
+  return { text: '', esPlan: false, raw: '' };
+}

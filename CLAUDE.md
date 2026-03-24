@@ -53,9 +53,9 @@ Este proyecto usa 4 agentes especializados. Lanzar en paralelo cuando la tarea i
 ## Dominio de Negocio
 - **Empresas:** Divemotor, Andes Motor, Andes Maq
 - **4 tipos de vehículo:** Camión, Bus, Maquinaria, Vehículo Ligero
-- **9 hitos:** Importación, Asignación, PDI, Crédito, Facturación, Pago, Inmatriculación, Programación, Entrega
+- **10 hitos:** Importación, Carrozado, PDI, Asignación, Crédito, Facturación, Pago, Inmatriculación, Programación, Entrega
 - **Carriles:** financiero, operativo, comercial (ejecución paralela por grupo)
-- **Estados VIN:** A TIEMPO | EN RIESGO | DEMORADO | FINALIZADO
+- **Estados VIN:** A TIEMPO | EN RIESGO | DEMORADO | ENTREGADO
 - **6 substatus subetapa:** completed, completed-risk, completed-late, on-time, at-risk, delayed
 
 ## Lógica Cross-Cutting: Grupos Paralelos
@@ -67,22 +67,22 @@ Los grupos paralelos agrupan hitos que se ejecutan simultáneamente. Su ciclo de
 3. **Auto-eliminación:** Después de mover un hito, frontend verifica si grupo anterior quedó vacío → `DELETE /v1/hitos/grupos-paralelos/{id}?tipoVehiculo={tipo}`
 4. **Backend `deleteGrupoForTipo`:** Reasigna hitos huérfanos al grupo previo por orden visual antes de eliminar el grupo
 
-### Carriles (Financiero / Operativo)
+### Carriles
 Cada hito pertenece a un carril dentro de su grupo:
-- **Financiero:** crédito, facturación, pago (flujo financiero)
-- **Operativo:** PDI, inmatriculación, programación, entrega (flujo operativo)
 - Los carriles permiten ejecución paralela real dentro del mismo grupo
+- Frontend: sin labels de carril en tracking ("Financiero"/"Operativo" removidos), "Carril A"/"Carril B" solo en admin
 
 ## Esquema de BD Actual
 
 ### Tablas principales
 - `empresa` — Divemotor, Andes Motor, Andes Maq
 - `tipo_vehiculo` — Camión, Bus, Maquinaria, Vehículo Ligero (con `icono` Lucide)
-- `cliente` — con `empresa_id` FK, `is_vic` flag
-- `ficha` — con `cliente_id` FK, `ejecutivo` varchar
-- `vin` — con `ficha_id` FK, `tipo_vehiculo_id` FK, FK a `staging_vin`
 - `staging_vin` — tabla central de datos reales (PK: `vin`), 90+ columnas de diferentes fuentes
-- `hito` — catálogo maestro (id, nombre, carril, orden, icono, activo)
+- `vista_tracking_vin` — vista principal: joins staging_vin + tipo_vehiculo, deriva cliente/ficha/empresa
+  - `tipo_vehiculo_id` derivado de `linea_negocio` (VC→1, Buses→2, Maquinarias→3, Autos→4, default→2)
+  - `empresa_id` defaults to 1 (Divemotor)
+  - COALESCE defaults: `cliente_nombre` → 'Sin Cliente', `ficha_codigo` → 'Sin Ficha', `cliente_comex` STOCK → NULL
+- `hito` — catálogo maestro (id, nombre, carril, orden, icono, activo). 10 hitos incluyendo Carrozado (id=10, hammer) y PDI (id=3, wrench)
 - `subetapa` — con `hito_id` FK, `campo_staging_real`, `campo_staging_plan`
 - `grupo_paralelo` — grupos para ejecución paralela de hitos
 - `hito_tipo_vehiculo` — config por tipo: orden, carril, grupo, activo
@@ -97,11 +97,18 @@ Cada hito pertenece a un carril dentro de su grupo:
 
 ### Tablas eliminadas (ya no existen)
 - `vin_hito_tracking`, `vin_subetapa_tracking`, `subetapa_config`
+- `vin`, `ficha`, `cliente` — todos los datos ahora se derivan de `staging_vin` vía `vista_tracking_vin`
 
 ### Columnas eliminadas
 - `hito`: `grupo_paralelo_id`, `usuario_responsable_id`, `tipo_vehiculo`, `slug`
 - `ficha`: `forma_pago`
 - `tipo_vehiculo`: `slug`
+- `staging_vin`: `zpsa`, `fecha_entrega_vendedor` (mapeados como prioridad 2 a columnas existentes)
+
+### Columnas agregadas a staging_vin (2026-03-23)
+- `fecha_confirmacion_fabrica`, `fecha_salida_fabrica`, `fecha_salida_carrocero`
+- `fecha_soli_credito`, `fecha_aprobacion_credito`, `fecha_entrega_exp`
+- `fecha_obs_sunarp`, `fecha_reingresado`, `zpca`, `per_contingente`, `fecha_recojo_transportista`
 
 ## Lógica de Tracking (Computada Dinámicamente)
 
@@ -112,19 +119,20 @@ El tracking NO se persiste en tablas. Se calcula al vuelo en `TrackingService.bu
 3. **Iconos:** `stage.icono` = `hito.icono` desde BD
 4. **Fecha real:** desde `subetapa.campo_staging_real` → columna en `staging_vin`
 5. **Fecha plan:** `subetapa.campo_staging_plan` (prioridad) → si no hay, `baseline + SLA días`
-6. **Baseline:** grupo-aware con encadenamiento secuencial same-carril:
+6. **Baseline:** grupo-aware con encadenamiento secuencial:
    - Primera subetapa del flujo: sin baseline (ya tiene fecha real)
    - Dentro del mismo hito: cadena secuencial (sub → sub)
-   - Nuevo grupo: baseline = último end del grupo anterior (mismo carril preferido, fallback otro carril)
+   - Nuevo grupo: baseline = MAX de todos los carriles del grupo anterior (grupo no inicia hasta que TODOS los carriles previos terminen)
    - Mismo grupo paralelo: cada hito parte del grupo anterior (ejecución paralela)
    - Si la subetapa anterior no tiene fecha: cadena se rompe
+   - `addDaysStr` usa `Number(days)` para prevenir bug de concatenación string con resultados raw query
 7. **Forma de pago:** `formasPago: string[]` derivado de `staging_vin.descripcion_cond_pago` (único por VIN, agrupado por ficha)
 8. **6 substatus:** basados en comparación fecha real/hoy vs fecha plan + tolerancia SLA
 
 ## Módulos Backend
 
 ### Existentes con lógica activa
-- `tracking` — buildStages dinámico, baseline, plan, status
+- `tracking` — buildStages dinámico, baseline, plan, status. Paginación server-side (`page`, `pageSize` → `{ data, total, page, pageSize }`). Filtros server-side: busqueda, estado, tipoVehiculoId, empresaId. COUNT query usa raw query builder separado (vista no tiene entity metadata). `resolveSubFecha` helper compartido para resolución de fechas (real.end > real.start > plan.end > plan.start)
 - `hitos` — CRUD maestro + config por tipo + grupos paralelos
 - `staging` — parseSap, parseProped, upsert staging_vin
 - `sla` — CRUD reglas SLA con score de prioridad
@@ -139,18 +147,22 @@ El tracking NO se persiste en tablas. Se calcula al vuelo en `TrackingService.bu
 ## Frontend — Vistas Principales
 
 ### Seguimiento ODT (lista)
-- Filtros por empresa (botones), tipo vehículo, búsqueda VIN
+- Filtros por empresa (botones), tipo vehículo, búsqueda server-side, estado ("Todos los estados", "Entregado", "A Tiempo", "Demorado")
 - Filtros persisten al navegar al detalle y volver
+- Server-side pagination: 50/100/150/200 por página, botones prev/next ocultos cuando no aplican
 - Vista agrupada por cliente → ficha → VIN o lista plana
-- Columnas: VIN, modelo, hitos (círculos con iconos Lucide + hover cards), F. Inicial, F. Estimada, estado
+- Columnas: VIN, modelo, hitos (círculos con iconos Lucide + hover cards cursor-pointer), F. Inicial, F. Estimada, estado
 - VIC: corona dorada junto al nombre del cliente
 - Hover cards en hitos con substatus badges por subetapa
+- Ficha row: layout inline con gap-4, fecha más antigua de VINs, formato yyyy-MM-dd
+- Fechas incluyen año (2 dígitos) en todas las vistas
+- Export CSV disponible
 
 ### Tracking Detalle (VIN)
 - Botón retroceder + título "Tracking Detalle"
 - Toggle "Flujo" / "Gantt" con iconos
 - **Flujo:** visual map con iconos Lucide, hover cards (misma card que lista), fecha última subetapa bajo ícono
-- **Gantt:** barras plan (ghost) + real (color por status), weekly markers (lunes), línea "hoy", colapsable, rango de fechas, scrollbar horizontal
+- **Gantt:** barras plan (ghost) + real (color por status), weekly markers (lunes), línea "hoy", colapsable, rango de fechas, scrollbar horizontal, columna etapas fija 180px
 - **4 indicadores:** ETA Entrega Final, Desviación Acumulada (+N días, solo positivos), Última Actualización (relativo), Ver Bitácora
 - **Drawer lateral derecho:**
   - Para hito: 2 tabs (Detalle de Etapa, Datos Generales)
@@ -158,6 +170,12 @@ El tracking NO se persiste en tablas. Se calcula al vuelo en `TrackingService.bu
   - Header: VIN como título, sin marca/ficha/lote/OC
   - Datos Generales: Lote, OC, Ficha, Modelo, Forma de Pago, Ejecutivo
   - Tramos: días entre hitos consecutivos con estado
+  - PDF download (jsPDF + jspdf-autotable)
+
+### Reporte Maestro Detallado
+- Tabla con columnas Plan/Real/Dif por hito
+- Export CSV disponible
+- Módulo: `feature-reporte`
 
 ### Administración (5 tabs)
 - **Config SLA** — primera tab, accesible por admin y superadmin, detección de duplicados

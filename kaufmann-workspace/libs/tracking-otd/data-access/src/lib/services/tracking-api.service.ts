@@ -8,6 +8,20 @@ export interface TrackingClientesFilters {
   estado?: string;
   tipoVehiculoId?: number;
   busqueda?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface TrackingSummary {
+  total: number;
+  demorado: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T;
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,7 +35,18 @@ export class TrackingApiService {
     if (filters?.estado) params = params.set('estado', filters.estado);
     if (filters?.tipoVehiculoId) params = params.set('tipoVehiculoId', filters.tipoVehiculoId);
     if (filters?.busqueda) params = params.set('busqueda', filters.busqueda);
+    if (filters?.page) params = params.set('page', filters.page);
+    if (filters?.pageSize) params = params.set('pageSize', filters.pageSize);
 
-    return this.http.get<ClienteModel[]>(`${this.apiUrl}/v1/tracking/clientes`, { params });
+    return this.http.get<PaginatedResponse<ClienteModel[]>>(`${this.apiUrl}/v1/tracking/clientes`, { params });
+  }
+
+  getSummary(filters?: { empresaId?: number; tipoVehiculoId?: number; busqueda?: string }) {
+    let params = new HttpParams();
+    if (filters?.empresaId) params = params.set('empresaId', filters.empresaId);
+    if (filters?.tipoVehiculoId) params = params.set('tipoVehiculoId', filters.tipoVehiculoId);
+    if (filters?.busqueda) params = params.set('busqueda', filters.busqueda);
+
+    return this.http.get<TrackingSummary>(`${this.apiUrl}/v1/tracking/summary`, { params });
   }
 }

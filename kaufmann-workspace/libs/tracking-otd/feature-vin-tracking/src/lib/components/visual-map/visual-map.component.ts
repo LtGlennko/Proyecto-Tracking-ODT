@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { HitoTracking } from '@kaufmann/shared/models';
+import { resolveSubFecha } from '@kaufmann/shared/utils';
 import { LucideAngularModule } from 'lucide-angular';
 
 interface SubNode {
@@ -30,7 +31,7 @@ interface Bloque {
     selector: 'kf-visual-map',
     imports: [LucideAngularModule],
     template: `
-    <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-visible">
+    <div class="bg-white rounded-lg border border-slate-200 p-3 sm:p-6 overflow-x-auto">
 
       @if (bloques().length === 0) {
         <div class="py-8 text-center text-slate-400 text-sm">Sin hitos configurados</div>
@@ -56,7 +57,7 @@ interface Bloque {
               <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
                 @for (hito of bloque.financiero; track hito.id; let hlast = $last) {
                   <div class="flex flex-col items-center shrink-0 relative"
-                       (mouseenter)="hoveredHitoId.set(hito.id)"
+                       (mouseenter)="onHitoHover(hito.id, $event)"
                        (mouseleave)="hoveredHitoId.set(null)">
                     <div class="flex flex-col items-center">
                       <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
@@ -77,7 +78,8 @@ interface Bloque {
                     </div>
                     <!-- Hover card -->
                     @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
-                      <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-[90vw] sm:max-w-56 pointer-events-none"
+                           [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
                           <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
@@ -122,7 +124,7 @@ interface Bloque {
               <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
                 @for (hito of bloque.operativo; track hito.id; let hlast = $last) {
                   <div class="flex flex-col items-center shrink-0 relative"
-                       (mouseenter)="hoveredHitoId.set(hito.id)"
+                       (mouseenter)="onHitoHover(hito.id, $event)"
                        (mouseleave)="hoveredHitoId.set(null)">
                     <div class="flex flex-col items-center">
                       <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 transition-all"
@@ -143,7 +145,8 @@ interface Bloque {
                     </div>
                     <!-- Hover card -->
                     @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
-                      <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-[90vw] sm:max-w-56 pointer-events-none"
+                           [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
                           <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
@@ -208,6 +211,13 @@ export class VisualMapComponent {
   stages = input.required<HitoTracking[]>();
   nodeClick = output<number>();
   hoveredHitoId = signal<number | null>(null);
+  hoverPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  onHitoHover(hitoId: number, event: MouseEvent) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.hoverPos.set({ x: rect.left + rect.width / 2, y: rect.bottom + 4 });
+    this.hoveredHitoId.set(hitoId);
+  }
 
   bloques = computed(() => {
     const stages = this.stages();
@@ -221,19 +231,15 @@ export class VisualMapComponent {
 
     const toNode = (h: HitoTracking): HitoNode => {
       const subs: SubNode[] = h.subStages.map((s: any) => {
-        const real = s.real?.start ? this.fmtShort(s.real.start) : '';
-        const plan = s.plan?.start ? this.fmtShort(s.plan.start) : '';
-        return { name: s.name, fecha: real || plan, esPlan: !real && !!plan, status: s.status };
+        const sf = resolveSubFecha(s.real, s.plan);
+        return { name: s.name, fecha: sf.raw ? this.fmtShort(sf.raw) : '', esPlan: sf.esPlan, status: s.status };
       });
 
       let lastDate = '';
       let lastDateEsPlan = false;
       for (let i = h.subStages.length - 1; i >= 0; i--) {
-        const s = h.subStages[i];
-        const real = s.real?.start ? this.fmtShort(s.real.start) : '';
-        const plan = s.plan?.start ? this.fmtShort(s.plan.start) : '';
-        if (real) { lastDate = real; lastDateEsPlan = false; break; }
-        if (plan) { lastDate = plan; lastDateEsPlan = true; break; }
+        const sf = resolveSubFecha(h.subStages[i].real, h.subStages[i].plan);
+        if (sf.raw) { lastDate = this.fmtShort(sf.raw); lastDateEsPlan = sf.esPlan; break; }
       }
 
       let lastPlanDate = '';
@@ -336,6 +342,6 @@ export class VisualMapComponent {
     if (!iso) return '';
     const d = new Date(iso + 'T00:00:00');
     const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    return `${d.getDate()} ${months[d.getMonth()]}`;
+    return `${d.getDate()} ${months[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
   }
 }

@@ -22,6 +22,13 @@ type TrackingState = {
   drawerOpen: boolean;
   selectedStageId: number | null;
   viewMode: 'grouped' | 'list';
+  // Pagination
+  page: number;
+  pageSize: number;
+  totalVins: number;
+  // Summary (global counts)
+  summaryTotal: number;
+  summaryDemorado: number;
 };
 
 const initialState: TrackingState = {
@@ -34,13 +41,18 @@ const initialState: TrackingState = {
   drawerOpen: false,
   selectedStageId: null,
   viewMode: 'grouped',
+  page: 1,
+  pageSize: 50,
+  totalVins: 0,
+  summaryTotal: 0,
+  summaryDemorado: 0,
 };
 
 export const TrackingStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
 
-  withComputed(({ vins, filtros, selectedVinId, clientes }) => {
+  withComputed(({ vins, filtros, selectedVinId, clientes, page, pageSize, totalVins }) => {
     const empresaFilter = inject(EmpresaFilterService);
 
     return {
@@ -79,7 +91,9 @@ export const TrackingStore = signalStore(
         return vins().find(v => v.id === id) ?? null;
       }),
 
-      /** Hierarchy filtered: clients -> fichas -> vins (preserving structure, filtering at VIN level) */
+      totalPages: computed(() => Math.ceil(totalVins() / pageSize())),
+
+      /** Hierarchy filtered: clients -> fichas -> vins */
       clientesFiltrados: computed(() => {
         const f = filtros();
         const selectedEmpresaNombre = empresaFilter.selectedEmpresaNombre();
@@ -114,18 +128,57 @@ export const TrackingStore = signalStore(
 
   withMethods((store) => {
     const api = inject(TrackingApiService);
+    const empresaFilter = inject(EmpresaFilterService);
 
     return {
-      async loadClientes() {
-        patchState(store, { loading: true, error: null });
+      async loadClientes(page?: number, pageSize?: number) {
+        const p = page ?? store.page();
+        const ps = pageSize ?? store.pageSize();
+        const f = store.filtros();
+        patchState(store, { loading: true, error: null, page: p, pageSize: ps });
         try {
-          const clientes = await firstValueFrom(api.getClientesHierarchy());
+          const res = await firstValueFrom(api.getClientesHierarchy({
+            page: p,
+            pageSize: ps,
+            busqueda: f.busqueda || undefined,
+            estado: f.estado || undefined,
+            tipoVehiculoId: f.tipoVehiculoId || undefined,
+            empresaId: empresaFilter.selectedEmpresaId() || undefined,
+          }));
+          const clientes = res.data;
           const allVins = clientes.flatMap(c => c.fichas.flatMap(f => f.vins.map(v => ({ ...v, isVic: c.isVic ?? false }))));
-          patchState(store, { clientes, vins: allVins, loading: false });
+          patchState(store, {
+            clientes, vins: allVins, loading: false,
+            totalVins: res.total, page: res.page, pageSize: res.pageSize,
+          });
+          // Load summary in parallel (non-blocking)
+          firstValueFrom(api.getSummary({
+            empresaId: empresaFilter.selectedEmpresaId() || undefined,
+            tipoVehiculoId: f.tipoVehiculoId || undefined,
+            busqueda: f.busqueda || undefined,
+          })).then(s => {
+            patchState(store, { summaryTotal: s.total, summaryDemorado: s.demorado });
+          }).catch(() => {});
         } catch (err: any) {
           console.error('Error loading tracking data:', err);
           patchState(store, { loading: false, error: err?.message || 'Error cargando datos' });
         }
+      },
+      async nextPage() {
+        const p = store.page();
+        const total = store.totalPages();
+        if (p < total) {
+          await this.loadClientes(p + 1);
+        }
+      },
+      async prevPage() {
+        const p = store.page();
+        if (p > 1) {
+          await this.loadClientes(p - 1);
+        }
+      },
+      async setPageSize(size: number) {
+        await this.loadClientes(1, size);
       },
       openDrawer(vinId: string, stageId?: number) {
         patchState(store, {

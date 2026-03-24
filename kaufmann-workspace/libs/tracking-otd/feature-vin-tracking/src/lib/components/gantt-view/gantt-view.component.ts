@@ -13,14 +13,14 @@ interface TimeMarker {
     imports: [FormsModule],
     template: `
     <!-- Date range controls -->
-    <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-3">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-3">
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         <span class="text-sm font-medium text-slate-700">Rango de Vista:</span>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         <input
           type="date"
           [ngModel]="viewStart()"
@@ -45,15 +45,15 @@ interface TimeMarker {
 
       <div [style.min-width.px]="ganttMinWidth()">
       <!-- Header / Timeline Scale -->
-      <div class="flex border-b border-slate-100 bg-white shrink-0 h-12 sticky top-0 z-20">
-        <div class="w-1/4 min-w-[200px] px-4 font-bold text-slate-700 text-xs uppercase tracking-wider border-r border-slate-100 flex items-center bg-white">
+      <div class="flex border-b border-slate-100 bg-white shrink-0 h-16 sticky top-0 z-20">
+        <div class="w-[180px] shrink-0 px-4 font-bold text-slate-700 text-xs uppercase tracking-wider border-r border-slate-100 flex items-end pb-2 bg-white">
           Etapas
         </div>
-        <div class="flex-1 relative overflow-hidden">
+        <div class="flex-1 relative overflow-visible">
           @for (m of timeMarkers(); track m.label) {
-            <div class="absolute top-0 bottom-0 border-l border-slate-100 pl-2 pt-3"
+            <div class="absolute top-0 bottom-0 border-l border-slate-100"
                  [style.left.%]="m.leftPct">
-              <span class="text-xs font-medium text-slate-400 capitalize whitespace-nowrap">{{ m.label }}</span>
+              <span class="text-[9px] font-medium text-slate-400 capitalize whitespace-nowrap block origin-bottom-left rotate-[-45deg] absolute bottom-2 left-1">{{ m.label }}</span>
             </div>
           }
           @if (todayPct() !== null) {
@@ -76,7 +76,7 @@ interface TimeMarker {
             <!-- Macro Stage Row -->
             <div class="flex hover:bg-slate-50 transition-colors group cursor-pointer h-12"
                  (click)="toggleCollapse(stage.id)">
-              <div class="w-1/4 min-w-[200px] px-4 border-r border-slate-100 flex items-center justify-between z-10 bg-white group-hover:bg-slate-50 transition-colors">
+              <div class="w-[180px] shrink-0 px-4 border-r border-slate-100 flex items-center justify-between z-10 bg-white group-hover:bg-slate-50 transition-colors">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="w-2 h-2 rounded-full flex-shrink-0"
                     [class]="stage.status === 'completed' ? 'bg-emerald-500' :
@@ -132,7 +132,7 @@ interface TimeMarker {
               <div class="bg-slate-50/30">
                 @for (sub of stage.subStages; track sub.id) {
                   <div class="flex hover:bg-slate-50 transition-colors h-8">
-                    <div class="w-1/4 min-w-[200px] px-4 pl-10 border-r border-slate-100 flex items-center">
+                    <div class="w-[180px] shrink-0 px-4 pl-10 border-r border-slate-100 flex items-center">
                       <span class="text-xs text-slate-500 truncate">{{ sub.name }}</span>
                     </div>
                     <div class="flex-1 relative flex items-center">
@@ -182,7 +182,7 @@ interface TimeMarker {
       </div><!-- end min-width wrapper -->
 
       <!-- Legend -->
-      <div class="px-4 py-2 bg-white border-t border-slate-100 flex items-center gap-4 text-[10px] text-slate-400 uppercase tracking-wider shrink-0">
+      <div class="px-4 py-2 bg-white border-t border-slate-100 flex items-center gap-2 sm:gap-4 flex-wrap text-[10px] text-slate-400 uppercase tracking-wider shrink-0">
         <div class="flex items-center gap-1.5">
           <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
           <span>Completado</span>
@@ -288,7 +288,7 @@ export class GanttViewComponent implements OnInit {
     const diff = current.getDate() - day + (day === 0 ? -6 : 1);
     current.setDate(diff);
 
-    const fmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' });
+    const fmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
 
     while (current.getTime() <= max) {
       const t = current.getTime();
@@ -312,11 +312,11 @@ export class GanttViewComponent implements OnInit {
     return ((now - min) / span) * 100;
   });
 
-  // --- Minimum width to prevent date label overlap (80px per marker + 200px label col) ---
+  // --- Minimum width (40px per marker + 180px label col) ---
 
   ganttMinWidth = computed(() => {
     const markers = this.timeMarkers().length;
-    return Math.max(700, 200 + markers * 80);
+    return Math.max(600, 180 + markers * 40);
   });
 
   // --- Container height (dynamic based on visible rows) ---
@@ -374,6 +374,6 @@ export class GanttViewComponent implements OnInit {
     if (!d) return '—';
     const date = new Date(d);
     if (isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(date);
+    return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: '2-digit' }).format(date);
   }
 }

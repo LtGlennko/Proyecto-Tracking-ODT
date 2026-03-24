@@ -107,8 +107,9 @@ interface Bloque {
     }
   `],
   template: `
-  <div class="flex flex-col">
+  <div class="flex flex-col overflow-x-auto">
 
+    <div class="min-w-[500px]">
     <!-- Cabecera de carriles (sticky) -->
     <div class="grid grid-cols-2 sticky top-0 z-20 bg-white border-b border-slate-200">
       <div class="flex items-center gap-2 px-5 py-2.5 border-b-2 border-blue-500">
@@ -232,6 +233,7 @@ interface Bloque {
       }
     </div>
 
+    </div><!-- end min-w wrapper -->
   </div>
 
   <!-- ═══ Template reutilizable para cada hito card ═══ -->

@@ -40,7 +40,7 @@ interface Bloque {
   standalone: true,
   imports: [LucideAngularModule],
   template: `
-  <div class="bg-white rounded-lg border border-slate-200 p-6 overflow-x-auto">
+  <div class="bg-white rounded-lg border border-slate-200 p-3 sm:p-6 overflow-x-auto">
     <h3 class="text-sm font-semibold text-slate-700 mb-5">Vista previa del proceso</h3>
 
     <!-- Grid: 2 rows (financiero + operativo), N columns (label + groups with separators) -->

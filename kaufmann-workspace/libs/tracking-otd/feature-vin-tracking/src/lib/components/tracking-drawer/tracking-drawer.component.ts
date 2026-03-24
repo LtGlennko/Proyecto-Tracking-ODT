@@ -54,6 +54,22 @@ export class TrackingDrawerComponent {
   readonly formatDate = formatDate;
   readonly calculateDiff = calculateDiff;
 
+  formatDateTop(dateStr: string | null): string {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return `${day} ${months[d.getUTCMonth()]}`;
+  }
+
+  formatDateYear(dateStr: string | null): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return String(d.getUTCFullYear()).slice(2);
+  }
+
   constructor() {
     effect(() => {
       const stageId = this.selectedStageId();

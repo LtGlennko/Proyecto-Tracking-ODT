@@ -3,9 +3,14 @@
 } @else {
 <div class="flex h-screen overflow-hidden bg-slate-50">
 
+  <!-- ── MOBILE SIDEBAR OVERLAY ─────────────────────────── -->
+  @if (mobileSidebarOpen()) {
+    <div class="fixed inset-0 bg-black/50 z-40 md:hidden" (click)="mobileSidebarOpen.set(false)"></div>
+  }
+
   <!-- ── SIDEBAR ─────────────────────────────────────────── -->
   <aside
-    class="flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden"
+    class="hidden md:flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden"
     [style.width]="sidebarCollapsed() ? '64px' : '240px'"
     style="background-color: #1E3A5F;"
     >
@@ -68,16 +73,82 @@
     </div>
   </aside>
 
+  <!-- ── MOBILE SIDEBAR (slide-over) ─────────────────────── -->
+  <aside
+    class="fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300 ease-in-out md:hidden"
+    [class.translate-x-0]="mobileSidebarOpen()"
+    [class.-translate-x-full]="!mobileSidebarOpen()"
+    style="background-color: #1E3A5F;"
+    >
+    <!-- Logo area -->
+    <div class="flex items-center justify-between px-4 py-5 border-b border-white/10 min-h-[64px]">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+          <span class="text-white font-bold text-sm">K</span>
+        </div>
+        <span class="text-white font-bold text-sm truncate">Grupo Kaufmann</span>
+      </div>
+      <button
+        (click)="mobileSidebarOpen.set(false)"
+        class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+        aria-label="Cerrar menú">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+      @for (item of visibleNavItems(); track item) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="bg-white/20 text-white"
+          [routerLinkActiveOptions]="{ exact: false }"
+          (click)="mobileSidebarOpen.set(false)"
+          class="flex items-center rounded-lg px-3 py-2.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors duration-150 cursor-pointer"
+          [attr.aria-label]="item.label"
+          >
+          <span class="text-lg flex-shrink-0 w-6 text-center">{{ item.icon }}</span>
+          <span class="ml-3 text-sm font-medium truncate">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <!-- User info -->
+    <div class="border-t border-white/10 p-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-xs font-semibold">{{ currentUser()?.initials }}</span>
+        </div>
+        <div class="min-w-0">
+          <p class="text-white text-xs font-medium truncate">{{ currentUser()?.name }}</p>
+          <p class="text-white/50 text-xs truncate">{{ currentUser()?.role }}</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <!-- ── MAIN CONTENT ──────────────────────────────────────── -->
   <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
 
     <!-- HEADER -->
-    <header class="bg-white border-b border-slate-200 h-14 flex items-center px-6 gap-4 flex-shrink-0 shadow-sm">
+    <header class="bg-white border-b border-slate-200 h-14 flex items-center px-3 sm:px-6 gap-2 sm:gap-4 flex-shrink-0 shadow-sm">
+      <!-- Hamburger button (mobile only) -->
+      <button
+        (click)="toggleMobileSidebar()"
+        class="md:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+        aria-label="Abrir menú">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
       <div class="flex-1 min-w-0">
         <nav class="flex items-center gap-1.5 text-sm text-slate-500">
-          <span class="text-slate-400">Kaufmann</span>
-          <span class="text-slate-300">/</span>
-          <span class="text-slate-800 font-medium">{{ currentRouteName }}</span>
+          <span class="text-slate-400 hidden sm:inline">Kaufmann</span>
+          <span class="text-slate-300 hidden sm:inline">/</span>
+          <span class="text-slate-800 font-medium truncate">{{ currentRouteName }}</span>
         </nav>
       </div>
 
@@ -106,11 +177,16 @@
         }
       </div>
 
-      <!-- Alerts bell -->
-      <button class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors" aria-label="Alertas">
-        <span class="text-lg">🔔</span>
-        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-      </button>
+      <!-- Empresa select (mobile only) -->
+      <select
+        class="md:hidden text-xs rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        [ngModel]="empresaFilter.selectedEmpresaId() ?? ''"
+        (ngModelChange)="empresaFilter.select($event ? +$event : null)">
+        <option value="">Todas</option>
+        @for (emp of empresaFilter.availableEmpresas(); track emp.id) {
+          <option [value]="emp.id">{{ emp.nombre }}</option>
+        }
+      </select>
 
       <!-- Avatar + profile menu -->
       <div class="relative">

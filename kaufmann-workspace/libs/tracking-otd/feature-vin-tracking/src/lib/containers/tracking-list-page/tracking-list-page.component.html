@@ -1,4 +1,4 @@
-<div class="p-6 min-h-full">
+<div class="p-3 sm:p-6 min-h-full">
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <!-- VISUAL MAP (full replacement — hides header & filters) -->
@@ -6,7 +6,7 @@
   @if (visualMapVin(); as mapVin) {
     <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible">
       <!-- Header with back button, VIN info and view toggle -->
-      <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-slate-200 bg-slate-50">
         <button
           (click)="closeVisualMap()"
           class="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
@@ -54,8 +54,8 @@
       }
 
       <!-- ═══ Indicators bar ═══ -->
-      <div class="border-t border-slate-200 px-5 py-4 bg-slate-50/50">
-        <div class="grid grid-cols-4 gap-4">
+      <div class="border-t border-slate-200 px-3 sm:px-5 py-3 sm:py-4 bg-slate-50/50">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <!-- ETA Entrega Final -->
           <div class="flex flex-col">
             <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">ETA Entrega Final</span>
@@ -75,8 +75,9 @@
           <div class="flex flex-col">
             <span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Desviación Acumulada</span>
             @let dev = getDesviacionAcumulada(mapVin);
-            <span class="text-sm font-bold" [class]="dev > 0 ? 'text-red-600' : dev < 0 ? 'text-emerald-600' : 'text-slate-500'">
-              {{ dev > 0 ? '+' : '' }}{{ dev }} días
+            <span class="text-sm font-bold" [class]="dev.total > 0 ? 'text-red-600' : dev.total < 0 ? 'text-emerald-600' : 'text-slate-500'">
+              {{ dev.total > 0 ? '+' : '' }}{{ dev.total }} días
+              <!-- adelanto oculto por ahora -->
             </span>
           </div>
 
@@ -105,41 +106,24 @@
   <div class="mb-6">
     <h1 class="text-xl font-bold text-slate-800">Seguimiento ODT</h1>
     <p class="text-sm text-slate-500 mt-0.5">
-      {{ store.vinsFiltrados().length }} VINs encontrados ·
-      <span class="text-red-600 font-medium">{{ store.totalDemorados() }} demorados</span>
+      {{ store.summaryTotal() }} VINs encontrados ·
+      <span class="text-red-600 font-medium">{{ store.summaryDemorado() }} demorados</span>
     </p>
   </div>
 
   <!-- Filters bar -->
-  <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-4 mb-4 flex flex-wrap gap-3 items-center">
+  <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-3 sm:p-4 mb-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
     <!-- Search -->
-    <div class="relative flex-1 min-w-48">
-      <input
-        type="text"
-        placeholder="Buscar VIN, cliente, ficha, modelo…"
-        [value]="searchValue()"
-        (input)="onSearch($any($event.target).value)"
-        class="w-full pl-8 pr-8 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
-        />
-      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-      </span>
-      @if (searchValue()) {
-        <button
-          (click)="clearSearch()"
-          class="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-500 transition-colors"
-          aria-label="Limpiar búsqueda">
-          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      }
-    </div>
+    <kf-search-bar
+      placeholder="Buscar VIN, cliente, ficha, modelo..."
+      [value]="searchValue()"
+      (valueChange)="onSearch($event)"
+      (cleared)="clearSearch()"
+      containerClass="w-full lg:w-[500px] xl:w-[600px]"
+    />
 
     <!-- View mode toggle -->
-    <div class="flex rounded-lg border border-slate-200 overflow-hidden">
+    <div class="flex rounded-lg border border-slate-200 overflow-hidden sm:ml-auto">
       <button
         (click)="store.setViewMode('list')"
         class="px-2.5 py-2 transition-colors"
@@ -184,16 +168,25 @@
       }
     </select>
 
+    <!-- Export CSV -->
+    <button (click)="exportCsv()"
+      class="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Exportar
+    </button>
+
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <!-- GROUPED VIEW: Cliente → Ficha → VIN                   -->
   <!-- ═══════════════════════════════════════════════════════ -->
   @if (store.viewMode() === 'grouped') {
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible">
+    <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
 
       <!-- Header columns -->
-      <div class="grid grid-cols-12 bg-slate-50 border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+      <div class="hidden md:grid grid-cols-12 bg-slate-50 border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
         <div class="col-span-3">Entidad / Referencia</div>
         <div class="col-span-2">Estado General</div>
         <div class="col-span-4">Hitos</div>
@@ -249,17 +242,15 @@
             <div
               class="grid grid-cols-12 px-4 py-3 pl-10 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-100 cursor-pointer transition-colors items-center"
               (click)="$event.stopPropagation(); toggleExpand(ficha.id)">
-              <div class="col-span-3 flex items-center gap-2">
-                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform" [class.rotate-90]="isExpanded(ficha.id)"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-                <span class="text-sm font-medium text-slate-700">{{ ficha.id }}</span>
-              </div>
-              <div class="col-span-9 flex items-center justify-between">
-                <div class="flex items-center gap-4 text-xs text-slate-500">
-                  <span><span class="text-slate-400">Creado:</span> {{ ficha.dateCreated }}</span>
-                  <span><span class="text-slate-400">Ejecutivo:</span> {{ ficha.executive }}</span>
+              <div class="col-span-12 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform" [class.rotate-90]="isExpanded(ficha.id)"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                  </svg>
+                  <span class="text-sm font-medium text-slate-700">{{ ficha.id }}</span>
+                  <span class="text-xs text-slate-500"><span class="text-slate-400">Creado:</span> {{ getOldestDate(ficha) }}</span>
+                  <span class="text-xs text-slate-500"><span class="text-slate-400">Ejecutivo:</span> {{ ficha.executive }}</span>
                   @for (fp of ficha.formasPago; track fp) {
                     <span class="px-1.5 py-0.5 rounded text-xs font-semibold" [class]="pagoPill(fp)">
                       {{ fp }}
@@ -304,7 +295,7 @@
                   <div class="col-span-4 flex items-center gap-1 flex-wrap max-w-[270px]">
                     @for (stage of vin.stages; track stage.id) {
                       <div class="relative"
-                        (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
+                        (mouseenter)="onHitoHover(vin.id, stage.id, $event)"
                         (mouseleave)="hoveredStageKey.set(null)">
                         <span
                           class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-pointer"
@@ -314,7 +305,8 @@
                           }
                         </span>
                         @if (hoveredStageKey() === vin.id + ':' + stage.id) {
-                          <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                          <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none"
+                               [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                             <div class="flex items-center justify-between gap-2 mb-2">
                               <span class="text-xs font-bold text-slate-800">{{ stage.name }}</span>
                               <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="getStatusLabelClass(stage.status)">{{ getStatusLabel(stage.status) }}</span>
@@ -432,7 +424,7 @@
                   <div class="flex items-center gap-1 justify-center flex-wrap max-w-[270px]">
                     @for (stage of vin.stages; track stage.id) {
                       <div class="relative"
-                        (mouseenter)="hoveredStageKey.set(vin.id + ':' + stage.id)"
+                        (mouseenter)="onHitoHover(vin.id, stage.id, $event)"
                         (mouseleave)="hoveredStageKey.set(null)">
                         <span
                           class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:scale-110 transition-transform cursor-pointer"
@@ -442,7 +434,8 @@
                           }
                         </span>
                         @if (hoveredStageKey() === vin.id + ':' + stage.id) {
-                          <div class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none">
+                          <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none"
+                               [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                             <div class="flex items-center justify-between gap-2 mb-2">
                               <span class="text-xs font-bold text-slate-800">{{ stage.name }}</span>
                               <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="getStatusLabelClass(stage.status)">{{ getStatusLabel(stage.status) }}</span>
@@ -485,31 +478,44 @@
         </table>
       </div>
 
-      <!-- Pagination -->
-      @if (totalPages() > 1) {
-        <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50">
-          <span class="text-xs text-slate-500">
-            Página {{ currentPage() }} de {{ totalPages() }} ·
-            {{ store.vinsFiltrados().length }} resultados
-          </span>
-          <div class="flex gap-2">
-            <button
-              (click)="prevPage()"
-              [disabled]="currentPage() === 1"
-              class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition-colors"
-            >← Anterior</button>
-            <button
-              (click)="nextPage()"
-              [disabled]="currentPage() === totalPages()"
-              class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition-colors"
-            >Siguiente →</button>
-          </div>
-        </div>
-      }
     </div>
   }
 
   } <!-- end @else (list views) -->
+
+  <!-- Pagination (shared for both views, hidden in VIN detail) -->
+  @if (!visualMapVin()) {
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 sm:px-4 py-3 mt-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+    <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <span class="text-xs text-slate-500">
+        Página {{ currentPage() }} de {{ totalPages() }} · {{ store.totalVins() }} VINs
+      </span>
+      <select
+        [ngModel]="store.pageSize()"
+        (ngModelChange)="store.setPageSize($event)"
+        class="text-xs rounded border border-slate-200 bg-white px-2 py-1 text-slate-600">
+        <option [value]="50">50 por página</option>
+        <option [value]="100">100 por página</option>
+        <option [value]="150">150 por página</option>
+        <option [value]="200">200 por página</option>
+      </select>
+    </div>
+    <div class="flex gap-2">
+      @if (currentPage() > 1) {
+        <button
+          (click)="prevPage()"
+          class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors"
+        >← Anterior</button>
+      }
+      @if (currentPage() < totalPages()) {
+        <button
+          (click)="nextPage()"
+          class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors"
+        >Siguiente →</button>
+      }
+    </div>
+  </div>
+  }
 
 </div>
 

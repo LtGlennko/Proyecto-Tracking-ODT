@@ -8,9 +8,9 @@ function fmtDate(d: Date | null | undefined): string {
 }
 
 /** Add days to a YYYY-MM-DD date string */
-function addDaysStr(dateStr: string, days: number): string {
+function addDaysStr(dateStr: string, days: number | string): string {
   const d = new Date(dateStr);
-  d.setUTCDate(d.getUTCDate() + days);
+  d.setUTCDate(d.getUTCDate() + Number(days));
   return d.toISOString().slice(0, 10);
 }
 
@@ -27,6 +27,8 @@ interface HierarchyFilters {
   estado?: string;
   tipoVehiculoId?: number;
   busqueda?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 interface HitoConfig {
@@ -78,6 +80,7 @@ export class TrackingService {
       .addSelect('vt.lote', 'lote')
       .addSelect('vt.orden_compra', 'ordenCompra')
       .addSelect('vt.ultima_actualizacion', 'ultimaActualizacion')
+      .addSelect('vt.staging_created_at', 'stagingCreatedAt')
       .addSelect('vt.ficha_codigo', 'fichaCodigo')
       .addSelect('vt.forma_pago', 'formaPago')
       .addSelect('vt.ficha_fecha_creacion', 'fechaCreacion')
@@ -102,12 +105,51 @@ export class TrackingService {
       );
     }
 
+    // Only show VINs with PROPED data + at least 5 date fields populated
+    qb.andWhere('(vt.etd IS NOT NULL OR vt.eta IS NOT NULL)');
+    qb.andWhere(`(
+      CASE WHEN vt.fecha_colocacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_embarque_sap IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_llegada_aduana IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_preasignacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_facturacion_sap IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_inscrito IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_entrega_cliente IS NOT NULL THEN 1 ELSE 0 END
+    ) >= 5`);
+
     qb.orderBy('vt.cliente_nombre', 'ASC').addOrderBy('vt.ficha_codigo', 'ASC').addOrderBy('vt.vin', 'ASC');
+
+    // Count total before pagination (same filters including completeness)
+    const countQb = this.dataSource.createQueryBuilder()
+      .select('COUNT(*)', 'total')
+      .from('vista_tracking_vin', 'vt');
+    if (filters.empresaId) countQb.andWhere('vt.empresa_id = :empresaId', { empresaId: filters.empresaId });
+    if (filters.tipoVehiculoId) countQb.andWhere('vt.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId: filters.tipoVehiculoId });
+    if (filters.busqueda) countQb.andWhere('(vt.vin ILIKE :q OR vt.cliente_nombre ILIKE :q OR vt.modelo ILIKE :q OR vt.ficha_codigo ILIKE :q)', { q: `%${filters.busqueda}%` });
+    countQb.andWhere('(vt.etd IS NOT NULL OR vt.eta IS NOT NULL)');
+    countQb.andWhere(`(
+      CASE WHEN vt.fecha_colocacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_embarque_sap IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_llegada_aduana IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_preasignacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_facturacion_sap IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_inscrito IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_entrega_cliente IS NOT NULL THEN 1 ELSE 0 END
+    ) >= 5`);
+    const countResult = await countQb.getRawOne();
+    const totalVins = parseInt(countResult?.total || '0', 10);
+
+    // Apply pagination in SQL
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 50;
+    qb.offset((page - 1) * pageSize).limit(pageSize);
 
     const rows: any[] = await qb.getRawMany();
 
     const vinIds = rows.map(r => r.vinId);
-    if (vinIds.length === 0) return [];
+    if (vinIds.length === 0) return { data: [], total: totalVins, page, pageSize, summary: { total: totalVins, demorado: 0 } };
 
     // 2. Load hito_tipo_vehiculo config (per tipo_vehiculo_id)
     const hitoConfigRows: any[] = await this.dataSource.createQueryBuilder()
@@ -205,7 +247,7 @@ export class TrackingService {
       stagingByVin.set(sv.vin, sv);
     }
 
-    // 8. Build hierarchical structure
+    // 8. Build hierarchical structure + count states
     const clienteMap = new Map<number, any>();
 
     for (const row of rows) {
@@ -241,7 +283,7 @@ export class TrackingService {
         ejecutivo: row.ejecutivo || '',
         estadoGeneral,
         currentStageId,
-        lastUpdate: row.ultimaActualizacion ? new Date(row.ultimaActualizacion).toISOString() : '',
+        lastUpdate: row.ultimaActualizacion ? new Date(row.ultimaActualizacion + 'Z').toISOString() : (row.stagingCreatedAt ? new Date(row.stagingCreatedAt + 'Z').toISOString() : ''),
         daysDelayed: 0, // Without SLA there's no delay calculation
         diasVendedorComercial: 0,
         cumplimiento,
@@ -289,7 +331,67 @@ export class TrackingService {
       result.push(client);
     }
 
-    return result;
+    return { data: result, total: totalVins, page, pageSize };
+  }
+
+  /**
+   * Lightweight summary: counts total and demorados across ALL VINs (no pagination).
+   * Builds stages for each VIN but skips hierarchy construction.
+   */
+  async getSummary(filters: { empresaId?: number; tipoVehiculoId?: number; busqueda?: string }) {
+    const qb = this.dataSource.createQueryBuilder()
+      .select('vt.vin', 'vinId')
+      .addSelect('vt.tipo_vehiculo_id', 'tipoVehiculoId')
+      .addSelect('vt.empresa_id', 'empresaDbId')
+      .from('vista_tracking_vin', 'vt');
+
+    if (filters.empresaId) qb.andWhere('vt.empresa_id = :empresaId', { empresaId: filters.empresaId });
+    if (filters.tipoVehiculoId) qb.andWhere('vt.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId: filters.tipoVehiculoId });
+    if (filters.busqueda) qb.andWhere('(vt.vin ILIKE :q OR vt.cliente_nombre ILIKE :q OR vt.modelo ILIKE :q OR vt.ficha_codigo ILIKE :q)', { q: `%${filters.busqueda}%` });
+
+    // Same completeness filter as clientes endpoint
+    qb.andWhere('(vt.etd IS NOT NULL OR vt.eta IS NOT NULL)');
+    qb.andWhere(`(
+      CASE WHEN vt.fecha_colocacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_embarque_sap IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_llegada_aduana IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_preasignacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_facturacion_sap IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_inscrito IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN vt.fecha_entrega_cliente IS NOT NULL THEN 1 ELSE 0 END
+    ) >= 5`);
+
+    const rows: any[] = await qb.getRawMany();
+    if (rows.length === 0) return { total: 0, demorado: 0 };
+
+    const vinIds = rows.map(r => r.vinId);
+
+    // Load configs (cached per request)
+    const [hitoConfigRows, subConfigRows, allSubetapas, slaConfigs, stagingRows] = await Promise.all([
+      this.dataSource.createQueryBuilder().select('htv.hito_id', 'hitoId').addSelect('htv.tipo_vehiculo_id', 'tipoVehiculoId').addSelect('htv.grupo_paralelo_id', 'grupoParaleloId').addSelect('htv.carril', 'carril').addSelect('htv.orden', 'orden').addSelect('htv.activo', 'activo').addSelect('h.nombre', 'nombre').addSelect('h.icono', 'icono').from('hito_tipo_vehiculo', 'htv').leftJoin('hito', 'h', 'h.id = htv.hito_id').orderBy('htv.orden', 'ASC').getRawMany(),
+      this.dataSource.createQueryBuilder().select('stv.subetapa_id', 'subetapaId').addSelect('stv.tipo_vehiculo_id', 'tipoVehiculoId').addSelect('stv.orden', 'orden').addSelect('stv.activo', 'activo').from('subetapa_tipo_vehiculo', 'stv').orderBy('stv.orden', 'ASC').getRawMany(),
+      this.dataSource.createQueryBuilder().select('s.id', 'id').addSelect('s.hito_id', 'hitoId').addSelect('s.nombre', 'nombre').addSelect('s.campo_staging_real', 'campoStagingReal').addSelect('s.campo_staging_plan', 'campoStagingPlan').from('subetapa', 's').getRawMany(),
+      this.dataSource.createQueryBuilder().select('s.empresa_id', 'empresaId').addSelect('s.subetapa_id', 'subetapaId').addSelect('s.tipo_vehiculo_id', 'tipoVehiculoId').addSelect('s.dias_objetivo', 'diasObjetivo').addSelect('s.dias_tolerancia', 'diasTolerancia').from('sla_config', 's').getRawMany() as Promise<SlaRow[]>,
+      this.dataSource.createQueryBuilder().select('vt.*').from('vista_tracking_vin', 'vt').where('vt.vin IN (:...vinIds)', { vinIds }).getRawMany(),
+    ]);
+
+    const hitoConfigByTipo = new Map<number, HitoConfig[]>();
+    for (const r of hitoConfigRows) { const k = r.tipoVehiculoId as number; if (!hitoConfigByTipo.has(k)) hitoConfigByTipo.set(k, []); hitoConfigByTipo.get(k)!.push({ hitoId: r.hitoId, nombre: r.nombre, grupoParaleloId: r.grupoParaleloId, carril: r.carril, orden: r.orden, activo: r.activo, icono: r.icono }); }
+    const subConfigByTipo = new Map<number, SubConfig[]>();
+    for (const r of subConfigRows) { const k = r.tipoVehiculoId as number; if (!subConfigByTipo.has(k)) subConfigByTipo.set(k, []); subConfigByTipo.get(k)!.push({ subetapaId: r.subetapaId, orden: r.orden, activo: r.activo }); }
+    const subetapaById = new Map<number, SubetapaDef>();
+    for (const s of allSubetapas) { subetapaById.set(s.id, { id: s.id, hitoId: s.hitoId, nombre: s.nombre, campoStagingReal: s.campoStagingReal, campoStagingPlan: s.campoStagingPlan }); }
+    const stagingByVin = new Map<string, any>();
+    for (const sv of stagingRows) { stagingByVin.set(sv.vin, sv); }
+
+    let demorado = 0;
+    for (const row of rows) {
+      const stages = this.buildStages(hitoConfigByTipo.get(row.tipoVehiculoId as number), subConfigByTipo.get(row.tipoVehiculoId as number), subetapaById, stagingByVin.get(row.vinId), slaConfigs, row.tipoVehiculoId, row.empresaDbId);
+      if (this.deriveEstadoGeneral(stages) === 'DEMORADO') demorado++;
+    }
+
+    return { total: rows.length, demorado };
   }
 
   /** Derive estadoGeneral from built stages (not from stored tracking values) */
@@ -367,11 +469,7 @@ export class TrackingService {
           if (val) fechaReal = fmtDate(val);
         }
 
-        let fechaPlanStaging: string = '';
-        if (sd.campoStagingPlan && stagingRow) {
-          const val = stagingRow[sd.campoStagingPlan];
-          if (val) fechaPlanStaging = fmtDate(val);
-        }
+        // campo_staging_plan ignorado por ahora — plan se calcula exclusivamente con SLA
 
         return {
           id: `sub-${sd.id}`,
@@ -379,7 +477,7 @@ export class TrackingService {
           _slaTolerancia: 0, // temporary — filled in step 2
           name: sd.nombre || '',
           baseline: { start: '', end: '' },
-          plan: { start: fechaPlanStaging, end: fechaPlanStaging },
+          plan: { start: '', end: '' },
           real: { start: fechaReal, end: fechaReal },
           status: 'pending', // recalculated in step 3
         };
@@ -440,7 +538,7 @@ export class TrackingService {
         // Resolve SLA for this sub (needed for plan fallback and tolerancia)
         const sla = this.resolveSlaInline(slaConfigs, (sub as any)._dbSubId, tipoVehiculoId, empresaId);
         if (sla) {
-          (sub as any)._slaTolerancia = sla.diasTolerancia || 0;
+          (sub as any)._slaTolerancia = Number(sla.diasTolerancia) || 0;
         }
 
         if (prevEnd) {

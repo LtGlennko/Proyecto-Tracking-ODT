@@ -45,14 +45,14 @@
       "@kaufmann/tracking-otd/feature-chat": [
         "libs/tracking-otd/feature-chat/src/index.ts"
       ],
-      "@kaufmann/tracking-otd/feature-dashboard": [
-        "libs/tracking-otd/feature-dashboard/src/index.ts"
-      ],
-      "@kaufmann/tracking-otd/feature-staging": [
+"@kaufmann/tracking-otd/feature-staging": [
         "libs/tracking-otd/feature-staging/src/index.ts"
       ],
       "@kaufmann/tracking-otd/feature-vin-tracking": [
         "libs/tracking-otd/feature-vin-tracking/src/index.ts"
+      ],
+      "@kaufmann/tracking-otd/feature-reporte": [
+        "libs/tracking-otd/feature-reporte/src/index.ts"
       ]
     }
   },

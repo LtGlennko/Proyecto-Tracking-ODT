@@ -22,14 +22,7 @@ export const routes: Routes = [
       import('@kaufmann/tracking-otd/feature-vin-tracking')
         .then(m => m.TRACKING_ROUTES),
   },
-  {
-    path: 'dashboard',
-    canActivate: [authGuard],
-    loadChildren: () =>
-      import('@kaufmann/tracking-otd/feature-dashboard')
-        .then(m => m.DASHBOARD_ROUTES),
-  },
-  {
+{
     path: 'alertas',
     canActivate: [authGuard],
     loadChildren: () =>
@@ -56,6 +49,13 @@ export const routes: Routes = [
     loadChildren: () =>
       import('@kaufmann/tracking-otd/feature-staging')
         .then(m => m.STAGING_ROUTES),
+  },
+  {
+    path: 'reporte',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('@kaufmann/tracking-otd/feature-reporte')
+        .then(m => m.REPORTE_ROUTES),
   },
   {
     path: 'admin',

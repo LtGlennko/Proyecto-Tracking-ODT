@@ -194,17 +194,17 @@ interface SlaConfigApi {
     selector: 'kf-admin-page',
     imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CdkDragPreview, HitoConfigSwimlaneComponent, ProcessPreviewComponent, LucideAngularModule],
     template: `
-    <div class="p-6 space-y-5">
+    <div class="p-3 sm:p-6 space-y-4 sm:space-y-5">
       <div>
-        <h1 class="text-xl font-bold text-slate-800">Administración</h1>
-        <p class="text-sm text-slate-500 mt-0.5">Gestión de hitos, SLAs y usuarios</p>
+        <h1 class="text-lg sm:text-xl font-bold text-slate-800">Administración</h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Gestión de hitos, SLAs y usuarios</p>
       </div>
 
       <!-- Tabs -->
-      <div class="flex border-b border-slate-200 gap-1">
+      <div class="flex overflow-x-auto border-b border-slate-200 gap-1 -mx-3 sm:mx-0 px-3 sm:px-0">
         @for (tab of visibleTabs(); track tab.id) {
           <button (click)="activeTab.set(tab.id)"
-            class="px-5 py-2.5 text-sm font-medium transition-colors rounded-t-md flex items-center gap-1.5"
+            class="px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors rounded-t-md flex items-center gap-1.5 whitespace-nowrap shrink-0"
           [class]="activeTab() === tab.id
             ? (tab.superOnly ? 'bg-red-50 border border-b-white border-red-200 text-red-800 -mb-px' : 'bg-white border border-b-white border-slate-200 text-slate-800 -mb-px')
             : (tab.superOnly ? 'text-red-400 hover:text-red-600 hover:bg-red-50/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50')"
@@ -233,7 +233,7 @@ interface SlaConfigApi {
 
           <!-- Formulario nuevo hito -->
           @if (showNewHitoForm() && auth.isSuperAdmin()) {
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-end gap-3">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3">
               <div class="flex-1">
                 <label class="text-xs font-medium text-slate-600 block mb-1">Nombre del hito</label>
                 <input type="text" [ngModel]="newHitoNombre()" (ngModelChange)="newHitoNombre.set($event)"
@@ -269,7 +269,7 @@ interface SlaConfigApi {
             @for (hito of hitosMaster(); track hito.id) {
               <div cdkDrag [cdkDragData]="hito" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible relative">
                 <!-- Hito header -->
-                <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex-wrap">
                   <!-- Drag handle -->
                   <span cdkDragHandle class="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" title="Arrastrar para reordenar">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8-16a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
@@ -345,7 +345,8 @@ interface SlaConfigApi {
 
                 <!-- Subetapas table -->
                 @if (expandedMasterHitoId() === hito.id) {
-                  <table class="w-full text-sm">
+                  <div class="overflow-x-auto">
+                  <table class="w-full text-sm min-w-[600px]">
                     <thead class="bg-slate-50 border-b border-slate-200">
                       <tr>
                         <th class="text-left px-2 py-2 text-xs font-semibold text-slate-500 uppercase w-8"></th>
@@ -509,6 +510,7 @@ interface SlaConfigApi {
                       </tfoot>
                     }
                   </table>
+                  </div>
                 }
               </div>
             } @empty {
@@ -527,9 +529,9 @@ interface SlaConfigApi {
           <p class="text-xs text-slate-400">Configura orden, grupo paralelo y activación de hitos y subetapas para cada tipo de vehículo.</p>
 
           <!-- Vehicle type selector -->
-          <div class="flex items-center gap-2">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <span class="text-sm font-medium text-slate-600">Tipo de vehículo:</span>
-            <div class="flex gap-1">
+            <div class="flex gap-1 flex-wrap">
               @for (tv of tipoVehiculoOptions(); track tv.id) {
                 <button (click)="selectTipoVehiculo(tv.id)"
                   class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border"
@@ -767,8 +769,8 @@ interface SlaConfigApi {
               <span class="text-xs text-slate-400">{{ filteredSlaRules().length }} reglas</span>
             </div>
 
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <table class="w-full text-sm">
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+              <table class="w-full text-sm min-w-[700px]">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th class="text-center px-2 py-2.5 text-xs font-semibold text-slate-500 uppercase w-16">Prioridad</th>
@@ -885,7 +887,7 @@ interface SlaConfigApi {
             <!-- Filtros -->
             <div class="space-y-2">
               <!-- Fila 1: Buscador + tipo de dato -->
-              <div class="flex gap-3 items-center">
+              <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
                 <input type="text" placeholder="Buscar campo..." [ngModel]="mapeoSearch()" (ngModelChange)="mapeoSearch.set($event)"
                   class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
                 <div class="flex gap-1">
@@ -906,7 +908,7 @@ interface SlaConfigApi {
               </div>
 
               <!-- Fila 2: Filtro por número de fuentes -->
-              <div class="flex gap-2 items-center">
+              <div class="flex gap-2 items-center flex-wrap">
                 <span class="text-xs text-slate-400">N° fuentes:</span>
                 <button (click)="mapeoFilterNumFuentes.set(null)"
                   class="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
@@ -1101,8 +1103,8 @@ interface SlaConfigApi {
           @if (loadingTipos()) {
             <div class="flex justify-center py-8"><span class="text-slate-400 text-sm">Cargando tipos...</span></div>
           } @else {
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible">
-              <table class="w-full text-sm">
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+              <table class="w-full text-sm min-w-[500px]">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase w-12">Icono</th>
@@ -1200,8 +1202,8 @@ interface SlaConfigApi {
               <span class="text-slate-400 text-sm">Cargando usuarios...</span>
             </div>
           } @else {
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <table class="w-full text-sm">
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+              <table class="w-full text-sm min-w-[600px]">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Usuario</th>

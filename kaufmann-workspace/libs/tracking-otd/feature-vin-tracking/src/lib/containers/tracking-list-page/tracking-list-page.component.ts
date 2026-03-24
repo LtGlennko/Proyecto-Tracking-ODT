@@ -1,30 +1,31 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TrackingStore, TipoVehiculoService } from '@kaufmann/tracking-otd/data-access';
 import { VinModel, EstadoVin, TipoVehiculoModel, FichaModel, HitoTracking } from '@kaufmann/shared/models';
-import { StatusBadgeComponent } from '@kaufmann/shared/ui';
+import { StatusBadgeComponent, SearchBarComponent } from '@kaufmann/shared/ui';
 import { VehicleIconComponent } from '@kaufmann/shared/ui';
 import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracking-drawer.component';
 import { VisualMapComponent } from '../../components/visual-map/visual-map.component';
 import { GanttViewComponent } from '../../components/gantt-view/gantt-view.component';
-import { formatDate } from '@kaufmann/shared/utils';
+import { formatDate, resolveSubFecha } from '@kaufmann/shared/utils';
 import { LucideAngularModule } from 'lucide-angular';
 
 
 @Component({
     selector: 'kf-tracking-list-page',
-    imports: [FormsModule, StatusBadgeComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule],
+    imports: [FormsModule, StatusBadgeComponent, SearchBarComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule],
     templateUrl: './tracking-list-page.component.html'
 })
-export class TrackingListPageComponent implements OnInit {
+export class TrackingListPageComponent implements OnInit, OnDestroy {
   readonly store = inject(TrackingStore);
 
 
-  currentPage = signal(1);
-  readonly pageSize = 20;
+  currentPage = computed(() => this.store.page());
+  totalPages = computed(() => this.store.totalPages());
+  readonly pageSize = 50;
 
   searchInput$ = new Subject<string>();
   searchValue = signal('');
@@ -50,14 +51,15 @@ export class TrackingListPageComponent implements OnInit {
   ];
   tipoVehiculoOptions = this.tvService.items;
   hoveredStageKey = signal<string | null>(null);
+  hoverPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  pagedVins = computed(() => {
-    const all = this.store.vinsFiltrados();
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return all.slice(start, start + this.pageSize);
-  });
+  onHitoHover(vinId: string, stageId: number, event: MouseEvent) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.hoverPos.set({ x: rect.left + rect.width / 2, y: rect.bottom + 6 });
+    this.hoveredStageKey.set(vinId + ':' + stageId);
+  }
 
-  totalPages = computed(() => Math.max(1, Math.ceil(this.store.vinsFiltrados().length / this.pageSize)));
+  pagedVins = computed(() => this.store.vinsFiltrados());
 
   constructor() {
     this.searchInput$.pipe(
@@ -65,7 +67,7 @@ export class TrackingListPageComponent implements OnInit {
       takeUntilDestroyed()
     ).subscribe(val => {
       this.store.setFiltro('busqueda', val);
-      this.currentPage.set(1);
+      this.store.loadClientes(1);
     });
   }
 
@@ -76,6 +78,11 @@ export class TrackingListPageComponent implements OnInit {
 
     this.tvService.load();
     this.store.loadClientes();
+  }
+
+  ngOnDestroy() {
+    this.searchValue.set('');
+    this.store.setFiltro('busqueda', '');
   }
 
   onSearch(value: string) {
@@ -91,23 +98,23 @@ export class TrackingListPageComponent implements OnInit {
   setEstado(e: Event) {
     const val = (e.target as HTMLSelectElement).value as EstadoVin | '';
     this.store.setFiltro('estado', val || null);
-    this.currentPage.set(1);
+    this.store.loadClientes(1);
   }
 
   setEstadoValue(val: string) {
     this.store.setFiltro('estado', val || null);
-    this.currentPage.set(1);
+    this.store.loadClientes(1);
   }
 
   setTipoVehiculo(e: Event) {
     const val = (e.target as HTMLSelectElement).value;
     this.store.setFiltro('tipoVehiculoId', val ? Number(val) : null);
-    this.currentPage.set(1);
+    this.store.loadClientes(1);
   }
 
   setTipoVehiculoValue(val: string) {
     this.store.setFiltro('tipoVehiculoId', val ? Number(val) : null);
-    this.currentPage.set(1);
+    this.store.loadClientes(1);
   }
 
   openDrawer(vinId: string, stageId?: number) {
@@ -141,6 +148,72 @@ export class TrackingListPageComponent implements OnInit {
     };
   }
 
+  // -- Export CSV --
+
+  exportCsv(): void {
+    const allVins = this.store.vinsFiltrados();
+    if (allVins.length === 0) return;
+
+    // Build dynamic subetapa columns from first VIN's stages
+    const subCols: { hito: string; sub: string }[] = [];
+    const sampleVin = allVins.find(v => v.stages.length > 0) || allVins[0];
+    for (const stage of sampleVin.stages) {
+      for (const sub of stage.subStages) {
+        subCols.push({ hito: stage.name, sub: sub.name });
+      }
+    }
+
+    // Header
+    const headers = [
+      'VIN', 'Cliente', 'Ficha', 'Tipo Vehiculo', 'Modelo', 'Lote', 'OC',
+      'Forma de Pago', 'Ejecutivo', 'Estado', 'F. Inicial', 'F. Estimada',
+      ...subCols.flatMap(c => [`${c.hito} - ${c.sub} (Real)`, `${c.hito} - ${c.sub} (Plan)`]),
+    ];
+
+    // Rows
+    const rows = allVins.map(vin => {
+      const subValues: string[] = [];
+      for (const stage of vin.stages) {
+        for (const sub of stage.subStages) {
+          subValues.push(sub.real?.end || sub.real?.start || '');
+          subValues.push(sub.plan?.end || sub.plan?.start || '');
+        }
+      }
+      // Pad if VIN has fewer stages than sample
+      while (subValues.length < subCols.length * 2) subValues.push('', '');
+
+      return [
+        vin.id,
+        vin.clientName,
+        vin.fichaId,
+        vin.tipoVehiculo?.nombre || '',
+        vin.modelo,
+        vin.lote,
+        vin.ordenCompra,
+        vin.formaPago,
+        vin.ejecutivo,
+        vin.estadoGeneral,
+        this.getFirstDate(vin),
+        this.getLastDate(vin),
+        ...subValues,
+      ];
+    });
+
+    // Build CSV
+    const escape = (v: string) => `"${(v || '').replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+
+    // Download
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tracking-odt-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // -- Visual map --
 
   showVisualMap(vin: VinModel, event: Event): void {
@@ -164,12 +237,9 @@ export class TrackingListPageComponent implements OnInit {
     return vin.stages.find(s => s.id === hitoId)?.status ?? 'pending';
   }
 
-  getSubFecha(sub: { real: { start: string | null }; plan: { start: string | null } }): { text: string; esPlan: boolean } {
-    const real = sub.real?.start;
-    const plan = sub.plan?.start;
-    if (real) return { text: this.fmtDate(real), esPlan: false };
-    if (plan) return { text: this.fmtDate(plan), esPlan: true };
-    return { text: '', esPlan: false };
+  getSubFecha(sub: { real: { start: string | null; end: string | null }; plan: { start: string | null; end: string | null } }): { text: string; esPlan: boolean } {
+    const result = resolveSubFecha(sub.real, sub.plan);
+    return { text: result.raw ? this.fmtDate(result.raw) : '', esPlan: result.esPlan };
   }
 
   getLastPlanDate(stage: HitoTracking): string {
@@ -233,7 +303,26 @@ export class TrackingListPageComponent implements OnInit {
 
   formatDate = formatDate;
 
-  private readonly shortDateFmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+  private readonly shortDateFmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' });
+
+  /** Fecha más antigua entre todos los VINs de una ficha */
+  getOldestDate(ficha: FichaModel): string {
+    let oldest: Date | null = null;
+    for (const vin of ficha.vins) {
+      for (const stage of vin.stages) {
+        for (const sub of stage.subStages) {
+          const d = sub.real?.start || sub.real?.end || sub.plan?.start || sub.plan?.end;
+          if (d) {
+            const date = new Date(d + 'T00:00:00Z');
+            if (!isNaN(date.getTime()) && (!oldest || date < oldest)) {
+              oldest = date;
+            }
+          }
+        }
+      }
+    }
+    return oldest ? oldest.toISOString().slice(0, 10) : '—';
+  }
 
   /** F. Inicial: fecha de la primera subetapa del flujo */
   getFirstDate(vin: VinModel): string {
@@ -258,8 +347,8 @@ export class TrackingListPageComponent implements OnInit {
     return this.shortDateFmt.format(date);
   }
 
-  prevPage() { if (this.currentPage() > 1) this.currentPage.update(p => p - 1); }
-  nextPage() { if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1); }
+  prevPage() { this.store.prevPage(); }
+  nextPage() { this.store.nextPage(); }
 
   tipoBadgeStyle(vin: VinModel): Record<string, string> {
     const color = vin.tipoVehiculo?.color || '#94a3b8';
@@ -294,8 +383,9 @@ export class TrackingListPageComponent implements OnInit {
     };
   }
 
-  getDesviacionAcumulada(vin: VinModel): number {
+  getDesviacionAcumulada(vin: VinModel): { total: number; adelanto: number } {
     let totalDays = 0;
+    let adelantoDays = 0;
     for (const stage of vin.stages) {
       for (const sub of stage.subStages) {
         const realStr = sub.real?.end || sub.real?.start;
@@ -305,12 +395,13 @@ export class TrackingListPageComponent implements OnInit {
           const plan = new Date(planStr + 'T00:00:00').getTime();
           if (!isNaN(real) && !isNaN(plan)) {
             const diff = Math.round((real - plan) / 86400000);
-          if (diff > 0) totalDays += diff;
+            totalDays += diff;
+            if (diff < 0) adelantoDays += diff;
           }
         }
       }
     }
-    return totalDays;
+    return { total: totalDays, adelanto: adelantoDays };
   }
 
   getRelativeTime(iso: string): string {
