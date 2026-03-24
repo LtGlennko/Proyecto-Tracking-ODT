@@ -157,27 +157,56 @@ AUTH_BYPASS_USER_NAME=Developer Kaufmann
     else:
         print("  WARNING: nginx test failed!")
 
-    # Start backend
+    # Start backend — session may drop after this, catch it
     print("  Starting backend...")
-    ssh_exec(ssh, f"rm -f /tmp/otd-backend.log")
-    ssh_exec(ssh, f"cd {REMOTE_BACKEND} && nohup node dist/main.js >> /tmp/otd-backend.log 2>&1 &")
-    time.sleep(4)
+    try:
+        ssh_exec(ssh, f"rm -f /tmp/otd-backend.log", check=False)
+    except Exception:
+        pass
+    try:
+        ssh_exec(ssh, f"setsid bash -c 'cd {REMOTE_BACKEND} && node dist/main.js >> /tmp/otd-backend.log 2>&1' &", check=False)
+    except Exception:
+        pass
 
-    # Verify
-    print("\n  Verifying deployment...")
-    ssh_exec(ssh, f"curl -sf http://localhost:{BACKEND_PORT}/api/health/liveness 2>/dev/null && echo 'Backend: OK' || echo 'Backend: NOT RESPONDING'")
-    out, _, _ = ssh_exec(ssh, "curl -sf http://localhost/otd/ 2>/dev/null | grep -o 'base href=\"[^\"]*\"' | head -1", check=False)
-    print(f"  Frontend base href: {out}")
-    out, _, _ = ssh_exec(ssh, f"curl -sf 'http://localhost:{BACKEND_PORT}/api/v1/tracking?page=1&pageSize=5' 2>/dev/null | python3 -c \"import sys,json; d=json.load(sys.stdin); print(f'Tracking: {{d[\\\"total\\\"]}} VINs')\" 2>/dev/null || echo 'Tracking: check manually'", check=False)
-    print(f"  {out}")
+    # Cleanup tars (best effort — session may already be dead)
+    try:
+        ssh_exec(ssh, "rm -f /tmp/backend-deploy.tar.gz /tmp/frontend-deploy.tar.gz", check=False)
+    except Exception:
+        pass
+    try:
+        sftp.close()
+    except Exception:
+        pass
+    try:
+        ssh.close()
+    except Exception:
+        pass
 
-    # Cleanup
-    ssh_exec(ssh, "rm -f /tmp/backend-deploy.tar.gz /tmp/frontend-deploy.tar.gz", check=False)
+    # Wait for backend to start, then reconnect to verify
+    print("  Waiting for backend to start...")
+    time.sleep(6)
+
+    print("\n  Verifying deployment (new connection)...")
+    ssh2 = paramiko.SSHClient()
+    ssh2.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh2.connect(HOST, port=PORT, username=USER, password=PASS)
+
+    def run2(cmd):
+        stdin, stdout, stderr = ssh2.exec_command(cmd)
+        stdout.channel.recv_exit_status()
+        return stdout.read().decode('utf-8', errors='replace').strip()
+
+    health = run2(f"curl -sf http://localhost:{BACKEND_PORT}/api/health/liveness 2>/dev/null")
+    print(f"  Health: {health}")
+    base = run2("grep -o 'base href=\"[^\"]*\"' /var/www/html/otd/frontend/browser/index.html 2>/dev/null")
+    print(f"  Frontend: {base}")
+    pid = run2(f"ss -tlnp sport = :{BACKEND_PORT} 2>/dev/null | grep -oP 'pid=\\K[0-9]+'")
+    print(f"  Backend PID: {pid if pid else 'NOT RUNNING'}")
+
     os.remove(backend_tar)
     os.remove(frontend_tar)
 
-    sftp.close()
-    ssh.close()
+    ssh2.close()
 
     print("\n" + "=" * 60)
     print("  DEPLOY COMPLETE!")

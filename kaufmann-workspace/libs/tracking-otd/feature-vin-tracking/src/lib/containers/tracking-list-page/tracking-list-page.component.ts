@@ -209,7 +209,7 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tracking-odt-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `tracking-otd-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
