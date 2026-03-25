@@ -47,15 +47,26 @@ interface Bloque {
     <div class="grid min-w-max" [style.grid-template-columns]="gridCols()" style="grid-template-rows: auto auto;">
 
 
-      @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
+      @for (bloque of bloques(); track bloque.grupoId; let first = $first; let i = $index) {
         <!-- Separator (financiero row) -->
         @if (!first) {
-          <div class="flex items-stretch justify-center px-3 border-b border-slate-200">
-            <div class="border-l-2 border-dashed border-slate-300"></div>
+          @let prevBloque = bloques()[i - 1];
+          <div class="relative border-b border-slate-200" style="width: 36px">
+            <div class="absolute inset-0 flex justify-center pointer-events-none">
+              <div class="w-px h-full" style="background:repeating-linear-gradient(to bottom,#cbd5e1 0,#cbd5e1 8px,transparent 8px,transparent 20px)"></div>
+            </div>
+            @if (prevBloque.financiero.length > 0 && bloque.financiero.length > 0) {
+              <div class="absolute left-0 right-0 flex justify-center" style="top: 12px; height: 48px; align-items: center">
+                <div class="flex items-center bg-white px-0.5">
+                  <div class="w-5 h-[3px] bg-blue-300 rounded-full"></div>
+                  <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-blue-300"></div>
+                </div>
+              </div>
+            }
           </div>
         }
         <!-- Financiero content -->
-        <div class="flex items-start justify-center gap-1 px-3 pt-3 pb-4 border-b border-slate-200">
+        <div class="flex items-start justify-center px-3 pt-3 pb-4 border-b border-slate-200">
           @for (hito of bloque.financiero; track hito.nombre; let hlast = $last) {
             <div class="flex flex-col items-center shrink-0">
               <div class="flex flex-col items-center h-20">
@@ -66,23 +77,25 @@ interface Bloque {
                     <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
                   }
                 </div>
-                <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">{{ hito.nombre }}</span>
+                <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-36">{{ hito.nombre }}</span>
               </div>
               @if (hito.subetapas.length > 0) {
-                <div class="w-full bg-blue-50/50 rounded border border-blue-100 px-1.5 py-1 max-w-28">
+                <div class="w-full bg-blue-50/50 rounded border border-blue-100 px-1.5 py-1 max-w-44">
                   @for (sub of hito.subetapas; track sub) {
                     <div class="flex items-center gap-1 py-px">
                       <span class="w-1 h-1 rounded-full bg-blue-300 shrink-0"></span>
-                      <span class="text-[10px] text-blue-600/80 leading-tight truncate" [title]="sub">{{ sub }}</span>
+                      <span class="text-[10px] text-blue-600/80 leading-tight">{{ sub }}</span>
                     </div>
                   }
                 </div>
               }
             </div>
             @if (!hlast) {
-              <div class="flex items-center shrink-0 mx-0.5 mt-4">
-                <div class="w-3 h-0.5 bg-blue-300"></div>
-                <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-blue-300"></div>
+              <div class="shrink-0 mx-1 flex items-center" style="height: 48px">
+                <div class="flex items-center">
+                  <div class="w-5 h-[3px] bg-blue-300 rounded-full"></div>
+                  <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-blue-300"></div>
+                </div>
               </div>
             }
           }
@@ -95,15 +108,26 @@ interface Bloque {
       }
 
 
-      @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
+      @for (bloque of bloques(); track bloque.grupoId; let first = $first; let i = $index) {
         <!-- Separator (operativo row) -->
         @if (!first) {
-          <div class="flex items-stretch justify-center px-3">
-            <div class="border-l-2 border-dashed border-slate-300"></div>
+          @let prevBloque = bloques()[i - 1];
+          <div class="relative" style="width: 36px">
+            <div class="absolute inset-0 flex justify-center pointer-events-none">
+              <div class="w-px h-full" style="background:repeating-linear-gradient(to bottom,#cbd5e1 0,#cbd5e1 8px,transparent 8px,transparent 20px)"></div>
+            </div>
+            @if (prevBloque.operativo.length > 0 && bloque.operativo.length > 0) {
+              <div class="absolute left-0 right-0 flex justify-center" style="top: 12px; height: 48px; align-items: center">
+                <div class="flex items-center bg-white px-0.5">
+                  <div class="w-5 h-[3px] bg-amber-300 rounded-full"></div>
+                  <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-amber-300"></div>
+                </div>
+              </div>
+            }
           </div>
         }
         <!-- Operativo content -->
-        <div class="flex items-start justify-center gap-1 px-3 pt-3 pb-4">
+        <div class="flex items-start justify-center px-3 pt-3 pb-4">
           @for (hito of bloque.operativo; track hito.nombre; let hlast = $last) {
             <div class="flex flex-col items-center shrink-0">
               <div class="flex flex-col items-center h-20">
@@ -114,23 +138,25 @@ interface Bloque {
                     <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
                   }
                 </div>
-                <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">{{ hito.nombre }}</span>
+                <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-36">{{ hito.nombre }}</span>
               </div>
               @if (hito.subetapas.length > 0) {
-                <div class="w-full bg-amber-50/50 rounded border border-amber-100 px-1.5 py-1 max-w-28">
+                <div class="w-full bg-amber-50/50 rounded border border-amber-100 px-1.5 py-1 max-w-44">
                   @for (sub of hito.subetapas; track sub) {
                     <div class="flex items-center gap-1 py-px">
                       <span class="w-1 h-1 rounded-full bg-amber-300 shrink-0"></span>
-                      <span class="text-[10px] text-amber-600/80 leading-tight truncate" [title]="sub">{{ sub }}</span>
+                      <span class="text-[10px] text-amber-600/80 leading-tight">{{ sub }}</span>
                     </div>
                   }
                 </div>
               }
             </div>
             @if (!hlast) {
-              <div class="flex items-center shrink-0 mx-0.5 mt-4">
-                <div class="w-3 h-0.5 bg-amber-300"></div>
-                <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-amber-300"></div>
+              <div class="shrink-0 mx-1 flex items-center" style="height: 48px">
+                <div class="flex items-center">
+                  <div class="w-5 h-[3px] bg-amber-300 rounded-full"></div>
+                  <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-amber-300"></div>
+                </div>
               </div>
             }
           }
@@ -146,7 +172,7 @@ interface Bloque {
     <!-- Legend -->
     <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-5 text-xs text-slate-500">
       <span class="flex items-center gap-1.5">
-        <span class="w-5 border-l-2 border-dashed border-slate-400 h-3"></span>
+        <span class="w-5 h-3" style="background:repeating-linear-gradient(to bottom,#94a3b8 0,#94a3b8 4px,transparent 4px,transparent 10px);width:1px;display:inline-block"></span>
         Grupo paralelo (ejecución simultánea)
       </span>
     </div>

@@ -15,6 +15,7 @@ export interface TrackingClientesFilters {
 export interface TrackingSummary {
   total: number;
   demorado: number;
+  enRiesgo: number;
 }
 
 export interface PaginatedResponse<T> {

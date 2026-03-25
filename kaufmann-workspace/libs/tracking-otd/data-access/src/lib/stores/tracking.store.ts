@@ -29,6 +29,7 @@ type TrackingState = {
   // Summary (global counts)
   summaryTotal: number;
   summaryDemorado: number;
+  summaryEnRiesgo: number;
 };
 
 const initialState: TrackingState = {
@@ -46,6 +47,7 @@ const initialState: TrackingState = {
   totalVins: 0,
   summaryTotal: 0,
   summaryDemorado: 0,
+  summaryEnRiesgo: 0,
 };
 
 export const TrackingStore = signalStore(
@@ -157,7 +159,7 @@ export const TrackingStore = signalStore(
             tipoVehiculoId: f.tipoVehiculoId || undefined,
             busqueda: f.busqueda || undefined,
           })).then(s => {
-            patchState(store, { summaryTotal: s.total, summaryDemorado: s.demorado });
+            patchState(store, { summaryTotal: s.total, summaryDemorado: s.demorado, summaryEnRiesgo: s.enRiesgo || 0 });
           }).catch(() => {});
         } catch (err: any) {
           console.error('Error loading tracking data:', err);

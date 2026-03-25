@@ -386,19 +386,47 @@ export class TrackingService {
     for (const sv of stagingRows) { stagingByVin.set(sv.vin, sv); }
 
     let demorado = 0;
+    let enRiesgo = 0;
     for (const row of rows) {
       const stages = this.buildStages(hitoConfigByTipo.get(row.tipoVehiculoId as number), subConfigByTipo.get(row.tipoVehiculoId as number), subetapaById, stagingByVin.get(row.vinId), slaConfigs, row.tipoVehiculoId, row.empresaDbId);
-      if (this.deriveEstadoGeneral(stages) === 'DEMORADO') demorado++;
+      const estado = this.deriveEstadoGeneral(stages);
+      if (estado === 'DEMORADO') demorado++;
+      else if (estado === 'EN RIESGO') enRiesgo++;
     }
 
-    return { total: rows.length, demorado };
+    return { total: rows.length, demorado, enRiesgo };
   }
 
-  /** Derive estadoGeneral from built stages (not from stored tracking values) */
+  /** Derive estadoGeneral from built stages
+   *  ENTREGADO: última subetapa del flujo tiene fecha real
+   *  DEMORADO: no entregado, alguna subetapa excedió plan + tolerancia (delayed/completed-late)
+   *  EN RIESGO: no entregado, alguna subetapa excedió plan pero dentro de tolerancia (at-risk/completed-risk)
+   *  A TIEMPO: no entregado, todo dentro del plan
+   */
   private deriveEstadoGeneral(stages: any[]): string {
     if (!stages || stages.length === 0) return 'A TIEMPO';
-    if (stages.every(s => s.status === 'completed')) return 'ENTREGADO';
-    if (stages.some(s => s.status === 'delayed')) return 'DEMORADO';
+
+    // Check if last subetapa of last stage has real date → ENTREGADO
+    const lastStage = stages[stages.length - 1];
+    if (lastStage?.subStages?.length > 0) {
+      const lastSub = lastStage.subStages[lastStage.subStages.length - 1];
+      if (lastSub.real?.end || lastSub.real?.start) return 'ENTREGADO';
+    }
+
+    // Collect all sub statuses
+    const allSubStatuses: string[] = [];
+    for (const s of stages) {
+      for (const sub of (s.subStages || [])) {
+        allSubStatuses.push(sub.status);
+      }
+    }
+
+    // DEMORADO: any sub is delayed or completed-late (exceeded critical = plan + tolerance)
+    if (allSubStatuses.some(st => st === 'delayed' || st === 'completed-late')) return 'DEMORADO';
+
+    // EN RIESGO: any sub is at-risk or completed-risk (exceeded plan but within tolerance)
+    if (allSubStatuses.some(st => st === 'at-risk' || st === 'completed-risk')) return 'EN RIESGO';
+
     return 'A TIEMPO';
   }
 

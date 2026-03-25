@@ -47,6 +47,7 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
   estadoOptions = [
     { value: 'ENTREGADO', label: 'Entregado' },
     { value: 'A TIEMPO', label: 'A Tiempo' },
+    { value: 'EN RIESGO', label: 'En Riesgo' },
     { value: 'DEMORADO', label: 'Demorado' },
   ];
   tipoVehiculoOptions = this.tvService.items;
@@ -114,6 +115,19 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
 
   setTipoVehiculoValue(val: string) {
     this.store.setFiltro('tipoVehiculoId', val ? Number(val) : null);
+    this.store.loadClientes(1);
+  }
+
+  hasActiveFilters(): boolean {
+    return !!(this.searchValue() || this.selectedEstado() || this.selectedTipoVehiculoId());
+  }
+
+  clearAllFilters() {
+    this.searchValue.set('');
+    this.searchInput$.next('');
+    this.store.setFiltro('busqueda', '');
+    this.store.setFiltro('estado', null);
+    this.store.setFiltro('tipoVehiculoId', null);
     this.store.loadClientes(1);
   }
 
@@ -261,10 +275,10 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
 
   getStatusLabelClass(status: string): string {
     switch (status) {
-      case 'completed': return 'text-emerald-600 bg-emerald-50';
-      case 'delayed': return 'text-red-600 bg-red-50';
-      case 'active': return 'text-blue-600 bg-blue-50';
-      default: return 'text-slate-500 bg-slate-100';
+      case 'completed': return 'text-st-ontime bg-st-ontime-light';
+      case 'delayed': return 'text-st-delayed bg-st-delayed-light';
+      case 'active': return 'text-st-active bg-st-active-light';
+      default: return 'text-st-pending bg-st-pending-light';
     }
   }
 
@@ -282,22 +296,22 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
 
   getSubStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'completed': return 'bg-emerald-50 text-emerald-600';
-      case 'completed-risk': return 'bg-amber-50 text-amber-600';
-      case 'completed-late': return 'bg-red-50 text-red-600';
-      case 'on-time': return 'bg-slate-50 text-slate-400';
-      case 'at-risk': return 'bg-amber-50 text-amber-600';
-      case 'delayed': return 'bg-red-50 text-red-600';
-      default: return 'bg-slate-50 text-slate-400';
+      case 'completed': return 'bg-st-ontime-light text-st-ontime';
+      case 'completed-risk': return 'bg-st-risk-light text-st-risk';
+      case 'completed-late': return 'bg-st-delayed-light text-st-delayed';
+      case 'on-time': return 'bg-st-pending-light text-st-pending';
+      case 'at-risk': return 'bg-st-risk-light text-st-risk';
+      case 'delayed': return 'bg-st-delayed-light text-st-delayed';
+      default: return 'bg-st-pending-light text-st-pending';
     }
   }
 
   getHitoDotClass(status: string): string {
     switch (status) {
-      case 'completed': return 'border-2 border-emerald-500 bg-emerald-50 text-emerald-600';
-      case 'delayed':   return 'border-2 border-red-500 bg-red-50 text-red-600 animate-pulse';
-      case 'active':    return 'border-2 border-blue-400 bg-blue-50 text-blue-500 animate-pulse';
-      default:          return 'border-2 border-slate-300 bg-slate-50 text-slate-400';
+      case 'completed': return 'border-2 border-st-ontime bg-st-ontime-light text-st-ontime';
+      case 'delayed':   return 'border-2 border-st-delayed bg-st-delayed-light text-st-delayed animate-pulse';
+      case 'active':    return 'border-2 border-st-active bg-st-active-light text-st-active animate-pulse';
+      default:          return 'border-2 border-st-pending bg-st-pending-light text-st-pending';
     }
   }
 

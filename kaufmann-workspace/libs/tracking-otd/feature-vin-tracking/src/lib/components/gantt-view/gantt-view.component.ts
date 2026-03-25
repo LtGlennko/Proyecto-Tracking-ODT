@@ -79,9 +79,9 @@ interface TimeMarker {
               <div class="w-[180px] shrink-0 px-4 border-r border-slate-100 flex items-center justify-between z-10 bg-white group-hover:bg-slate-50 transition-colors">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="w-2 h-2 rounded-full flex-shrink-0"
-                    [class]="stage.status === 'completed' ? 'bg-emerald-500' :
-                             stage.status === 'delayed'   ? 'bg-red-500' :
-                             stage.status === 'active'    ? 'bg-blue-500' : 'bg-slate-300'">
+                    [class]="stage.status === 'completed' ? 'bg-st-ontime' :
+                             stage.status === 'delayed'   ? 'bg-st-delayed' :
+                             stage.status === 'active'    ? 'bg-st-active' : 'bg-st-pending'">
                   </span>
                   <span class="font-semibold text-slate-700 text-sm truncate">{{ stage.name }}</span>
                 </div>
@@ -112,9 +112,9 @@ interface TimeMarker {
 
                 <!-- Real bar -->
                 <div class="absolute h-2.5 rounded-full transition-all z-10 group/bar"
-                     [class]="stage.status === 'completed' ? 'bg-emerald-400' :
-                              stage.status === 'delayed'   ? 'bg-red-400' :
-                              stage.status === 'active'    ? 'bg-blue-400' : 'bg-slate-300'"
+                     [class]="stage.status === 'completed' ? 'bg-st-ontime' :
+                              stage.status === 'delayed'   ? 'bg-st-delayed' :
+                              stage.status === 'active'    ? 'bg-st-active' : 'bg-st-pending'"
                      [style.left]="getBarStyle(stage.real.start, stage.real.end)?.left || '0%'"
                      [style.width]="getBarStyle(stage.real.start, stage.real.end)?.width || '0%'"
                      [style.display]="getBarStyle(stage.real.start, stage.real.end)?.display || 'none'">
@@ -156,11 +156,11 @@ interface TimeMarker {
 
                       <!-- Sub real bar -->
                       <div class="absolute h-1.5 rounded-full opacity-70 group/subbar"
-                           [class]="sub.status === 'completed' ? 'bg-emerald-300' :
-                                    sub.status === 'completed-risk' ? 'bg-amber-300' :
-                                    sub.status === 'completed-late' ? 'bg-red-300' :
-                                    sub.status === 'at-risk' ? 'bg-amber-300' :
-                                    sub.status === 'delayed' ? 'bg-red-300' : 'bg-slate-200'"
+                           [class]="sub.status === 'completed' ? 'bg-st-ontime' :
+                                    sub.status === 'completed-risk' ? 'bg-st-risk' :
+                                    sub.status === 'completed-late' ? 'bg-st-delayed' :
+                                    sub.status === 'at-risk' ? 'bg-st-risk' :
+                                    sub.status === 'delayed' ? 'bg-st-delayed' : 'bg-st-pending'"
                            [style.left]="getBarStyle(sub.real.start, sub.real.end)?.left || '0%'"
                            [style.width]="getBarStyle(sub.real.start, sub.real.end)?.width || '0%'"
                            [style.display]="getBarStyle(sub.real.start, sub.real.end)?.display || 'none'">
@@ -184,15 +184,15 @@ interface TimeMarker {
       <!-- Legend -->
       <div class="px-4 py-2 bg-white border-t border-slate-100 flex items-center gap-2 sm:gap-4 flex-wrap text-[10px] text-slate-400 uppercase tracking-wider shrink-0">
         <div class="flex items-center gap-1.5">
-          <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+          <div class="w-2 h-2 bg-st-ontime rounded-full"></div>
           <span>Completado</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+          <div class="w-2 h-2 bg-st-active rounded-full"></div>
           <span>En Curso</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <div class="w-2 h-2 bg-red-400 rounded-full"></div>
+          <div class="w-2 h-2 bg-st-delayed rounded-full"></div>
           <span>Demorado</span>
         </div>
         <div class="flex items-center gap-1.5">

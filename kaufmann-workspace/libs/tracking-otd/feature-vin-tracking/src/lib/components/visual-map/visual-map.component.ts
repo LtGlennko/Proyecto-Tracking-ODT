@@ -41,12 +41,34 @@ interface Bloque {
         <div class="relative flex items-stretch min-w-max">
 
 
-          @for (bloque of bloques(); track bloque.grupoId; let first = $first) {
+          @for (bloque of bloques(); track bloque.grupoId; let first = $first; let i = $index) {
 
-            <!-- Dashed separator between groups -->
+            <!-- Separator between groups: dashed line + arrows per carril -->
             @if (!first) {
-              <div class="flex items-stretch justify-center shrink-0 px-5">
-                <div class="border-l-2 border-dashed border-slate-300"></div>
+              @let prevBloque = bloques()[i - 1];
+              <div class="shrink-0 relative" style="width: 36px; align-self: stretch">
+                <!-- Dashed vertical line (full height, always visible) -->
+                <div class="absolute inset-0 flex justify-center pointer-events-none">
+                  <div class="w-px h-full" style="background:repeating-linear-gradient(to bottom,#cbd5e1 0,#cbd5e1 8px,transparent 8px,transparent 20px)"></div>
+                </div>
+                <!-- Top carril arrow: centered to badge height -->
+                @if (prevBloque.financiero.length > 0 && bloque.financiero.length > 0) {
+                  <div class="absolute left-0 right-0 flex justify-center" style="top: 12px; height: 56px; align-items: center">
+                    <div class="flex items-center bg-white px-0.5">
+                      <div class="w-5 h-[3px] bg-flow-arrow rounded-full"></div>
+                      <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-flow-arrow"></div>
+                    </div>
+                  </div>
+                }
+                <!-- Bottom carril arrow: positioned at operativo lane -->
+                @if (prevBloque.operativo.length > 0 && bloque.operativo.length > 0) {
+                  <div class="absolute left-0 right-0 flex justify-center" style="bottom: 16px; height: 56px; align-items: center">
+                    <div class="flex items-center bg-white px-0.5">
+                      <div class="w-5 h-[3px] bg-flow-arrow rounded-full"></div>
+                      <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-flow-arrow"></div>
+                    </div>
+                  </div>
+                }
               </div>
             }
 
@@ -54,62 +76,64 @@ interface Bloque {
             <div class="flex flex-col shrink-0 min-w-28">
 
               <!-- Financiero lane (top) -->
-              <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
+              <div class="flex-1 flex items-start justify-center px-3 pt-3 pb-4">
                 @for (hito of bloque.financiero; track hito.id; let hlast = $last) {
-                  <div class="flex flex-col items-center shrink-0 relative"
+                  <div class="flex flex-col items-center shrink-0 relative w-20"
                        (mouseenter)="onHitoHover(hito.id, $event)"
                        (mouseleave)="hoveredHitoId.set(null)">
                     <div class="flex flex-col items-center">
-                      <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
+                      <div class="w-14 h-14 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
                            [class]="circleClass(hito.status, 'financiero')"
                            (click)="nodeClick.emit(hito.id)">
                         @if (hito.icono) {
-                          <lucide-icon [name]="hito.icono" [size]="22" [strokeWidth]="2.5"></lucide-icon>
+                          <lucide-icon [name]="hito.icono" [size]="26" [strokeWidth]="2.5"></lucide-icon>
                         } @else {
                           <span class="text-sm">{{ statusIcon(hito.status) }}</span>
                         }
                       </div>
-                      <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">
+                      <span class="mt-1.5 text-sm font-semibold text-slate-700 text-center leading-tight max-w-32">
                         {{ hito.nombre }}
                       </span>
                       @if (hito.lastDate) {
-                        <span class="text-[9px] font-mono mt-0.5" [class]="hito.lastDateEsPlan ? 'text-blue-500' : 'text-emerald-600'">{{ hito.lastDate }}</span>
+                        <span class="text-[9px] font-mono mt-0.5" [class]="hito.lastDateEsPlan ? 'text-st-active' : 'text-st-ontime'">{{ hito.lastDate }}</span>
                       }
                     </div>
                     <!-- Hover card -->
                     @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
-                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-[90vw] sm:max-w-56 pointer-events-none"
+                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-56 max-w-[90vw] sm:max-w-72 pointer-events-none"
                            [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
                           <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
                         </div>
-                        <div class="space-y-1">
+                        <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-1 items-center">
                           @for (sub of hito.subetapas; track sub.name) {
-                            <div class="flex items-center justify-between gap-1.5">
-                              <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
-                                <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
-                              </div>
-                              <span class="px-1 py-0.5 text-[9px] font-medium rounded shrink-0" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
-                              @if (sub.fecha) {
-                                <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
-                              }
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
+                              <span class="text-[11px] text-slate-600">{{ sub.name }}</span>
                             </div>
+                            <span class="px-1 py-0.5 text-[9px] font-medium rounded text-center whitespace-nowrap" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
+                            @if (sub.fecha) {
+                              <span class="text-[10px] font-mono whitespace-nowrap text-right" [class]="sub.esPlan ? 'text-st-active' : 'text-st-ontime'">{{ sub.fecha }}</span>
+                            } @else {
+                              <span></span>
+                            }
                           }
                         </div>
                         @if (hito.lastPlanDate) {
                           <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
-                            Plan: <span class="font-medium text-blue-500">{{ hito.lastPlanDate }}</span>
+                            Plan: <span class="font-medium text-st-active">{{ hito.lastPlanDate }}</span>
                           </div>
                         }
                       </div>
                     }
                   </div>
                   @if (!hlast) {
-                    <div class="flex items-center shrink-0 mx-0.5 mt-4">
-                      <div class="w-3 h-0.5 bg-blue-300"></div>
-                      <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-blue-300"></div>
+                    <div class="shrink-0 mx-1 flex items-center" style="padding-top: 0; height: 56px">
+                      <div class="flex items-center">
+                        <div class="w-5 h-[3px] bg-flow-arrow rounded-full"></div>
+                        <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-flow-arrow"></div>
+                      </div>
                     </div>
                   }
                 }
@@ -121,62 +145,64 @@ interface Bloque {
               </div>
 
               <!-- Operativo lane (bottom) -->
-              <div class="flex-1 flex items-start justify-center gap-1 px-3 pt-3 pb-4">
+              <div class="flex-1 flex items-start justify-center px-3 pt-3 pb-4">
                 @for (hito of bloque.operativo; track hito.id; let hlast = $last) {
-                  <div class="flex flex-col items-center shrink-0 relative"
+                  <div class="flex flex-col items-center shrink-0 relative w-20"
                        (mouseenter)="onHitoHover(hito.id, $event)"
                        (mouseleave)="hoveredHitoId.set(null)">
                     <div class="flex flex-col items-center">
-                      <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 transition-all"
-                           [class]="circleClass(hito.status, 'operativo')"
+                      <div class="w-14 h-14 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all"
+                           [class]="circleClass(hito.status, 'financiero')"
                            (click)="nodeClick.emit(hito.id)">
                         @if (hito.icono) {
-                          <lucide-icon [name]="hito.icono" [size]="22" [strokeWidth]="2.5"></lucide-icon>
+                          <lucide-icon [name]="hito.icono" [size]="26" [strokeWidth]="2.5"></lucide-icon>
                         } @else {
                           <span class="text-sm">{{ statusIcon(hito.status) }}</span>
                         }
                       </div>
-                      <span class="mt-1 text-sm font-semibold text-slate-700 text-center leading-tight max-w-28">
+                      <span class="mt-1.5 text-sm font-semibold text-slate-700 text-center leading-tight max-w-32">
                         {{ hito.nombre }}
                       </span>
                       @if (hito.lastDate) {
-                        <span class="text-[9px] font-mono mt-0.5" [class]="hito.lastDateEsPlan ? 'text-blue-500' : 'text-emerald-600'">{{ hito.lastDate }}</span>
+                        <span class="text-[9px] font-mono mt-0.5" [class]="hito.lastDateEsPlan ? 'text-st-active' : 'text-st-ontime'">{{ hito.lastDate }}</span>
                       }
                     </div>
                     <!-- Hover card -->
                     @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
-                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-[90vw] sm:max-w-56 pointer-events-none"
+                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-56 max-w-[90vw] sm:max-w-72 pointer-events-none"
                            [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
                           <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
                         </div>
-                        <div class="space-y-1">
+                        <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-1 items-center">
                           @for (sub of hito.subetapas; track sub.name) {
-                            <div class="flex items-center justify-between gap-1.5">
-                              <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
-                                <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
-                              </div>
-                              <span class="px-1 py-0.5 text-[9px] font-medium rounded shrink-0" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
-                              @if (sub.fecha) {
-                                <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sub.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sub.fecha }}</span>
-                              }
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
+                              <span class="text-[11px] text-slate-600">{{ sub.name }}</span>
                             </div>
+                            <span class="px-1 py-0.5 text-[9px] font-medium rounded text-center whitespace-nowrap" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
+                            @if (sub.fecha) {
+                              <span class="text-[10px] font-mono whitespace-nowrap text-right" [class]="sub.esPlan ? 'text-st-active' : 'text-st-ontime'">{{ sub.fecha }}</span>
+                            } @else {
+                              <span></span>
+                            }
                           }
                         </div>
                         @if (hito.lastPlanDate) {
                           <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
-                            Plan: <span class="font-medium text-blue-500">{{ hito.lastPlanDate }}</span>
+                            Plan: <span class="font-medium text-st-active">{{ hito.lastPlanDate }}</span>
                           </div>
                         }
                       </div>
                     }
                   </div>
                   @if (!hlast) {
-                    <div class="flex items-center shrink-0 mx-0.5 mt-4">
-                      <div class="w-3 h-0.5 bg-amber-300"></div>
-                      <div class="w-0 h-0 border-t-[3px] border-b-[3px] border-l-[4px] border-transparent border-l-amber-300"></div>
+                    <div class="shrink-0 mx-1 flex items-center" style="padding-top: 0; height: 56px">
+                      <div class="flex items-center">
+                        <div class="w-5 h-[3px] bg-flow-arrow rounded-full"></div>
+                        <div class="w-0 h-0 border-t-[7px] border-b-[7px] border-l-[9px] border-transparent border-l-flow-arrow"></div>
+                      </div>
                     </div>
                   }
                 }
@@ -195,12 +221,12 @@ interface Bloque {
 
         <!-- Legend -->
         <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap gap-4 text-xs text-slate-500">
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Completado</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> Demorado</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-blue-500 bg-blue-50"></span> Activo</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-200"></span> Pendiente</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-st-ontime"></span> Completado</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-st-delayed"></span> Demorado</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-st-active bg-st-active-light"></span> Activo</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-st-pending-border"></span> Pendiente</span>
           <span class="flex items-center gap-1.5">
-            <span class="w-5 border-l-2 border-dashed border-slate-400 h-3"></span> Grupo paralelo
+            <span class="h-3" style="background:repeating-linear-gradient(to bottom,#94a3b8 0,#94a3b8 4px,transparent 4px,transparent 10px);width:1px;display:inline-block"></span> Grupo paralelo
           </span>
         </div>
       }
@@ -271,13 +297,11 @@ export class VisualMapComponent {
       .sort((a, b) => a.minIdx - b.minIdx);
   });
 
-  circleClass(status: string, carril: string): string {
-    if (status === 'completed') return 'border-emerald-500 bg-emerald-50 text-emerald-600';
-    if (status === 'delayed') return 'border-red-500 bg-red-50 text-red-600';
-    if (status === 'active') return carril === 'financiero'
-      ? 'border-blue-400 bg-blue-50 text-blue-500 animate-pulse'
-      : 'border-amber-400 bg-amber-50 text-amber-500 animate-pulse';
-    return 'border-slate-300 bg-slate-50 text-slate-400';
+  circleClass(status: string, _carril?: string): string {
+    if (status === 'completed') return 'border-st-ontime bg-st-ontime-light text-st-ontime';
+    if (status === 'delayed') return 'border-st-delayed bg-st-delayed-light text-st-delayed';
+    if (status === 'active') return 'border-st-active bg-st-active-light text-st-active animate-pulse';
+    return 'border-st-pending bg-st-pending-light text-st-pending';
   }
 
   statusIcon(status: string): string {
@@ -298,10 +322,10 @@ export class VisualMapComponent {
 
   statusLabelClass(status: string): string {
     switch (status) {
-      case 'completed': return 'text-emerald-600 bg-emerald-50';
-      case 'delayed': return 'text-red-600 bg-red-50';
-      case 'active': return 'text-blue-600 bg-blue-50';
-      default: return 'text-slate-500 bg-slate-100';
+      case 'completed': return 'text-st-ontime bg-st-ontime-light';
+      case 'delayed': return 'text-st-delayed bg-st-delayed-light';
+      case 'active': return 'text-st-active bg-st-active-light';
+      default: return 'text-st-pending bg-st-pending-light';
     }
   }
 
@@ -319,23 +343,23 @@ export class VisualMapComponent {
 
   subStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'completed': return 'bg-emerald-50 text-emerald-600';
-      case 'completed-risk': return 'bg-amber-50 text-amber-600';
-      case 'completed-late': return 'bg-red-50 text-red-600';
-      case 'on-time': return 'bg-slate-50 text-slate-400';
-      case 'at-risk': return 'bg-amber-50 text-amber-600';
-      case 'delayed': return 'bg-red-50 text-red-600';
-      default: return 'bg-slate-50 text-slate-400';
+      case 'completed': return 'bg-st-ontime-light text-st-ontime';
+      case 'completed-risk': return 'bg-st-risk-light text-st-risk';
+      case 'completed-late': return 'bg-st-delayed-light text-st-delayed';
+      case 'on-time': return 'bg-st-pending-light text-st-pending';
+      case 'at-risk': return 'bg-st-risk-light text-st-risk';
+      case 'delayed': return 'bg-st-delayed-light text-st-delayed';
+      default: return 'bg-st-pending-light text-st-pending';
     }
   }
 
   subDotClass(status: string): string {
-    if (status === 'completed') return 'bg-emerald-500';
-    if (status === 'completed-risk') return 'bg-amber-500';
-    if (status === 'completed-late') return 'bg-red-500';
-    if (status === 'at-risk') return 'bg-amber-500 animate-pulse';
-    if (status === 'delayed') return 'bg-red-500 animate-pulse';
-    return 'bg-slate-300';
+    if (status === 'completed') return 'bg-st-ontime';
+    if (status === 'completed-risk') return 'bg-st-risk';
+    if (status === 'completed-late') return 'bg-st-delayed';
+    if (status === 'at-risk') return 'bg-st-risk animate-pulse';
+    if (status === 'delayed') return 'bg-st-delayed animate-pulse';
+    return 'bg-st-pending';
   }
 
   private fmtShort(iso: string): string {

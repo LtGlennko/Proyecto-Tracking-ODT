@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
 import { StatusBadgeComponent, SearchBarComponent } from '@kaufmann/shared/ui';
@@ -8,7 +9,7 @@ import { VinModel, HitoTracking } from '@kaufmann/shared/models';
 @Component({
   selector: 'kf-reporte-page',
   standalone: true,
-  imports: [FormsModule, StatusBadgeComponent, SearchBarComponent],
+  imports: [FormsModule, RouterLink, StatusBadgeComponent, SearchBarComponent],
   template: `
     <div class="p-3 sm:p-6 space-y-4">
 
@@ -43,7 +44,7 @@ import { VinModel, HitoTracking } from '@kaufmann/shared/models';
           <thead>
             <tr class="border-b border-slate-200 bg-slate-50">
               <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide sticky left-0 bg-slate-50 z-10" rowspan="2">VIN</th>
-              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Cliente</th>
+              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide w-[180px] min-w-[180px] max-w-[180px]" rowspan="2">Cliente</th>
               <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Modelo</th>
               <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Lote</th>
               <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Status</th>
@@ -68,9 +69,9 @@ import { VinModel, HitoTracking } from '@kaufmann/shared/models';
             @for (row of filteredRows(); track row.vin.id) {
               <tr class="border-b border-slate-100 hover:bg-blue-50/50 transition-colors">
                 <td class="px-3 py-2.5 sticky left-0 bg-white z-10">
-                  <span class="font-mono text-xs font-semibold text-blue-600 cursor-pointer hover:underline">{{ row.vinShort }}</span>
+                  <span class="font-mono text-xs font-semibold text-slate-700">{{ row.vinShort }}</span>
                 </td>
-                <td class="px-3 py-2.5 text-xs text-slate-700">{{ row.vin.clientName }}</td>
+                <td class="px-3 py-2.5 text-xs text-slate-700 w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words">{{ row.vin.clientName }}</td>
                 <td class="px-3 py-2.5 text-xs text-slate-700">{{ row.vin.modelo }}</td>
                 <td class="px-3 py-2.5 text-xs text-slate-500">{{ row.vin.lote || '-' }}</td>
                 <td class="px-3 py-2.5 text-center">

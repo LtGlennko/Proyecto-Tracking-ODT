@@ -107,7 +107,8 @@
     <h1 class="text-xl font-bold text-slate-800">Seguimiento OTD</h1>
     <p class="text-sm text-slate-500 mt-0.5">
       {{ store.summaryTotal() }} VINs encontrados ·
-      <span class="text-red-600 font-medium">{{ store.summaryDemorado() }} demorados</span>
+      <span class="text-st-risk font-medium">{{ store.summaryEnRiesgo() }} en riesgo</span> ·
+      <span class="text-st-delayed font-medium">{{ store.summaryDemorado() }} demorados</span>
     </p>
   </div>
 
@@ -168,6 +169,17 @@
       }
     </select>
 
+    <!-- Clear filters -->
+    @if (hasActiveFilters()) {
+      <button (click)="clearAllFilters()"
+        class="flex items-center gap-1 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Limpiar filtros
+      </button>
+    }
+
     <!-- Export CSV -->
     <button (click)="exportCsv()"
       class="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
@@ -223,13 +235,13 @@
             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 border border-slate-200">
               Total: {{ cStats.total }}
             </span>
-            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-st-ontime-light text-st-ontime border border-st-ontime-border">
               Entregados: {{ cStats.delivered }}
             </span>
-            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-st-ontime-light text-st-ontime border border-st-ontime-border">
               A Tiempo: {{ cStats.onTime }}
             </span>
-            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-st-delayed-light text-st-delayed border border-st-delayed-border">
               Demorados: {{ cStats.delayed }}
             </span>
           </div>
@@ -260,9 +272,9 @@
                 @let fStats = calcStats(ficha.vins);
                 <div class="flex gap-2 mr-2">
                   <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-slate-100 text-slate-600">Total: {{ fStats.total }}</span>
-                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-600">Entregados: {{ fStats.delivered }}</span>
-                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-600">A Tiempo: {{ fStats.onTime }}</span>
-                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-red-50 text-red-600">Demorados: {{ fStats.delayed }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-st-ontime-light text-st-ontime">Entregados: {{ fStats.delivered }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-st-ontime-light text-st-ontime">A Tiempo: {{ fStats.onTime }}</span>
+                  <span class="px-1.5 py-0.5 text-xs font-semibold rounded bg-st-delayed-light text-st-delayed">Demorados: {{ fStats.delayed }}</span>
                 </div>
               </div>
             </div>
@@ -305,29 +317,29 @@
                           }
                         </span>
                         @if (hoveredStageKey() === vin.id + ':' + stage.id) {
-                          <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none"
+                          <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-56 max-w-72 pointer-events-none"
                                [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                             <div class="flex items-center justify-between gap-2 mb-2">
                               <span class="text-xs font-bold text-slate-800">{{ stage.name }}</span>
                               <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="getStatusLabelClass(stage.status)">{{ getStatusLabel(stage.status) }}</span>
                             </div>
-                            <div class="space-y-1">
+                            <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-1 items-center">
                               @for (sub of stage.subStages; track sub.id) {
                                 @let sf = getSubFecha(sub);
-                                <div class="flex items-center justify-between gap-1.5">
-                                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                                    <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="sub.status === 'completed' ? 'bg-emerald-500' : sub.status === 'completed-risk' ? 'bg-amber-500' : sub.status === 'completed-late' ? 'bg-red-500' : sub.status === 'at-risk' ? 'bg-amber-500' : sub.status === 'delayed' ? 'bg-red-500' : 'bg-slate-300'"></span>
-                                    <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
-                                  </div>
-                                  <span class="px-1 py-0.5 text-[9px] font-medium rounded shrink-0" [class]="getSubStatusBadgeClass(sub.status)">{{ getSubStatusLabel(sub.status) }}</span>
-                                  @if (sf.text) {
-                                    <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sf.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sf.text }}</span>
-                                  }
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                  <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="sub.status === 'completed' ? 'bg-st-ontime' : sub.status === 'completed-risk' ? 'bg-st-risk' : sub.status === 'completed-late' ? 'bg-st-delayed' : sub.status === 'at-risk' ? 'bg-st-risk' : sub.status === 'delayed' ? 'bg-st-delayed' : 'bg-st-pending'"></span>
+                                  <span class="text-[11px] text-slate-600">{{ sub.name }}</span>
                                 </div>
+                                <span class="px-1 py-0.5 text-[9px] font-medium rounded text-center whitespace-nowrap" [class]="getSubStatusBadgeClass(sub.status)">{{ getSubStatusLabel(sub.status) }}</span>
+                                @if (sf.text) {
+                                  <span class="text-[10px] font-mono whitespace-nowrap text-right" [class]="sf.esPlan ? 'text-st-active' : 'text-st-ontime'">{{ sf.text }}</span>
+                                } @else {
+                                  <span></span>
+                                }
                               }
                             </div>
                             <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
-                              Plan: <span class="font-medium text-blue-500">{{ getLastPlanDate(stage) }}</span>
+                              Plan: <span class="font-medium text-st-active">{{ getLastPlanDate(stage) }}</span>
                             </div>
                           </div>
                         }
@@ -384,9 +396,9 @@
                 class="border-b border-slate-100 hover:bg-slate-50 transition-colors duration-100 cursor-pointer group"
                 >
                 <!-- Cliente -->
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-1">
-                    <span class="font-medium text-slate-800 text-xs truncate max-w-32">{{ vin.clientName }}</span>
+                <td class="px-4 py-3 w-[180px] min-w-[180px] max-w-[180px]">
+                  <div class="flex items-start gap-1">
+                    <span class="font-medium text-slate-800 text-xs break-words">{{ vin.clientName }}</span>
                     @if (vin.isVic) {
                       <svg class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2.5 19h19l-2-9-5 4-4.5-7-4.5 7-5-4-2 9zm2.5 1v1.5a.5.5 0 00.5.5h13a.5.5 0 00.5-.5V20H5z"/>
@@ -434,29 +446,29 @@
                           }
                         </span>
                         @if (hoveredStageKey() === vin.id + ':' + stage.id) {
-                          <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-48 max-w-56 pointer-events-none"
+                          <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-56 max-w-72 pointer-events-none"
                                [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
                             <div class="flex items-center justify-between gap-2 mb-2">
                               <span class="text-xs font-bold text-slate-800">{{ stage.name }}</span>
                               <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="getStatusLabelClass(stage.status)">{{ getStatusLabel(stage.status) }}</span>
                             </div>
-                            <div class="space-y-1">
+                            <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-1 items-center">
                               @for (sub of stage.subStages; track sub.id) {
                                 @let sf = getSubFecha(sub);
-                                <div class="flex items-center justify-between gap-1.5">
-                                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                                    <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="sub.status === 'completed' ? 'bg-emerald-500' : sub.status === 'completed-risk' ? 'bg-amber-500' : sub.status === 'completed-late' ? 'bg-red-500' : sub.status === 'at-risk' ? 'bg-amber-500' : sub.status === 'delayed' ? 'bg-red-500' : 'bg-slate-300'"></span>
-                                    <span class="text-[11px] text-slate-600 truncate">{{ sub.name }}</span>
-                                  </div>
-                                  <span class="px-1 py-0.5 text-[9px] font-medium rounded shrink-0" [class]="getSubStatusBadgeClass(sub.status)">{{ getSubStatusLabel(sub.status) }}</span>
-                                  @if (sf.text) {
-                                    <span class="text-[10px] font-mono whitespace-nowrap shrink-0" [class]="sf.esPlan ? 'text-blue-500' : 'text-emerald-600'">{{ sf.text }}</span>
-                                  }
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                  <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="sub.status === 'completed' ? 'bg-st-ontime' : sub.status === 'completed-risk' ? 'bg-st-risk' : sub.status === 'completed-late' ? 'bg-st-delayed' : sub.status === 'at-risk' ? 'bg-st-risk' : sub.status === 'delayed' ? 'bg-st-delayed' : 'bg-st-pending'"></span>
+                                  <span class="text-[11px] text-slate-600">{{ sub.name }}</span>
                                 </div>
+                                <span class="px-1 py-0.5 text-[9px] font-medium rounded text-center whitespace-nowrap" [class]="getSubStatusBadgeClass(sub.status)">{{ getSubStatusLabel(sub.status) }}</span>
+                                @if (sf.text) {
+                                  <span class="text-[10px] font-mono whitespace-nowrap text-right" [class]="sf.esPlan ? 'text-st-active' : 'text-st-ontime'">{{ sf.text }}</span>
+                                } @else {
+                                  <span></span>
+                                }
                               }
                             </div>
                             <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
-                              Plan: <span class="font-medium text-blue-500">{{ getLastPlanDate(stage) }}</span>
+                              Plan: <span class="font-medium text-st-active">{{ getLastPlanDate(stage) }}</span>
                             </div>
                           </div>
                         }
