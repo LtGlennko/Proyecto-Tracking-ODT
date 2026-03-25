@@ -4,7 +4,7 @@ import autoTable from 'jspdf-autotable';
 
 import { VinModel, HitoTracking } from '@kaufmann/shared/models';
 import { StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
-import { formatDate, calculateDiff } from '@kaufmann/shared/utils';
+import { formatDate, calculateDiff, subStatusLabel as subStatusLabelFn } from '@kaufmann/shared/utils';
 
 @Component({
     selector: 'kf-tracking-drawer',
@@ -121,17 +121,7 @@ export class TrackingDrawerComponent {
     }
   }
 
-  subStatusLabel(status: string): string {
-    switch (status) {
-      case 'completed': return 'A tiempo';
-      case 'completed-risk': return 'En tolerancia';
-      case 'completed-late': return 'Crítico';
-      case 'on-time': return 'A tiempo';
-      case 'at-risk': return 'En tolerancia';
-      case 'delayed': return 'Crítico';
-      default: return 'Pendiente';
-    }
-  }
+  subStatusLabel = subStatusLabelFn;
 
   subStatusBadgeClass(status: string): string {
     switch (status) {

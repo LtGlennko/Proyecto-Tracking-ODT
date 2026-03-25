@@ -3,33 +3,34 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
-import { StatusBadgeComponent, SearchBarComponent } from '@kaufmann/shared/ui';
+import { StatusBadgeComponent, SearchBarComponent, PaginationComponent } from '@kaufmann/shared/ui';
 import { VinModel, HitoTracking } from '@kaufmann/shared/models';
+import { downloadCsv } from '@kaufmann/shared/utils';
 
 @Component({
   selector: 'kf-reporte-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, StatusBadgeComponent, SearchBarComponent],
+  imports: [FormsModule, RouterLink, StatusBadgeComponent, SearchBarComponent, PaginationComponent],
   template: `
     <div class="p-3 sm:p-6 space-y-4">
 
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <h1 class="text-lg sm:text-xl font-bold text-slate-800">Reporte Maestro Detallado</h1>
+        <h1 class="kf-page-title">Reporte Maestro Detallado</h1>
       </div>
 
-      <!-- Filters -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+      <!-- Filters bar -->
+      <div class="kf-card p-3 sm:p-4 mb-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
         <kf-search-bar
           placeholder="Filtrar reporte..."
           [value]="searchTerm()"
           (valueChange)="searchTerm.set($event)"
           (cleared)="searchTerm.set('')"
-          containerClass="w-full sm:w-auto sm:flex-1 sm:max-w-md"
+          containerClass="w-full lg:w-[500px] xl:w-[600px]"
         />
         <div class="hidden sm:block flex-1"></div>
         <button (click)="exportCsv()"
-          class="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+          class="kf-btn-primary">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
           </svg>
@@ -38,7 +39,7 @@ import { VinModel, HitoTracking } from '@kaufmann/shared/models';
       </div>
 
       <!-- Table -->
-      <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+      <div class="kf-card overflow-x-auto">
         <table class="w-full text-sm whitespace-nowrap">
           <!-- Header row 1: fixed + hito groups -->
           <thead>
@@ -104,36 +105,12 @@ import { VinModel, HitoTracking } from '@kaufmann/shared/models';
       </div>
 
       <!-- Pagination -->
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span class="text-xs text-slate-500">
-            Página {{ store.page() }} de {{ store.totalPages() }} · {{ store.totalVins() }} VINs
-          </span>
-          <select
-            [ngModel]="store.pageSize()"
-            (ngModelChange)="store.setPageSize($event)"
-            class="text-xs rounded border border-slate-200 bg-white px-2 py-1 text-slate-600">
-            <option [value]="50">50 por página</option>
-            <option [value]="100">100 por página</option>
-            <option [value]="150">150 por página</option>
-            <option [value]="200">200 por página</option>
-          </select>
-        </div>
-        <div class="flex gap-2">
-          @if (store.page() > 1) {
-            <button
-              (click)="store.prevPage()"
-              class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors"
-            >← Anterior</button>
-          }
-          @if (store.page() < store.totalPages()) {
-            <button
-              (click)="store.nextPage()"
-              class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors"
-            >Siguiente →</button>
-          }
-        </div>
-      </div>
+      <kf-pagination
+        [page]="store.page()"
+        [pageSize]="store.pageSize()"
+        [total]="store.totalVins()"
+        (pageChange)="$event < store.page() ? store.prevPage() : store.nextPage()"
+        (pageSizeChange)="store.setPageSize($event)" />
 
     </div>
   `,
@@ -239,16 +216,6 @@ export class ReportePageComponent implements OnDestroy {
       ...r.hitoCells.flatMap(c => [c.plan || '', c.real || '', c.dif ?? '']),
     ]);
 
-    const escape = (v: string) => `"${(v || '').replace(/"/g, '""')}"`;
-    const csv = [headers.map(escape).join(','), ...csvRows.map(r => r.map(escape).join(','))].join('\n');
-
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-maestro-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(headers, csvRows, `reporte-maestro-${new Date().toISOString().slice(0, 10)}.csv`);
   }
 }

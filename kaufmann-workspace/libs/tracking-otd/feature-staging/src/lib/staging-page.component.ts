@@ -62,7 +62,7 @@ interface UploadRecord {
     
       <!-- Preview table (shown when file loaded) -->
       @if (previewVisible()) {
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="kf-card overflow-hidden">
           <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-slate-800">Vista Previa — {{ previewSource() }}</h3>
             <div class="flex gap-3 text-xs">
@@ -107,7 +107,7 @@ interface UploadRecord {
       }
     
       <!-- Upload history -->
-      <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div class="kf-card overflow-hidden">
         <div class="px-5 py-3 border-b border-slate-200">
           <h3 class="text-sm font-semibold text-slate-800">Historial de Cargas</h3>
         </div>

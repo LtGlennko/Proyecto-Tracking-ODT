@@ -6,9 +6,21 @@ Monorepo con dos aplicaciones: frontend Angular (Nx workspace) y backend NestJS 
 
 ## Estructura del Proyecto
 ```
-kaufmann-workspace/    ← Frontend Angular 17 + Nx + TailwindCSS
-tracking-otd-api/      ← Backend NestJS 10 + TypeORM 0.3 + PostgreSQL 15
+kaufmann-workspace/    ← Frontend Angular 21 + Nx 20 + TailwindCSS 3.4
+tracking-otd-api/      ← Backend NestJS 10 + TypeORM 0.3 + PostgreSQL 15/16
 ```
+
+## Versiones
+### Frontend (kaufmann-workspace/)
+- Angular 21.1.6, Nx 20.8.4 (@nx/angular), NgRx Signals 21.0.1
+- TailwindCSS 3.4.3, Lucide Angular 0.383.0, TypeScript 5.9.0, RxJS 7.8.0
+- jsPDF 4.2.1 + jspdf-autotable 5.0.7
+- Node.js 24.14.0, npm 11.9.0
+
+### Backend (tracking-otd-api/)
+- NestJS 10.3, TypeORM 0.3.20, TypeScript 5.3.3
+- PostgreSQL 15.17 (Docker local), 16.13 (servidor remoto)
+- xlsx 0.18.5, docx 9.6.1
 
 ## Esquema de Subagentes
 
@@ -53,9 +65,9 @@ Este proyecto usa 4 agentes especializados. Lanzar en paralelo cuando la tarea i
 ## Dominio de Negocio
 - **Empresas:** Divemotor, Andes Motor, Andes Maq
 - **4 tipos de vehículo:** Camión, Bus, Maquinaria, Vehículo Ligero
-- **10 hitos:** Importación, Carrozado, PDI, Asignación, Crédito, Facturación, Pago, Inmatriculación, Programación, Entrega
+- **10 hitos, 31 subetapas:** Importación, Carrozado, PDI, Asignación, Crédito, Facturación, Pago, Inmatriculación, Programación, Entrega
 - **Carriles:** financiero, operativo, comercial (ejecución paralela por grupo)
-- **Estados VIN:** A TIEMPO | EN RIESGO | DEMORADO | ENTREGADO
+- **4 estados VIN:** A TIEMPO | EN RIESGO | DEMORADO | ENTREGADO
 - **6 substatus subetapa:** completed, completed-risk, completed-late, on-time, at-risk, delayed
 
 ## Lógica Cross-Cutting: Grupos Paralelos
@@ -132,7 +144,7 @@ El tracking NO se persiste en tablas. Se calcula al vuelo en `TrackingService.bu
 ## Módulos Backend
 
 ### Existentes con lógica activa
-- `tracking` — buildStages dinámico, baseline, plan, status. Paginación server-side (`page`, `pageSize` → `{ data, total, page, pageSize }`). Filtros server-side: busqueda, estado, tipoVehiculoId, empresaId. COUNT query usa raw query builder separado (vista no tiene entity metadata). `resolveSubFecha` helper compartido para resolución de fechas (real.end > real.start > plan.end > plan.start)
+- `tracking` — buildStages dinámico, baseline, plan, status. Paginación server-side (`page`, `pageSize` → `{ data, total, page, pageSize }`). Filtros server-side: busqueda, estado, tipoVehiculoId, empresaId. COUNT query usa raw query builder separado (vista no tiene entity metadata). `resolveSubFecha` helper compartido para resolución de fechas (real.end > real.start > plan.end > plan.start). Summary endpoint: `/tracking/summary` → `{ total, demorado, enRiesgo }`. Completeness filter: solo VINs con datos PROPED + 5 campos fecha
 - `hitos` — CRUD maestro + config por tipo + grupos paralelos
 - `staging` — parseSap, parseProped, upsert staging_vin
 - `sla` — CRUD reglas SLA con score de prioridad
@@ -191,6 +203,25 @@ El tracking NO se persiste en tablas. Se calcula al vuelo en `TrackingService.bu
 - Nombres e IDs de hitos: desde BD (`hito.nombre`, `hito.id`)
 - Iconos de hitos y tipos: desde BD (`hito.icono`, `tipo_vehiculo.icono`)
 - Fuentes de datos: desde BD (`fuentes_vin`)
+
+## Frontend — Centralización
+
+### Design Tokens (`tailwind.config.js`)
+- Status: `st-ontime`, `st-risk`, `st-delayed`, `st-done`, `st-active`, `st-pending`
+- Flow: `flow-arrow`, `flow-sep`
+- Brand: `brand-navy` (#1E3A5F), `brand-blue` (#2E75B6)
+
+### Global CSS Classes (`styles.scss`)
+- `kf-card`, `kf-select`, `kf-filters-bar`, `kf-page-title`
+- `kf-btn-primary`, `kf-btn-ghost`, `kf-btn-brand`
+- `kf-stat-badge`, `kf-table-header`
+
+### Shared Helpers (`@kaufmann/shared/utils`)
+- `status-styles.helpers` (7 funciones), `date.helpers`, `csv-export.helpers`, `sla.helpers`
+
+### Shared UI Components (`@kaufmann/shared/ui`)
+- HitoHoverCardComponent, PaginationComponent, SearchBarComponent
+- StatusBadgeComponent, VehicleIconComponent, KpiCardComponent, StageNodeComponent
 
 ## Convenciones Generales
 - Idioma del código: inglés para nombres técnicos, español para dominio de negocio

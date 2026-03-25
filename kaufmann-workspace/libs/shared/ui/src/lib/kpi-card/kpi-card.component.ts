@@ -5,7 +5,7 @@ import { Component, input } from '@angular/core';
     selector: 'kf-kpi-card',
     imports: [],
     template: `
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 flex items-start gap-4"
+    <div class="kf-card p-5 flex items-start gap-4"
       [style.border-left-color]="color()"
       style="border-left-width: 4px;">
       <div class="flex-1 min-w-0">

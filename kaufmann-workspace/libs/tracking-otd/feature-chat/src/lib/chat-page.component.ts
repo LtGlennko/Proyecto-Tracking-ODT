@@ -20,7 +20,7 @@ interface ChatMessage {
         <h1 class="text-xl font-bold text-slate-800">Chat</h1>
         <p class="text-sm text-slate-500 mt-0.5">Panel de mensajes y menciones del equipo</p>
       </div>
-      <div class="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col h-[calc(100vh-220px)]">
+      <div class="kf-card flex flex-col h-[calc(100vh-220px)]">
         <!-- Messages -->
         <div class="flex-1 overflow-y-auto p-5 space-y-4">
           @for (msg of messages(); track msg) {

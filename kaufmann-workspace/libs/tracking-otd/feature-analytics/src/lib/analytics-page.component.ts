@@ -14,7 +14,7 @@ import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
     
       <!-- OTD Gauge -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 col-span-1">
+        <div class="kf-card p-5 col-span-1">
           <h3 class="text-sm font-semibold text-slate-700 mb-4">Cumplimiento OTD Global</h3>
           <div class="flex items-center justify-center">
             <div class="relative w-32 h-32">
@@ -33,7 +33,7 @@ import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
         </div>
     
         <!-- Stats -->
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
+        <div class="kf-card p-5">
           <h3 class="text-sm font-semibold text-slate-700 mb-3">Por Tipo de Vehículo</h3>
           <div class="space-y-2">
             @for (tipo of tipoVehiculoStats(); track tipo) {
@@ -51,7 +51,7 @@ import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
         </div>
     
         <!-- Lead time por hito -->
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 col-span-2">
+        <div class="kf-card p-5 col-span-2">
           <h3 class="text-sm font-semibold text-slate-700 mb-3">Volumen por Hito</h3>
           <div class="space-y-2">
             @for (h of hitoList(); track h.id) {
@@ -79,7 +79,7 @@ import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
       </div>
     
       <!-- Tendencia (placeholder for Chart.js integration) -->
-      <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
+      <div class="kf-card p-5">
         <h3 class="text-sm font-semibold text-slate-700 mb-4">Tendencia de Entregas (últimos 6 meses)</h3>
         <div class="h-48 flex items-end gap-4 px-4 border-b border-slate-100">
           @for (bar of trendBars(); track bar) {

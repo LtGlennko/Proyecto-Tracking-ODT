@@ -5,10 +5,12 @@
 ## Contexto del Proyecto
 Sistema de seguimiento de ventas y entregas de vehículos para Grupo Kaufmann.
 3 empresas: Divemotor, Andes Motor, Andes Maq.
-Flujo: Solicitud → Compra → Entrega (9 hitos, 20 subetapas).
+Flujo: Solicitud → Compra → Entrega (10 hitos, 31 subetapas).
 
 ## Stack
-- NestJS 10 + TypeORM 0.3 + PostgreSQL 15
+- NestJS 10.3 + TypeORM 0.3.20 + PostgreSQL 15.17 (Docker local) / 16.13 (servidor remoto)
+- TypeScript 5.3.3
+- xlsx 0.18.5, docx 9.6.1
 - Auth: Azure AD B2C → JWT (RS256)
 - Logger: Winston (nest-winston)
 - Tests: Jest + Supertest
@@ -19,8 +21,8 @@ Flujo: Solicitud → Compra → Entrega (9 hitos, 20 subetapas).
 ### Campos CALCULADOS — jamás persistir en BD
 - `diferencia_dias` en tracking → calcular como `(fechaReal - fechaPlan)` en días
 - `dias_critico` en sla_config → calcular como `diasObjetivo + diasTolerancia`
-- `estado_general` del VIN → derivar de `vin_hito_tracking.estado[]`
-- KPIs del VIN → calcular en `VinService.findOne()`, nunca en BD
+- `estado_general` del VIN → derivar dinámicamente del tracking computado
+- KPIs del VIN → calcular dinámicamente, nunca en BD
 
 ### Migraciones — siempre que cambies una entidad
 - NUNCA usar `synchronize: true`
@@ -55,11 +57,8 @@ Flujo: Solicitud → Compra → Entrega (9 hitos, 20 subetapas).
 ```
 src/modules/
   empresa/        → empresa.entity, empresa.service, empresa.controller
-  cliente/
-  ficha/          → ficha.formasPago (string[]) derivado de staging_vin.descripcion_cond_pago
-  vin/            → vin.service incluye calcularEstadoGeneral
   hitos/          → grupo_paralelo, hito (con icono), subetapa (campo_staging_real, campo_staging_plan)
-  tracking/       → cálculo dinámico de tracking (sin tablas vin_hito/subetapa_tracking)
+  tracking/       → cálculo dinámico de tracking (sin tablas vin_hito/subetapa_tracking). Summary endpoint: /tracking/summary → { total, demorado, enRiesgo }. Completeness filter: solo VINs con datos PROPED + 5 campos fecha
   sla/            → sla_config (sin chk_sla_min_dimension), SlaService.resolve(), SlaService.getStatus()
   alertas/        → alerta, alerta_accion, AlertasScheduler (@Cron cada 6h)
   chat/           → chat, mensaje, mensaje_etiqueta, notificacion
@@ -117,6 +116,13 @@ npm run test:cov
 - Columnas eliminadas de `hito`: `grupo_paralelo_id`, `usuario_responsable_id`, `tipo_vehiculo`, `slug`
 - Columna eliminada de `ficha`: `forma_pago`
 - Constraint eliminado: `chk_sla_min_dimension` de `sla_config`
+
+## Tablas Eliminadas (2026-03-23)
+- `vin`, `ficha`, `cliente` — todos los datos ahora derivados de `staging_vin` vía `vista_tracking_vin`
+- `vista_tracking_vin` es la vista principal: joins staging_vin + tipo_vehiculo, deriva cliente/ficha/empresa
+- COALESCE defaults: `cliente_nombre` → 'Sin Cliente', `ficha_codigo` → 'Sin Ficha', `cliente_comex` STOCK → NULL
+- `tipo_vehiculo_id` derivado de `linea_negocio` (VC→1, Buses→2, Maquinarias→3, Autos→4, default→2)
+- `empresa_id` defaults to 1 (Divemotor)
 
 ## Métodos Removidos
 - `syncFromStaging`, `getTrackingVin`, `updateHitoTracking`, `updateSubetapaTracking`

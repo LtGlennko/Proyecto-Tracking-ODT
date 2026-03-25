@@ -1,7 +1,13 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { HitoTracking } from '@kaufmann/shared/models';
-import { resolveSubFecha } from '@kaufmann/shared/utils';
+import {
+  resolveSubFecha,
+  stageStatusLabel, stageStatusLabelClass,
+  subStatusLabel as subStatusLabelFn, subStatusBadgeClass as subStatusBadgeClassFn,
+  hitoCircleClass, subDotClass as subDotClassFn,
+} from '@kaufmann/shared/utils';
 import { LucideAngularModule } from 'lucide-angular';
+import { HitoHoverCardComponent } from '@kaufmann/shared/ui';
 
 interface SubNode {
   name: string;
@@ -29,7 +35,7 @@ interface Bloque {
 
 @Component({
     selector: 'kf-visual-map',
-    imports: [LucideAngularModule],
+    imports: [LucideAngularModule, HitoHoverCardComponent],
     template: `
     <div class="bg-white rounded-lg border border-slate-200 p-3 sm:p-6 overflow-x-auto">
 
@@ -100,32 +106,13 @@ interface Bloque {
                     </div>
                     <!-- Hover card -->
                     @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
-                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-56 max-w-[90vw] sm:max-w-72 pointer-events-none"
-                           [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                          <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
-                          <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
-                        </div>
-                        <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-1 items-center">
-                          @for (sub of hito.subetapas; track sub.name) {
-                            <div class="flex items-center gap-1.5 min-w-0">
-                              <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
-                              <span class="text-[11px] text-slate-600">{{ sub.name }}</span>
-                            </div>
-                            <span class="px-1 py-0.5 text-[9px] font-medium rounded text-center whitespace-nowrap" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
-                            @if (sub.fecha) {
-                              <span class="text-[10px] font-mono whitespace-nowrap text-right" [class]="sub.esPlan ? 'text-st-active' : 'text-st-ontime'">{{ sub.fecha }}</span>
-                            } @else {
-                              <span></span>
-                            }
-                          }
-                        </div>
-                        @if (hito.lastPlanDate) {
-                          <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
-                            Plan: <span class="font-medium text-st-active">{{ hito.lastPlanDate }}</span>
-                          </div>
-                        }
-                      </div>
+                      <kf-hito-hover-card
+                        [stageName]="hito.nombre"
+                        [stageStatus]="hito.status"
+                        [subStages]="hito.subetapas"
+                        [lastPlanDate]="hito.lastPlanDate"
+                        [posX]="hoverPos().x"
+                        [posY]="hoverPos().y" />
                     }
                   </div>
                   @if (!hlast) {
@@ -169,32 +156,13 @@ interface Bloque {
                     </div>
                     <!-- Hover card -->
                     @if (hoveredHitoId() === hito.id && hito.subetapas.length > 0) {
-                      <div class="fixed -translate-x-1/2 z-[100] bg-white border border-slate-200 rounded-lg shadow-xl p-3 min-w-56 max-w-[90vw] sm:max-w-72 pointer-events-none"
-                           [style.left.px]="hoverPos().x" [style.top.px]="hoverPos().y">
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                          <span class="text-xs font-bold text-slate-800">{{ hito.nombre }}</span>
-                          <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" [class]="statusLabelClass(hito.status)">{{ statusLabel(hito.status) }}</span>
-                        </div>
-                        <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-1 items-center">
-                          @for (sub of hito.subetapas; track sub.name) {
-                            <div class="flex items-center gap-1.5 min-w-0">
-                              <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="subDotClass(sub.status)"></span>
-                              <span class="text-[11px] text-slate-600">{{ sub.name }}</span>
-                            </div>
-                            <span class="px-1 py-0.5 text-[9px] font-medium rounded text-center whitespace-nowrap" [class]="subStatusBadgeClass(sub.status)">{{ subStatusLabel(sub.status) }}</span>
-                            @if (sub.fecha) {
-                              <span class="text-[10px] font-mono whitespace-nowrap text-right" [class]="sub.esPlan ? 'text-st-active' : 'text-st-ontime'">{{ sub.fecha }}</span>
-                            } @else {
-                              <span></span>
-                            }
-                          }
-                        </div>
-                        @if (hito.lastPlanDate) {
-                          <div class="mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400">
-                            Plan: <span class="font-medium text-st-active">{{ hito.lastPlanDate }}</span>
-                          </div>
-                        }
-                      </div>
+                      <kf-hito-hover-card
+                        [stageName]="hito.nombre"
+                        [stageStatus]="hito.status"
+                        [subStages]="hito.subetapas"
+                        [lastPlanDate]="hito.lastPlanDate"
+                        [posX]="hoverPos().x"
+                        [posY]="hoverPos().y" />
                     }
                   </div>
                   @if (!hlast) {
@@ -298,10 +266,7 @@ export class VisualMapComponent {
   });
 
   circleClass(status: string, _carril?: string): string {
-    if (status === 'completed') return 'border-st-ontime bg-st-ontime-light text-st-ontime';
-    if (status === 'delayed') return 'border-st-delayed bg-st-delayed-light text-st-delayed';
-    if (status === 'active') return 'border-st-active bg-st-active-light text-st-active animate-pulse';
-    return 'border-st-pending bg-st-pending-light text-st-pending';
+    return hitoCircleClass(status);
   }
 
   statusIcon(status: string): string {
@@ -311,56 +276,11 @@ export class VisualMapComponent {
     return '\u25CB';
   }
 
-  statusLabel(status: string): string {
-    switch (status) {
-      case 'completed': return 'Completado';
-      case 'delayed': return 'Demorado';
-      case 'active': return 'En curso';
-      default: return 'Pendiente';
-    }
-  }
-
-  statusLabelClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'text-st-ontime bg-st-ontime-light';
-      case 'delayed': return 'text-st-delayed bg-st-delayed-light';
-      case 'active': return 'text-st-active bg-st-active-light';
-      default: return 'text-st-pending bg-st-pending-light';
-    }
-  }
-
-  subStatusLabel(status: string): string {
-    switch (status) {
-      case 'completed': return 'A tiempo';
-      case 'completed-risk': return 'En tolerancia';
-      case 'completed-late': return 'Crítico';
-      case 'on-time': return 'A tiempo';
-      case 'at-risk': return 'En tolerancia';
-      case 'delayed': return 'Crítico';
-      default: return 'Pendiente';
-    }
-  }
-
-  subStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'bg-st-ontime-light text-st-ontime';
-      case 'completed-risk': return 'bg-st-risk-light text-st-risk';
-      case 'completed-late': return 'bg-st-delayed-light text-st-delayed';
-      case 'on-time': return 'bg-st-pending-light text-st-pending';
-      case 'at-risk': return 'bg-st-risk-light text-st-risk';
-      case 'delayed': return 'bg-st-delayed-light text-st-delayed';
-      default: return 'bg-st-pending-light text-st-pending';
-    }
-  }
-
-  subDotClass(status: string): string {
-    if (status === 'completed') return 'bg-st-ontime';
-    if (status === 'completed-risk') return 'bg-st-risk';
-    if (status === 'completed-late') return 'bg-st-delayed';
-    if (status === 'at-risk') return 'bg-st-risk animate-pulse';
-    if (status === 'delayed') return 'bg-st-delayed animate-pulse';
-    return 'bg-st-pending';
-  }
+  statusLabel = stageStatusLabel;
+  statusLabelClass = stageStatusLabelClass;
+  subStatusLabel = subStatusLabelFn;
+  subStatusBadgeClass = subStatusBadgeClassFn;
+  subDotClass = subDotClassFn;
 
   private fmtShort(iso: string): string {
     if (!iso) return '';

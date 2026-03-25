@@ -196,7 +196,7 @@ interface SlaConfigApi {
     template: `
     <div class="p-3 sm:p-6 space-y-4 sm:space-y-5">
       <div>
-        <h1 class="text-lg sm:text-xl font-bold text-slate-800">Administración</h1>
+        <h1 class="kf-page-title">Administración</h1>
         <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Gestión de hitos, SLAs y usuarios</p>
       </div>
 
@@ -267,7 +267,7 @@ interface SlaConfigApi {
           } @else {
             <div cdkDropList [cdkDropListData]="hitosMaster()" (cdkDropListDropped)="onDropHito($event)" class="space-y-3">
             @for (hito of hitosMaster(); track hito.id) {
-              <div cdkDrag [cdkDragData]="hito" class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-visible relative">
+              <div cdkDrag [cdkDragData]="hito" class="kf-card overflow-visible relative">
                 <!-- Hito header -->
                 <div class="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex-wrap">
                   <!-- Drag handle -->
@@ -633,7 +633,7 @@ interface SlaConfigApi {
           } @else if (showPreview()) {
             <kf-process-preview [hitos]="hitoConfigs()" />
           } @else {
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            <div class="kf-card overflow-hidden">
               <kf-hito-config-swimlane
                 [hitos]="hitoConfigs()"
                 [grupos]="gruposParalelos()"
@@ -769,7 +769,7 @@ interface SlaConfigApi {
               <span class="text-xs text-slate-400">{{ filteredSlaRules().length }} reglas</span>
             </div>
 
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+            <div class="kf-card overflow-x-auto">
               <table class="w-full text-sm min-w-[700px]">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
@@ -1103,7 +1103,7 @@ interface SlaConfigApi {
           @if (loadingTipos()) {
             <div class="flex justify-center py-8"><span class="text-slate-400 text-sm">Cargando tipos...</span></div>
           } @else {
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+            <div class="kf-card overflow-x-auto">
               <table class="w-full text-sm min-w-[500px]">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
@@ -1202,7 +1202,7 @@ interface SlaConfigApi {
               <span class="text-slate-400 text-sm">Cargando usuarios...</span>
             </div>
           } @else {
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+            <div class="kf-card overflow-x-auto">
               <table class="w-full text-sm min-w-[600px]">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
@@ -1222,7 +1222,7 @@ interface SlaConfigApi {
                       <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
                           <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
-                          style="background-color: #2E75B6;">{{ getInitials(user.nombre) }}</div>
+                          class="bg-brand-blue">{{ getInitials(user.nombre) }}</div>
                           <span class="font-medium text-slate-800 text-sm">{{ user.nombre || '—' }}</span>
                         </div>
                       </td>

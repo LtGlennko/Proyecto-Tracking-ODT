@@ -1,19 +1,24 @@
 # Frontend — Angular Nx Workspace
 
 ## Stack
-- Angular 17 (standalone components, signals API)
-- Nx Monorepo (libs/, apps/)
-- NgRx Signal Store (`@ngrx/signals`)
-- TailwindCSS con design tokens Kaufmann
-- TypeScript strict
+- Angular 21.1.6 (standalone components, signals API)
+- Nx 20.8.4 (@nx/angular)
+- NgRx Signal Store 21.0.1 (`@ngrx/signals`)
+- TailwindCSS 3.4.3 con design tokens Kaufmann
+- Lucide Angular 0.383.0
+- TypeScript 5.9.0 strict
+- RxJS 7.8.0
+- jsPDF 4.2.1 + jspdf-autotable 5.0.7
+- Node.js 24.14.0, npm 11.9.0
+- `npm install` requiere `--legacy-peer-deps`
 
 ## Paths Clave
 - **App shell:** `apps/tracking-otd/src/app/` (routing, layout, guards)
 - **Shared models:** `libs/shared/models/src/lib/` (VinModel, HitoTracking, FichaModel, AlertaModel, SlaConfigModel)
-- **Shared UI:** `libs/shared/ui/src/lib/` (StatusBadge, StageNode, VehicleIcon, KpiCard)
-- **Shared utils:** `libs/shared/utils/src/lib/` (date.helpers, sla.helpers, pipes)
-- **Data access:** `libs/tracking-otd/data-access/src/lib/` (TrackingStore, AlertasStore, mock data)
-- **Features:** `libs/tracking-otd/feature-*/` (feature-vin-tracking, feature-admin, feature-dashboard, feature-alertas)
+- **Shared UI:** `libs/shared/ui/src/lib/` (HitoHoverCardComponent, PaginationComponent, SearchBarComponent, StatusBadgeComponent, VehicleIconComponent, KpiCardComponent, StageNodeComponent)
+- **Shared utils:** `libs/shared/utils/src/lib/` (status-styles.helpers, date.helpers, csv-export.helpers, sla.helpers, pipes)
+- **Data access:** `libs/tracking-otd/data-access/src/lib/` (TrackingStore, mock data)
+- **Features:** `libs/tracking-otd/feature-*/` (feature-vin-tracking, feature-admin, feature-reporte, feature-alertas)
 
 ## Reglas Obligatorias
 - SIEMPRE standalone components — NUNCA NgModule
@@ -27,19 +32,25 @@
 
 ## Design System
 - **Brand navy:** `#1E3A5F` | **Brand blue:** `#2E75B6`
-- **Status colors:** emerald = A TIEMPO, red = DEMORADO, slate = FINALIZADO, blue = ACTIVO
+- **Status colors:** emerald = A TIEMPO (st-ontime), red = DEMORADO (st-delayed), amber = EN RIESGO (st-risk), slate = ENTREGADO (st-done), blue = ACTIVO (st-active), gray = PENDIENTE (st-pending)
+- **Flow tokens:** `flow-arrow`, `flow-sep`
 - **Líneas de negocio:** blue = VC/Camiones, purple = Autos, orange = Maquinarias, sky = Buses
 - **Font:** Plus Jakarta Sans
 - **Bordes:** `border-slate-200`, **Fondos:** `bg-white`, `bg-slate-50`
 - **Sombras:** `shadow-sm` para cards
 
+### Global CSS Classes (`styles.scss`)
+- Layout: `kf-card`, `kf-filters-bar`, `kf-page-title`, `kf-table-header`
+- Controls: `kf-select`, `kf-btn-primary`, `kf-btn-ghost`, `kf-btn-brand`
+- Data: `kf-stat-badge`
+
 ## Módulo Admin (`feature-admin`)
-Página con 5 tabs: **Tipos de Vehículo**, **Hitos y Subetapas**, **Config por Tipo**, **SLA**, **Mapeo Campos**.
+Página con 6 tabs: **Config SLA**, **Subetapas por Tipo**, **Hitos por Tipo**, **Hitos Maestros**, **Mapeo Campos**, **Tipos Vehículo**.
 - "Hitos Maestros" y "Mapeo Campos" son superadmin-only (estilo rojo + icono lock).
 
 ### Config por Tipo — Componentes clave:
 - **`HitoConfigSwimlaneComponent`** — Editor visual de hitos por tipo de vehículo
-  - Dos carriles: financiero (azul) y operativo (ámbar)
+  - Dos carriles: "Carril A" / "Carril B" (solo en admin; sin labels en tracking)
   - Hitos agrupados en bloques por `grupoParalelo`
   - Grupo virtual trailing (`grupoId=0`): siempre aparece al final, no ordenable, no eliminable
   - Al asignar un hito al grupo virtual → frontend llama POST para crear grupo real

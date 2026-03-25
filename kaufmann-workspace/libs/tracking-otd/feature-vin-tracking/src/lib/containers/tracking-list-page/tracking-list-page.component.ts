@@ -5,18 +5,24 @@ import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TrackingStore, TipoVehiculoService } from '@kaufmann/tracking-otd/data-access';
 import { VinModel, EstadoVin, TipoVehiculoModel, FichaModel, HitoTracking } from '@kaufmann/shared/models';
-import { StatusBadgeComponent, SearchBarComponent } from '@kaufmann/shared/ui';
+import { HoverSubStage } from '@kaufmann/shared/ui';
+import { StatusBadgeComponent, SearchBarComponent, HitoHoverCardComponent, PaginationComponent } from '@kaufmann/shared/ui';
 import { VehicleIconComponent } from '@kaufmann/shared/ui';
 import { TrackingDrawerComponent } from '../../components/tracking-drawer/tracking-drawer.component';
 import { VisualMapComponent } from '../../components/visual-map/visual-map.component';
 import { GanttViewComponent } from '../../components/gantt-view/gantt-view.component';
-import { formatDate, resolveSubFecha } from '@kaufmann/shared/utils';
+import {
+  formatDate, resolveSubFecha,
+  stageStatusLabel, stageStatusLabelClass,
+  subStatusLabel, subStatusBadgeClass,
+  hitoDotClass, downloadCsv,
+} from '@kaufmann/shared/utils';
 import { LucideAngularModule } from 'lucide-angular';
 
 
 @Component({
     selector: 'kf-tracking-list-page',
-    imports: [FormsModule, StatusBadgeComponent, SearchBarComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule],
+    imports: [FormsModule, StatusBadgeComponent, SearchBarComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule, HitoHoverCardComponent, PaginationComponent],
     templateUrl: './tracking-list-page.component.html'
 })
 export class TrackingListPageComponent implements OnInit, OnDestroy {
@@ -119,13 +125,10 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
   }
 
   hasActiveFilters(): boolean {
-    return !!(this.searchValue() || this.selectedEstado() || this.selectedTipoVehiculoId());
+    return !!(this.selectedEstado() || this.selectedTipoVehiculoId());
   }
 
   clearAllFilters() {
-    this.searchValue.set('');
-    this.searchInput$.next('');
-    this.store.setFiltro('busqueda', '');
     this.store.setFiltro('estado', null);
     this.store.setFiltro('tipoVehiculoId', null);
     this.store.loadClientes(1);
@@ -213,19 +216,7 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
       ];
     });
 
-    // Build CSV
-    const escape = (v: string) => `"${(v || '').replace(/"/g, '""')}"`;
-    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
-
-    // Download
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tracking-otd-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(headers, rows, `tracking-otd-${new Date().toISOString().slice(0, 10)}.csv`);
   }
 
   // -- Visual map --
@@ -240,6 +231,13 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
   }
 
   // -- Shared helpers --
+
+  mapSubStages(stage: HitoTracking): HoverSubStage[] {
+    return stage.subStages.map((sub: any) => {
+      const sf = this.getSubFecha(sub);
+      return { name: sub.name, status: sub.status, fecha: sf.text || undefined, esPlan: sf.esPlan };
+    });
+  }
 
   getSubetapaTooltip(stage: HitoTracking): string {
     if (!stage.subStages || stage.subStages.length === 0) return stage.name;
@@ -264,56 +262,11 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
     return '—';
   }
 
-  getStatusLabel(status: string): string {
-    switch (status) {
-      case 'completed': return 'Completado';
-      case 'delayed': return 'Demorado';
-      case 'active': return 'En curso';
-      default: return 'Pendiente';
-    }
-  }
-
-  getStatusLabelClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'text-st-ontime bg-st-ontime-light';
-      case 'delayed': return 'text-st-delayed bg-st-delayed-light';
-      case 'active': return 'text-st-active bg-st-active-light';
-      default: return 'text-st-pending bg-st-pending-light';
-    }
-  }
-
-  getSubStatusLabel(status: string): string {
-    switch (status) {
-      case 'completed': return 'A tiempo';
-      case 'completed-risk': return 'En tolerancia';
-      case 'completed-late': return 'Crítico';
-      case 'on-time': return 'A tiempo';
-      case 'at-risk': return 'En tolerancia';
-      case 'delayed': return 'Crítico';
-      default: return 'Pendiente';
-    }
-  }
-
-  getSubStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'bg-st-ontime-light text-st-ontime';
-      case 'completed-risk': return 'bg-st-risk-light text-st-risk';
-      case 'completed-late': return 'bg-st-delayed-light text-st-delayed';
-      case 'on-time': return 'bg-st-pending-light text-st-pending';
-      case 'at-risk': return 'bg-st-risk-light text-st-risk';
-      case 'delayed': return 'bg-st-delayed-light text-st-delayed';
-      default: return 'bg-st-pending-light text-st-pending';
-    }
-  }
-
-  getHitoDotClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'border-2 border-st-ontime bg-st-ontime-light text-st-ontime';
-      case 'delayed':   return 'border-2 border-st-delayed bg-st-delayed-light text-st-delayed animate-pulse';
-      case 'active':    return 'border-2 border-st-active bg-st-active-light text-st-active animate-pulse';
-      default:          return 'border-2 border-st-pending bg-st-pending-light text-st-pending';
-    }
-  }
+  getStatusLabel = stageStatusLabel;
+  getStatusLabelClass = stageStatusLabelClass;
+  getSubStatusLabel = subStatusLabel;
+  getSubStatusBadgeClass = subStatusBadgeClass;
+  getHitoDotClass = hitoDotClass;
 
   formatDate = formatDate;
 

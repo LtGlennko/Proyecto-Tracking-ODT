@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Global CSS Variables ─────────────────────────────────── */
-:root {
-  --brand-navy:  #1E3A5F;
-  --brand-blue:  #2E75B6;
-  --brand-light: #EFF6FF;
-}
-
 /* ── Base ────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
 
@@ -52,4 +45,56 @@ body {
 .kf-tooltip {
   @apply absolute z-50 bg-white border border-slate-200 rounded-lg shadow-md p-3 text-xs text-slate-700;
   pointer-events: none;
+}
+
+/* ── Reusable component classes ─────────────────────────── */
+
+/* Card container (white box with border + shadow) */
+.kf-card {
+  @apply bg-white rounded-lg border border-slate-200 shadow-sm;
+}
+
+/* Select/dropdown input */
+.kf-select {
+  @apply text-sm rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* Filters bar container */
+.kf-filters-bar {
+  @apply bg-white rounded-lg border border-slate-200 shadow-sm p-3 sm:p-4 mb-4;
+}
+
+/* Page title */
+.kf-page-title {
+  @apply text-lg sm:text-xl font-bold text-slate-800;
+}
+
+/* Subtle text (subtitle, counts) */
+.kf-subtitle {
+  @apply text-sm text-slate-500 mt-0.5;
+}
+
+/* Primary action button (green export) */
+.kf-btn-primary {
+  @apply flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shrink-0;
+}
+
+/* Secondary/ghost button (clear filters) */
+.kf-btn-ghost {
+  @apply flex items-center gap-1 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors shrink-0 whitespace-nowrap;
+}
+
+/* Brand navy button (toggle, download PDF) */
+.kf-btn-brand {
+  @apply bg-brand-navy text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors;
+}
+
+/* Stat badge (Total, Entregados, etc.) */
+.kf-stat-badge {
+  @apply px-2 py-0.5 text-xs font-semibold rounded-full;
+}
+
+/* Section header row (table headers) */
+.kf-table-header {
+  @apply text-xs font-semibold text-slate-500 uppercase tracking-wide;
 }
