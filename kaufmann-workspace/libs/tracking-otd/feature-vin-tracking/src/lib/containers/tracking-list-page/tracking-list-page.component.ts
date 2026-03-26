@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 
+import { NgStyle } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -22,7 +23,7 @@ import { LucideAngularModule } from 'lucide-angular';
 
 @Component({
     selector: 'kf-tracking-list-page',
-    imports: [FormsModule, StatusBadgeComponent, SearchBarComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule, HitoHoverCardComponent, PaginationComponent],
+    imports: [NgStyle, FormsModule, StatusBadgeComponent, SearchBarComponent, VehicleIconComponent, TrackingDrawerComponent, VisualMapComponent, GanttViewComponent, LucideAngularModule, HitoHoverCardComponent, PaginationComponent],
     templateUrl: './tracking-list-page.component.html'
 })
 export class TrackingListPageComponent implements OnInit, OnDestroy {
@@ -59,8 +60,10 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
   tipoVehiculoOptions = this.tvService.items;
   hoveredStageKey = signal<string | null>(null);
   hoverPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  private isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   onHitoHover(vinId: string, stageId: number, event: MouseEvent) {
+    if (this.isTouchDevice) return;
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     this.hoverPos.set({ x: rect.left + rect.width / 2, y: rect.bottom + 6 });
     this.hoveredStageKey.set(vinId + ':' + stageId);
@@ -252,6 +255,64 @@ export class TrackingListPageComponent implements OnInit, OnDestroy {
   getSubFecha(sub: { real: { start: string | null; end: string | null }; plan: { start: string | null; end: string | null } }): { text: string; esPlan: boolean } {
     const result = resolveSubFecha(sub.real, sub.plan);
     return { text: result.raw ? this.fmtDate(result.raw) : '', esPlan: result.esPlan };
+  }
+
+  getActiveStage(vin: VinModel): HitoTracking | null {
+    const stages = vin.stages;
+
+    // All active/delayed candidates — take the last one in array order
+    const candidates = stages.filter(s => s.status === 'active' || s.status === 'delayed');
+    if (candidates.length > 0) {
+      const last = candidates[candidates.length - 1];
+      // If it belongs to a parallel group, pick the worst among group peers
+      if (last.grupoParaleloId != null) {
+        const peers = candidates.filter(s => s.grupoParaleloId === last.grupoParaleloId);
+        // delayed beats active; among same status pick the one with latest plan/real end
+        const delayed = peers.filter(s => s.status === 'delayed');
+        const pool = delayed.length > 0 ? delayed : peers;
+        return pool.reduce((worst, s) => {
+          const d = (s.plan?.end ?? s.plan?.start ?? '');
+          const w = (worst.plan?.end ?? worst.plan?.start ?? '');
+          return d > w ? s : worst;
+        });
+      }
+      return last;
+    }
+
+    // Fallback: last completed stage, respecting parallel groups (take worst in group)
+    const reversed = stages.slice().reverse();
+    const lastCompleted = reversed.find(s => s.status === 'completed');
+    if (!lastCompleted) return null;
+    if (lastCompleted.grupoParaleloId != null) {
+      const peers = stages.filter(
+        s => s.grupoParaleloId === lastCompleted.grupoParaleloId && s.status === 'completed'
+      );
+      return peers.reduce((latest, s) => {
+        const d = (s.real?.end ?? s.real?.start ?? s.plan?.end ?? s.plan?.start ?? '');
+        const l = (latest.real?.end ?? latest.real?.start ?? latest.plan?.end ?? latest.plan?.start ?? '');
+        return d > l ? s : latest;
+      });
+    }
+    return lastCompleted;
+  }
+
+  getStageDate(stage: HitoTracking, field: 'baseline' | 'plan' | 'real'): string {
+    const d = stage[field]?.end || stage[field]?.start;
+    return d ? this.fmtDate(d) : '—';
+  }
+
+  getStageDev(stage: HitoTracking): number | null {
+    const realStr = stage.real?.end || stage.real?.start;
+    const planStr = stage.plan?.end || stage.plan?.start;
+    if (!realStr || !planStr) return null;
+    return Math.round((new Date(realStr + 'T00:00:00').getTime() - new Date(planStr + 'T00:00:00').getTime()) / 86400000);
+  }
+
+  stageDotClass(status: string): string {
+    if (status === 'completed') return 'bg-st-ontime';
+    if (status === 'delayed') return 'bg-st-delayed';
+    if (status === 'active') return 'bg-st-active';
+    return 'bg-slate-300';
   }
 
   getLastPlanDate(stage: HitoTracking): string {

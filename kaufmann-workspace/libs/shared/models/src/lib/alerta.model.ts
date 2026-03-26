@@ -19,3 +19,12 @@ export interface AlertaModel {
   timestamp: string;
   status: EstadoAlerta;
 }
+
+export interface MencionModel {
+  id: string;
+  vinId: string;
+  mensaje: string;
+  autor: string;
+  fecha: string;
+  leida: boolean;
+}

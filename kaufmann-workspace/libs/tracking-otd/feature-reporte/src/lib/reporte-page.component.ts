@@ -1,6 +1,5 @@
 import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
 import { TrackingStore } from '@kaufmann/tracking-otd/data-access';
 import { StatusBadgeComponent, SearchBarComponent, PaginationComponent } from '@kaufmann/shared/ui';
@@ -10,7 +9,7 @@ import { downloadCsv } from '@kaufmann/shared/utils';
 @Component({
   selector: 'kf-reporte-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, StatusBadgeComponent, SearchBarComponent, PaginationComponent],
+  imports: [FormsModule, StatusBadgeComponent, SearchBarComponent, PaginationComponent],
   template: `
     <div class="p-3 sm:p-6 space-y-4">
 
@@ -45,11 +44,11 @@ import { downloadCsv } from '@kaufmann/shared/utils';
           <thead>
             <tr class="border-b border-slate-200 bg-slate-50">
               <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide sticky left-0 bg-slate-50 z-10" rowspan="2">VIN</th>
-              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide w-[180px] min-w-[180px] max-w-[180px]" rowspan="2">Cliente</th>
-              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Modelo</th>
-              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Lote</th>
-              <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Status</th>
-              <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide" rowspan="2">Desviacion</th>
+              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide w-[180px] min-w-[180px] max-w-[180px] border-l border-slate-200" rowspan="2">Cliente</th>
+              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide border-l border-slate-200" rowspan="2">Modelo</th>
+              <th class="text-left px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide border-l border-slate-200" rowspan="2">Lote</th>
+              <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide border-l border-slate-200" rowspan="2">Estado</th>
+              <th class="text-center px-3 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide border-l border-slate-200" rowspan="2">Desviacion</th>
               @for (hito of hitoColumns(); track hito) {
                 <th class="text-center px-1 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wide border-l border-slate-200" colspan="3">
                   {{ hito }}
@@ -72,13 +71,13 @@ import { downloadCsv } from '@kaufmann/shared/utils';
                 <td class="px-3 py-2.5 sticky left-0 bg-white z-10">
                   <span class="font-mono text-xs font-semibold text-slate-700">{{ row.vinShort }}</span>
                 </td>
-                <td class="px-3 py-2.5 text-xs text-slate-700 w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words">{{ row.vin.clientName }}</td>
-                <td class="px-3 py-2.5 text-xs text-slate-700">{{ row.vin.modelo }}</td>
-                <td class="px-3 py-2.5 text-xs text-slate-500">{{ row.vin.lote || '-' }}</td>
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-2.5 text-xs text-slate-700 w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words border-l border-slate-100">{{ row.vin.clientName }}</td>
+                <td class="px-3 py-2.5 text-xs text-slate-700 border-l border-slate-100">{{ row.vin.modelo }}</td>
+                <td class="px-3 py-2.5 text-xs text-slate-500 border-l border-slate-100">{{ row.vin.lote || '-' }}</td>
+                <td class="px-3 py-2.5 text-center border-l border-slate-100">
                   <kf-status-badge [status]="$any(row.vin.estadoGeneral)" />
                 </td>
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-2.5 text-center border-l border-slate-100">
                   @if (row.totalDev > 0) {
                     <span class="text-xs font-bold text-red-600">+{{ row.totalDev }} d</span>
                   } @else if (row.totalDev < 0) {
@@ -206,7 +205,7 @@ export class ReportePageComponent implements OnDestroy {
 
     const hitos = this.hitoColumns();
     const headers = [
-      'VIN', 'Cliente', 'Modelo', 'Lote', 'Status', 'Desviacion',
+      'VIN', 'Cliente', 'Modelo', 'Lote', 'Estado', 'Desviacion',
       ...hitos.flatMap(h => [`${h} (Plan)`, `${h} (Real)`, `${h} (Dif)`]),
     ];
 

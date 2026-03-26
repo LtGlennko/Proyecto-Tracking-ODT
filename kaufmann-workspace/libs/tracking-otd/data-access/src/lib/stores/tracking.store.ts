@@ -190,7 +190,7 @@ export const TrackingStore = signalStore(
         });
       },
       closeDrawer() {
-        patchState(store, { drawerOpen: false, selectedVinId: null, selectedStageId: null });
+        patchState(store, { drawerOpen: false, selectedStageId: null });
       },
       setFiltro(key: keyof FiltrosTracking, value: unknown) {
         patchState(store, { filtros: { ...store.filtros(), [key]: value } });

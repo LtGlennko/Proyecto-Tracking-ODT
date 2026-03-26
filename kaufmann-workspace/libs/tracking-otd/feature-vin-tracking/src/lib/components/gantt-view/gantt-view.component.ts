@@ -86,7 +86,7 @@ interface TimeMarker {
                   <span class="font-semibold text-slate-700 text-sm truncate">{{ stage.name }}</span>
                 </div>
                 <svg class="w-4 h-4 text-slate-300 transition-transform flex-shrink-0"
-                     [class.rotate-180]="!isCollapsed(stage.id)"
+                     [class.rotate-90]="!isCollapsed(stage.id)"
                      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>

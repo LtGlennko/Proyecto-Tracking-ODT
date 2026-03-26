@@ -335,7 +335,10 @@ interface SlaConfigApi {
                     }
                   }
 
-                  <span class="text-slate-400 text-xs w-5 text-center select-none" (click)="toggleMasterExpanded(hito.id)">{{ expandedMasterHitoId() === hito.id ? '▼' : '▶' }}</span>
+                  <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" [class.rotate-90]="expandedMasterHitoId() === hito.id"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" (click)="toggleMasterExpanded(hito.id)">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                  </svg>
                 </div>
 
                 <!-- Drag preview -->
@@ -946,8 +949,8 @@ interface SlaConfigApi {
                         <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-50 text-amber-600">Sin mapeo</span>
                       }
                     </div>
-                    <svg class="w-4 h-4 text-slate-400 transition-transform" [class.rotate-180]="expandedCampo() === col.name" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" [class.rotate-90]="expandedCampo() === col.name" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                     </svg>
                   </button>
 

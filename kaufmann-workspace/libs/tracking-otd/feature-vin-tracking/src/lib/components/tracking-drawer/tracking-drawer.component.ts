@@ -4,7 +4,11 @@ import autoTable from 'jspdf-autotable';
 
 import { VinModel, HitoTracking } from '@kaufmann/shared/models';
 import { StatusBadgeComponent, VehicleIconComponent } from '@kaufmann/shared/ui';
-import { formatDate, calculateDiff, subStatusLabel as subStatusLabelFn } from '@kaufmann/shared/utils';
+import {
+  formatDate, calculateDiff, subStatusLabel as subStatusLabelFn,
+  subStatusBadgeClass as subStatusBadgeClassFn, subDotClass,
+  hitoStatusPillClass, progressBarColor, tramoPairClass,
+} from '@kaufmann/shared/utils';
 
 @Component({
     selector: 'kf-tracking-drawer',
@@ -19,6 +23,7 @@ export class TrackingDrawerComponent {
 
   expandedHitoId = signal<number | null>(null);
   drawerMainTab = signal<'detalle' | 'datos' | 'tramos'>('detalle');
+  animated = signal(false);
 
   hitoPairs = computed(() => {
     const stages = this.vin().stages;
@@ -72,6 +77,15 @@ export class TrackingDrawerComponent {
 
   constructor() {
     effect(() => {
+      const open = this.isOpen();
+      if (open) {
+        requestAnimationFrame(() => this.animated.set(true));
+      } else {
+        this.animated.set(false);
+      }
+    });
+
+    effect(() => {
       const stageId = this.selectedStageId();
       if (stageId) this.expandedHitoId.set(stageId);
       this.drawerMainTab.set('detalle');
@@ -80,7 +94,7 @@ export class TrackingDrawerComponent {
 
   @HostListener('document:keydown.escape')
   onEscape() {
-    this.closed.emit();
+    if (this.isOpen()) this.closed.emit();
   }
 
   toggleHito(hitoId: number) {
@@ -88,12 +102,7 @@ export class TrackingDrawerComponent {
   }
 
   hitoStatusClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-      case 'delayed':   return 'bg-red-100 text-red-700 border border-red-200';
-      case 'active':    return 'bg-blue-100 text-blue-700 border border-blue-200';
-      default:          return 'bg-slate-100 text-slate-500 border border-slate-200';
-    }
+    return hitoStatusPillClass(status);
   }
 
   hitoProgressWidth(hito: HitoTracking): number {
@@ -104,34 +113,17 @@ export class TrackingDrawerComponent {
   }
 
   hitoProgressColor(hito: HitoTracking): string {
-    if (hito.status === 'delayed') return 'bg-red-500';
-    if (hito.status === 'completed') return 'bg-emerald-500';
-    if (hito.status === 'active') return 'bg-blue-500';
-    return 'bg-slate-200';
+    return progressBarColor(hito.status);
   }
 
   subStageStatusDot(status: string): string {
-    switch (status) {
-      case 'completed': return 'bg-emerald-500';
-      case 'completed-risk': return 'bg-amber-500';
-      case 'completed-late': return 'bg-red-500';
-      case 'at-risk': return 'bg-amber-500 animate-pulse';
-      case 'delayed': return 'bg-red-500 animate-pulse';
-      default: return 'bg-slate-300';
-    }
+    return subDotClass(status);
   }
 
   subStatusLabel = subStatusLabelFn;
 
   subStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'completed': return 'bg-emerald-100 text-emerald-700';
-      case 'completed-risk': return 'bg-amber-100 text-amber-700';
-      case 'completed-late': return 'bg-red-100 text-red-700';
-      case 'at-risk': return 'bg-amber-100 text-amber-700';
-      case 'delayed': return 'bg-red-100 text-red-700';
-      default: return 'bg-slate-100 text-slate-500';
-    }
+    return subStatusBadgeClassFn(status);
   }
 
   pairStatusLabel(status: string): string {
@@ -144,12 +136,7 @@ export class TrackingDrawerComponent {
   }
 
   pairStatusClass(status: string): string {
-    switch (status) {
-      case 'on-time': return 'bg-emerald-50 text-emerald-600';
-      case 'at-risk': return 'bg-amber-50 text-amber-600';
-      case 'delayed': return 'bg-red-50 text-red-600';
-      default: return 'bg-slate-50 text-slate-400';
-    }
+    return tramoPairClass(status);
   }
 
   onVisualMapNodeClick(hitoId: number) {

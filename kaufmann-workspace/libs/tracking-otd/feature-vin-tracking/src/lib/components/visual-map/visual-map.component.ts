@@ -206,8 +206,10 @@ export class VisualMapComponent {
   nodeClick = output<number>();
   hoveredHitoId = signal<number | null>(null);
   hoverPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  private isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   onHitoHover(hitoId: number, event: MouseEvent) {
+    if (this.isTouchDevice) return;
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     this.hoverPos.set({ x: rect.left + rect.width / 2, y: rect.bottom + 4 });
     this.hoveredHitoId.set(hitoId);

@@ -158,9 +158,9 @@ interface Bloque {
               <button (click)="toggleGrupoExpanded(bloque.grupoId); $event.stopPropagation()"
                 class="shrink-0 p-0.5 rounded hover:bg-slate-200 transition-colors">
                 <svg class="w-3.5 h-3.5 text-slate-400 transition-transform"
-                     [class.rotate-180]="!isGrupoCollapsed(bloque.grupoId)"
+                     [class.rotate-90]="!isGrupoCollapsed(bloque.grupoId)"
                      fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
               </button>
             }
@@ -287,9 +287,9 @@ interface Bloque {
             {{ countActiveSubs(hito) }}/{{ hito.subetapas.length }} subetapas activas
           </span>
           <svg class="w-3.5 h-3.5 text-slate-400 transition-transform shrink-0"
-               [class.rotate-180]="expandedHitoId() === hito.hitoId"
+               [class.rotate-90]="expandedHitoId() === hito.hitoId"
                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
           </svg>
         </div>
       }

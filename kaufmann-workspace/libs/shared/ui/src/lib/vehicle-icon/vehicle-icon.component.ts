@@ -5,7 +5,7 @@ import { LucideAngularModule } from 'lucide-angular';
     selector: 'kf-vehicle-icon',
     imports: [LucideAngularModule],
     template: `
-    <span [class]="sizeClass()">
+    <span [class]="sizeClass()" [style.color]="color() || null">
       @if (icono()) {
         <lucide-icon [name]="icono()!" [size]="iconSize()" [strokeWidth]="1.5"></lucide-icon>
       } @else {
@@ -16,6 +16,7 @@ import { LucideAngularModule } from 'lucide-angular';
 })
 export class VehicleIconComponent {
   icono = input<string | null>(null);
+  color = input<string | null>(null);
   size = input<'sm' | 'md' | 'lg'>('md');
 
   iconSize = computed(() => {

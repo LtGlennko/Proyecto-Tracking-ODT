@@ -77,3 +77,31 @@ export function subDotClass(status: string): string {
   if (status === 'delayed') return 'bg-st-delayed animate-pulse';
   return 'bg-st-pending';
 }
+
+/** Hito status pill CSS (bg + text + border) for drawer hito header */
+export function hitoStatusPillClass(status: string): string {
+  switch (status) {
+    case 'completed': return 'bg-st-ontime-light text-st-ontime border border-st-ontime-border';
+    case 'delayed':   return 'bg-st-delayed-light text-st-delayed border border-st-delayed-border';
+    case 'active':    return 'bg-st-active-light text-st-active border border-st-active-border';
+    default:          return 'bg-st-pending-light text-st-pending border border-st-pending-border';
+  }
+}
+
+/** Progress bar fill color for hito detail */
+export function progressBarColor(status: string): string {
+  if (status === 'delayed')   return 'bg-st-delayed';
+  if (status === 'completed') return 'bg-st-ontime';
+  if (status === 'active')    return 'bg-st-active';
+  return 'bg-st-pending-border';
+}
+
+/** Tramo pair status background+text for drawer tramos tab */
+export function tramoPairClass(status: string): string {
+  switch (status) {
+    case 'on-time': return 'bg-st-ontime-light text-st-ontime';
+    case 'at-risk':  return 'bg-st-risk-light text-st-risk';
+    case 'delayed':  return 'bg-st-delayed-light text-st-delayed';
+    default:         return 'bg-st-pending-light text-st-pending';
+  }
+}

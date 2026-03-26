@@ -1,8 +1,8 @@
 <!-- Drawer panel -->
 <aside
   class="fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300"
-  [class.translate-x-0]="isOpen()"
-  [class.translate-x-full]="!isOpen()"
+  [class.kf-drawer-visible]="animated()"
+  [class.kf-drawer-hidden]="!animated()"
   role="dialog"
   aria-modal="true"
   [attr.aria-label]="'Detalle VIN ' + vin().id"
@@ -25,7 +25,7 @@
     <!-- Vehicle info -->
     <div class="flex gap-3 items-start">
       <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-        <kf-vehicle-icon [icono]="vin().tipoVehiculo?.icono" size="lg" />
+        <kf-vehicle-icon [icono]="vin().tipoVehiculo?.icono" [color]="vin().tipoVehiculo?.color ?? null" size="lg" />
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
@@ -374,4 +374,5 @@
       Descargar Reporte PDF
     </button>
   </div>
+
 </aside>
