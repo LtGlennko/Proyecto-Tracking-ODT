@@ -105,19 +105,7 @@ export class TrackingService {
       );
     }
 
-    // Only show VINs with PROPED data + at least 5 date fields populated
-    qb.andWhere('(vt.etd IS NOT NULL OR vt.eta IS NOT NULL)');
-    qb.andWhere(`(
-      CASE WHEN vt.fecha_colocacion IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_embarque_sap IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_llegada_aduana IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_preasignacion IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_facturacion_sap IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_inscrito IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_entrega_cliente IS NOT NULL THEN 1 ELSE 0 END
-    ) >= 5`);
-
+    // Completeness filter is enforced by vista_tracking_vin itself
     qb.orderBy('vt.cliente_nombre', 'ASC').addOrderBy('vt.ficha_codigo', 'ASC').addOrderBy('vt.vin', 'ASC');
 
     // Count total before pagination (same filters including completeness)
@@ -127,17 +115,7 @@ export class TrackingService {
     if (filters.empresaId) countQb.andWhere('vt.empresa_id = :empresaId', { empresaId: filters.empresaId });
     if (filters.tipoVehiculoId) countQb.andWhere('vt.tipo_vehiculo_id = :tipoVehiculoId', { tipoVehiculoId: filters.tipoVehiculoId });
     if (filters.busqueda) countQb.andWhere('(vt.vin ILIKE :q OR vt.cliente_nombre ILIKE :q OR vt.modelo ILIKE :q OR vt.ficha_codigo ILIKE :q)', { q: `%${filters.busqueda}%` });
-    countQb.andWhere('(vt.etd IS NOT NULL OR vt.eta IS NOT NULL)');
-    countQb.andWhere(`(
-      CASE WHEN vt.fecha_colocacion IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_embarque_sap IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_llegada_aduana IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_preasignacion IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_facturacion_sap IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_inscrito IS NOT NULL THEN 1 ELSE 0 END +
-      CASE WHEN vt.fecha_entrega_cliente IS NOT NULL THEN 1 ELSE 0 END
-    ) >= 5`);
+    // Completeness filter is enforced by vista_tracking_vin itself
     const countResult = await countQb.getRawOne();
     const totalVins = parseInt(countResult?.total || '0', 10);
 
